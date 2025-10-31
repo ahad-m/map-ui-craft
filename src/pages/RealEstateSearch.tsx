@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 
 const RealEstateSearch = () => {
   const [apiKey, setApiKey] = useState('');
@@ -38,16 +39,30 @@ const RealEstateSearch = () => {
 
   if (showApiInput) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="p-6 max-w-md w-full space-y-4">
-          <h2 className="text-xl font-semibold">Enter Google Maps API Key</h2>
-          <p className="text-sm text-muted-foreground">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <Card className="p-8 max-w-md w-full space-y-6 shadow-elegant border-0 bg-gradient-to-b from-card to-card/50 backdrop-blur-sm">
+          <div className="flex items-center justify-center mb-4">
+            <img 
+              src={riyalEstateLogo} 
+              alt="RiyalEstate" 
+              className="h-20 w-20 rounded-full object-cover ring-4 ring-primary/20"
+            />
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Welcome to RiyalEstate
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Enter your Google Maps API key to begin searching for properties
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
             Get your API key from{' '}
             <a
               href="https://console.cloud.google.com/google/maps-apis"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary underline"
+              className="text-primary underline hover:text-accent transition-colors"
             >
               Google Cloud Console
             </a>
@@ -57,13 +72,15 @@ const RealEstateSearch = () => {
             placeholder="Your Google Maps API Key"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
+            className="border-primary/20 focus-visible:ring-primary"
           />
           <Button
             onClick={() => apiKey && setShowApiInput(false)}
-            className="w-full"
+            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg"
             disabled={!apiKey}
           >
-            Continue
+            <Sparkles className="mr-2 h-4 w-4" />
+            Start Searching
           </Button>
         </Card>
       </div>
@@ -86,20 +103,43 @@ const RealEstateSearch = () => {
 
         {/* Top Search Bar */}
         <div className="absolute top-4 left-4 right-4 z-10">
-          <Card className="p-4 bg-card/95 backdrop-blur-sm shadow-lg">
+          <Card className="p-6 bg-card/98 backdrop-blur-md shadow-elegant border-primary/10 animate-fade-in">
             <div className="flex flex-col gap-4">
+              {/* Logo and Title */}
+              <div className="flex items-center gap-3 pb-3 border-b border-border">
+                <img 
+                  src={riyalEstateLogo} 
+                  alt="RiyalEstate" 
+                  className="h-12 w-12 rounded-full object-cover ring-2 ring-primary/20"
+                />
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    RiyalEstate
+                  </h1>
+                  <p className="text-xs text-muted-foreground">Find Your Perfect Property</p>
+                </div>
+              </div>
+
               {/* Transaction Type Toggle */}
               <div className="flex gap-2">
                 <Button
                   variant={transactionType === 'sale' ? 'default' : 'outline'}
-                  className="flex-1"
+                  className={`flex-1 transition-all ${
+                    transactionType === 'sale' 
+                      ? 'bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg' 
+                      : 'hover:border-primary/50'
+                  }`}
                   onClick={() => setTransactionType('sale')}
                 >
                   For Sale
                 </Button>
                 <Button
                   variant={transactionType === 'rent' ? 'default' : 'outline'}
-                  className="flex-1"
+                  className={`flex-1 transition-all ${
+                    transactionType === 'rent' 
+                      ? 'bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg' 
+                      : 'hover:border-primary/50'
+                  }`}
                   onClick={() => setTransactionType('rent')}
                 >
                   For Rent
@@ -108,24 +148,31 @@ const RealEstateSearch = () => {
 
               {/* Search Input */}
               <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <div className="flex-1 relative group">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-colors" />
                   <Input
                     placeholder="Search by location, neighborhood..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-background"
+                    className="pl-10 bg-background border-border focus-visible:ring-primary focus-visible:border-primary transition-all"
                   />
                 </div>
                 <Sheet open={showFilters} onOpenChange={setShowFilters}>
                   <SheetTrigger asChild>
-                    <Button variant="outline" size="icon">
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      className="hover:bg-primary/10 hover:border-primary/50 hover:text-primary transition-all"
+                    >
                       <SlidersHorizontal className="h-5 w-5" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-                    <SheetHeader>
-                      <SheetTitle>Advanced Filters</SheetTitle>
+                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto bg-gradient-to-b from-card to-card/95">
+                    <SheetHeader className="pb-4 border-b border-border">
+                      <div className="flex items-center gap-2">
+                        <SlidersHorizontal className="h-5 w-5 text-primary" />
+                        <SheetTitle className="text-xl">Advanced Filters</SheetTitle>
+                      </div>
                     </SheetHeader>
                     <div className="space-y-6 mt-6">
                       {/* Property Type */}
@@ -341,13 +388,17 @@ const RealEstateSearch = () => {
                       </div>
 
                       {/* Apply Filters Button */}
-                      <Button className="w-full" onClick={() => setShowFilters(false)}>
+                      <Button 
+                        className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg" 
+                        onClick={() => setShowFilters(false)}
+                      >
+                        <Search className="h-4 w-4 mr-2" />
                         Apply Filters
                       </Button>
                     </div>
                   </SheetContent>
                 </Sheet>
-                <Button>
+                <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
                   <Search className="h-5 w-5 mr-2" />
                   Search
                 </Button>
@@ -359,7 +410,7 @@ const RealEstateSearch = () => {
         {/* AI Chatbot Button */}
         <Button
           size="lg"
-          className="fixed bottom-6 right-6 z-20 rounded-full h-16 w-16 shadow-lg"
+          className="fixed bottom-6 right-6 z-20 rounded-full h-16 w-16 bg-gradient-to-br from-primary to-accent hover:opacity-90 shadow-glow transition-all hover:scale-110 animate-pulse"
           onClick={() => setShowChatbot(!showChatbot)}
         >
           {showChatbot ? (
@@ -371,30 +422,41 @@ const RealEstateSearch = () => {
 
         {/* Chatbot Panel */}
         {showChatbot && (
-          <Card className="fixed bottom-24 right-6 z-20 w-96 h-[500px] shadow-xl bg-card/95 backdrop-blur-sm">
-            <div className="flex flex-col h-full p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">AI Assistant</h3>
+          <Card className="fixed bottom-24 right-6 z-20 w-96 h-[500px] shadow-elegant border-primary/10 bg-gradient-to-b from-card to-card/95 backdrop-blur-md animate-scale-in">
+            <div className="flex flex-col h-full p-5">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                    <Sparkles className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <h3 className="font-semibold text-lg">AI Assistant</h3>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowChatbot(false)}
+                  className="hover:bg-primary/10"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
               <div className="flex-1 overflow-y-auto mb-4 space-y-3">
-                <div className="bg-muted p-3 rounded-lg">
-                  <p className="text-sm">
-                    Hello! I'm your AI assistant. I can help you find the perfect property,
+                <div className="bg-gradient-to-br from-primary/10 to-accent/10 p-4 rounded-xl border border-primary/20 animate-fade-in">
+                  <p className="text-sm leading-relaxed">
+                    👋 Hello! I'm your AI assistant. I can help you find the perfect property,
                     answer questions about neighborhoods, or provide information about the
                     local area. How can I assist you today?
                   </p>
                 </div>
               </div>
               <div className="flex gap-2">
-                <Input placeholder="Ask me anything..." />
-                <Button>Send</Button>
+                <Input 
+                  placeholder="Ask me anything..." 
+                  className="border-primary/20 focus-visible:ring-primary"
+                />
+                <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity">
+                  Send
+                </Button>
               </div>
             </div>
           </Card>
