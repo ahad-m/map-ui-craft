@@ -43,5 +43,22 @@
   "askQuestion": "Ask me anything about properties...",
   "send": "Send",
   "aiAssistant": "AI Assistant",
-  "helpMessage": "Hello! I'm your AI assistant. How can I help you find your perfect property today?"
+  "helpMessage": "Hello! I'm your AI assistant. How can I help you find your perfect property today?",
+  "enterGoogleMapsKey": "Enter Google Maps API Key",
+  "getApiKey": "Get your API key from",
+  "googleCloudConsole": "Google Cloud Console",
+  "yourGoogleMapsKey": "Your Google Maps API Key",
+  "searchHere": "Search here",
+  "home": "Home",
+  "restaurants": "Restaurants",
+  "apparel": "Apparel",
+  "shopping": "Shopping",
+  "explore": "Explore",
+  "you": "You",
+  "contribute": "Contribute",
+  "latestInArea": "Latest in the area",
+  "pageNotFound": "Page not found",
+  "oops": "Oops! Page not found",
+  "returnToHome": "Return to Home"
 }
+

@@ -1,43 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
-import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Plus } from 'lucide-react';
+import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Plus, Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 
 const MapScreen = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [apiKey, setApiKey] = useState('');
   const [showApiInput, setShowApiInput] = useState(true);
 
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'ar' : 'en';
+    i18n.changeLanguage(newLang);
+  };
+
   const categories = [
-    { icon: Home, label: 'Home' },
-    { icon: UtensilsCrossed, label: 'Restaurants' },
-    { icon: Shirt, label: 'Apparel' },
-    { icon: ShoppingBag, label: 'Shopping' },
+    { icon: Home, label: t('home') },
+    { icon: UtensilsCrossed, label: t('restaurants') },
+    { icon: Shirt, label: t('apparel') },
+    { icon: ShoppingBag, label: t('shopping') },
   ];
 
   if (showApiInput) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
         <Card className="p-6 max-w-md w-full space-y-4">
-          <h2 className="text-xl font-semibold">Enter Google Maps API Key</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleLanguage}
+            className="absolute top-4 right-4 gap-2"
+          >
+            <Languages className="h-4 w-4" />
+            {i18n.language === 'en' ? 'العربية' : 'English'}
+          </Button>
+          <h2 className="text-xl font-semibold">{t('enterGoogleMapsKey')}</h2>
           <p className="text-sm text-muted-foreground">
-            Get your API key from{' '}
+            {t('getApiKey')}{' '}
             <a
               href="https://console.cloud.google.com/google/maps-apis"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary underline"
             >
-              Google Cloud Console
+              {t('googleCloudConsole')}
             </a>
           </p>
           <Input
             type="text"
-            placeholder="Your Google Maps API Key"
+            placeholder={t('yourGoogleMapsKey')}
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
           />
@@ -46,7 +67,7 @@ const MapScreen = () => {
             className="w-full"
             disabled={!apiKey}
           >
-            Continue
+            {t('continue')}
           </Button>
         </Card>
       </div>
@@ -61,15 +82,23 @@ const MapScreen = () => {
           <div className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Search className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground ${i18n.language === 'ar' ? 'right-3' : 'left-3'}`} />
                 <Input
-                  placeholder="Search here"
-                  className="pl-10 pr-10 h-12 bg-card"
+                  placeholder={t('searchHere')}
+                  className={`h-12 bg-card ${i18n.language === 'ar' ? 'pr-10 pl-10' : 'pl-10 pr-10'}`}
                 />
-                <Mic className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Mic className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground ${i18n.language === 'ar' ? 'left-3' : 'right-3'}`} />
               </div>
               <Button size="icon" variant="outline" className="h-12 w-12 rounded-full">
                 <User className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleLanguage}
+                className="h-12 w-12 rounded-full"
+              >
+                <Languages className="h-5 w-5" />
               </Button>
             </div>
 
@@ -117,7 +146,7 @@ const MapScreen = () => {
         {/* Latest in the area banner */}
         <div className="absolute bottom-20 left-4 right-4 z-10">
           <Card className="p-3 bg-card/95 backdrop-blur-sm">
-            <p className="text-sm font-medium">Latest in the area</p>
+            <p className="text-sm font-medium">{t('latestInArea')}</p>
           </Card>
         </div>
 
@@ -129,7 +158,7 @@ const MapScreen = () => {
               className="flex flex-col items-center gap-1 h-auto py-2 px-4"
             >
               <Search className="h-5 w-5" />
-              <span className="text-xs">Explore</span>
+              <span className="text-xs">{t('explore')}</span>
             </Button>
 
             <Button
@@ -137,7 +166,7 @@ const MapScreen = () => {
               className="flex flex-col items-center gap-1 h-auto py-2 px-4 text-primary"
             >
               <Navigation className="h-5 w-5" />
-              <span className="text-xs font-semibold">You</span>
+              <span className="text-xs font-semibold">{t('you')}</span>
             </Button>
 
             <Button
@@ -150,7 +179,7 @@ const MapScreen = () => {
                 alt="RiyalEstate" 
                 className="h-8 w-8 rounded-full object-cover"
               />
-              <span className="text-xs font-semibold text-primary">RiyalEstate</span>
+              <span className="text-xs font-semibold text-primary">{t('riyalEstate')}</span>
             </Button>
 
             <Button
@@ -158,7 +187,7 @@ const MapScreen = () => {
               className="flex flex-col items-center gap-1 h-auto py-2 px-4"
             >
               <Plus className="h-5 w-5" />
-              <span className="text-xs">Contribute</span>
+              <span className="text-xs">{t('contribute')}</span>
             </Button>
           </div>
         </div>

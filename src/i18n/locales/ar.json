@@ -43,5 +43,21 @@
   "askQuestion": "اسألني أي شيء عن العقارات...",
   "send": "إرسال",
   "aiAssistant": "المساعد الذكي",
-  "helpMessage": "مرحباً! أنا مساعدك الذكي. كيف يمكنني مساعدتك في العثور على عقارك المثالي اليوم؟"
+  "helpMessage": "مرحباً! أنا مساعدك الذكي. كيف يمكنني مساعدتك في العثور على عقارك المثالي اليوم؟",
+  "enterGoogleMapsKey": "أدخل مفتاح Google Maps API",
+  "getApiKey": "احصل على مفتاح API من",
+  "googleCloudConsole": "Google Cloud Console",
+  "yourGoogleMapsKey": "مفتاح Google Maps API الخاص بك",
+  "searchHere": "ابحث هنا",
+  "home": "الرئيسية",
+  "restaurants": "المطاعم",
+  "apparel": "الملابس",
+  "shopping": "التسوق",
+  "explore": "استكشف",
+  "you": "أنت",
+  "contribute": "ساهم",
+  "latestInArea": "الأحدث في المنطقة",
+  "pageNotFound": "الصفحة غير موجودة",
+  "oops": "عذراً! الصفحة غير موجودة",
+  "returnToHome": "العودة إلى الصفحة الرئيسية"
 }
