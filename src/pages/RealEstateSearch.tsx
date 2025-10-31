@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -14,6 +15,7 @@ import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [apiKey, setApiKey] = useState('');
   const [showApiInput, setShowApiInput] = useState(true);
   const [transactionType, setTransactionType] = useState<'rent' | 'sale'>('sale');
@@ -129,6 +131,14 @@ const RealEstateSearch = () => {
             <div className="flex flex-col gap-4">
               {/* Logo, Title and Language Toggle */}
               <div className="flex items-center gap-3 pb-3 border-b border-border">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate('/')}
+                  className="hover:bg-primary/10"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
                 <img 
                   src={riyalEstateLogo} 
                   alt="RiyalEstate" 
