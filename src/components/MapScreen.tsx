@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 
 const MapScreen = () => {
+  const navigate = useNavigate();
   const [apiKey, setApiKey] = useState('');
   const [showApiInput, setShowApiInput] = useState(true);
 
@@ -138,14 +140,18 @@ const MapScreen = () => {
               <span className="text-xs font-semibold">You</span>
             </Button>
 
-            <div className="flex flex-col items-center gap-1 py-2 px-4">
+            <Button
+              variant="ghost"
+              className="flex flex-col items-center gap-1 h-auto py-2 px-4"
+              onClick={() => navigate('/search')}
+            >
               <img 
                 src={riyalEstateLogo} 
                 alt="RiyalEstate" 
                 className="h-8 w-8 rounded-full object-cover"
               />
               <span className="text-xs font-semibold text-primary">RiyalEstate</span>
-            </div>
+            </Button>
 
             <Button
               variant="ghost"
