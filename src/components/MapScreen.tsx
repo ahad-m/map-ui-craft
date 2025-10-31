@@ -4,6 +4,7 @@ import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigatio
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 
 const MapScreen = () => {
   const [apiKey, setApiKey] = useState('');
@@ -138,9 +139,11 @@ const MapScreen = () => {
             </Button>
 
             <div className="flex flex-col items-center gap-1 py-2 px-4">
-              <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-xs font-bold text-primary-foreground">RE</span>
-              </div>
+              <img 
+                src={riyalEstateLogo} 
+                alt="RiyalEstate" 
+                className="h-8 w-8 rounded-full object-cover"
+              />
               <span className="text-xs font-semibold text-primary">RiyalEstate</span>
             </div>
 
