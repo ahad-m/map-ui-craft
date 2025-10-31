@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -12,12 +13,24 @@ import { Checkbox } from '@/components/ui/checkbox';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 
 const RealEstateSearch = () => {
+  const { t, i18n } = useTranslation();
   const [apiKey, setApiKey] = useState('');
   const [showApiInput, setShowApiInput] = useState(true);
   const [transactionType, setTransactionType] = useState<'rent' | 'sale'>('sale');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
+
+  // Update document direction based on language
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'ar' : 'en';
+    i18n.changeLanguage(newLang);
+  };
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -41,6 +54,15 @@ const RealEstateSearch = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-accent/5">
         <Card className="p-8 max-w-md w-full space-y-6 shadow-elegant border-0 bg-gradient-to-b from-card to-card/50 backdrop-blur-sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleLanguage}
+            className="absolute top-4 right-4 gap-2"
+          >
+            <Languages className="h-4 w-4" />
+            {i18n.language === 'en' ? 'العربية' : 'English'}
+          </Button>
           <div className="flex items-center justify-center mb-4">
             <img 
               src={riyalEstateLogo} 
@@ -50,10 +72,10 @@ const RealEstateSearch = () => {
           </div>
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Welcome to RiyalEstate
+              {t('welcome')}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Enter your Google Maps API key to begin searching for properties
+              {t('enterApiKey')}
             </p>
           </div>
           <p className="text-xs text-muted-foreground text-center">
@@ -69,7 +91,7 @@ const RealEstateSearch = () => {
           </p>
           <Input
             type="text"
-            placeholder="Your Google Maps API Key"
+            placeholder={t('apiKeyPlaceholder')}
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             className="border-primary/20 focus-visible:ring-primary"
@@ -79,8 +101,8 @@ const RealEstateSearch = () => {
             className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg"
             disabled={!apiKey}
           >
-            <Sparkles className="mr-2 h-4 w-4" />
-            Start Searching
+            <Sparkles className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+            {t('continue')}
           </Button>
         </Card>
       </div>
@@ -105,19 +127,28 @@ const RealEstateSearch = () => {
         <div className="absolute top-4 left-4 right-4 z-10">
           <Card className="p-6 bg-card/98 backdrop-blur-md shadow-elegant border-primary/10 animate-fade-in">
             <div className="flex flex-col gap-4">
-              {/* Logo and Title */}
+              {/* Logo, Title and Language Toggle */}
               <div className="flex items-center gap-3 pb-3 border-b border-border">
                 <img 
                   src={riyalEstateLogo} 
                   alt="RiyalEstate" 
                   className="h-12 w-12 rounded-full object-cover ring-2 ring-primary/20"
                 />
-                <div>
+                <div className="flex-1">
                   <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    RiyalEstate
+                    {t('riyalEstate')}
                   </h1>
-                  <p className="text-xs text-muted-foreground">Find Your Perfect Property</p>
+                  <p className="text-xs text-muted-foreground">{t('propertySearch')}</p>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleLanguage}
+                  className="gap-2"
+                >
+                  <Languages className="h-4 w-4" />
+                  {i18n.language === 'en' ? 'ع' : 'EN'}
+                </Button>
               </div>
 
               {/* Transaction Type Toggle */}
@@ -131,7 +162,7 @@ const RealEstateSearch = () => {
                   }`}
                   onClick={() => setTransactionType('sale')}
                 >
-                  For Sale
+                  {t('forSale')}
                 </Button>
                 <Button
                   variant={transactionType === 'rent' ? 'default' : 'outline'}
@@ -142,19 +173,19 @@ const RealEstateSearch = () => {
                   }`}
                   onClick={() => setTransactionType('rent')}
                 >
-                  For Rent
+                  {t('forRent')}
                 </Button>
               </div>
 
               {/* Search Input */}
               <div className="flex gap-2">
                 <div className="flex-1 relative group">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-colors" />
+                  <MapPin className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-colors ${i18n.language === 'ar' ? 'right-3' : 'left-3'}`} />
                   <Input
-                    placeholder="Search by location, neighborhood..."
+                    placeholder={t('searchLocation')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-background border-border focus-visible:ring-primary focus-visible:border-primary transition-all"
+                    className={`bg-background border-border focus-visible:ring-primary focus-visible:border-primary transition-all ${i18n.language === 'ar' ? 'pr-10' : 'pl-10'}`}
                   />
                 </div>
                 <Sheet open={showFilters} onOpenChange={setShowFilters}>
@@ -171,13 +202,13 @@ const RealEstateSearch = () => {
                     <SheetHeader className="pb-4 border-b border-border">
                       <div className="flex items-center gap-2">
                         <SlidersHorizontal className="h-5 w-5 text-primary" />
-                        <SheetTitle className="text-xl">Advanced Filters</SheetTitle>
+                        <SheetTitle className="text-xl">{t('advancedFilters')}</SheetTitle>
                       </div>
                     </SheetHeader>
                     <div className="space-y-6 mt-6">
                       {/* Property Type */}
                       <div className="space-y-2">
-                        <Label>Property Type</Label>
+                        <Label>{t('propertyType')}</Label>
                         <Select
                           value={filters.propertyType}
                           onValueChange={(value) =>
@@ -185,22 +216,22 @@ const RealEstateSearch = () => {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
+                            <SelectValue placeholder={t('selectPropertyType')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="apartment">Apartment</SelectItem>
-                            <SelectItem value="villa">Villa</SelectItem>
-                            <SelectItem value="land">Land</SelectItem>
-                            <SelectItem value="commercial">Commercial</SelectItem>
+                            <SelectItem value="apartment">{t('apartment')}</SelectItem>
+                            <SelectItem value="villa">{t('villa')}</SelectItem>
+                            <SelectItem value="land">{t('land')}</SelectItem>
+                            <SelectItem value="commercial">{t('commercial')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       {/* City */}
                       <div className="space-y-2">
-                        <Label>City</Label>
+                        <Label>{t('city')}</Label>
                         <Input
-                          placeholder="Enter city"
+                          placeholder={t('enterCity')}
                           value={filters.city}
                           onChange={(e) =>
                             setFilters({ ...filters, city: e.target.value })
@@ -210,9 +241,9 @@ const RealEstateSearch = () => {
 
                       {/* Neighborhood */}
                       <div className="space-y-2">
-                        <Label>Neighborhood (District)</Label>
+                        <Label>{t('neighborhood')}</Label>
                         <Input
-                          placeholder="Enter neighborhood"
+                          placeholder={t('enterNeighborhood')}
                           value={filters.neighborhood}
                           onChange={(e) =>
                             setFilters({ ...filters, neighborhood: e.target.value })
@@ -222,11 +253,11 @@ const RealEstateSearch = () => {
 
                       {/* Price Range */}
                       <div className="space-y-2">
-                        <Label>Price (SAR)</Label>
+                        <Label>{t('priceRange')}</Label>
                         <div className="flex gap-2 items-center">
                           <Input
                             type="number"
-                            placeholder="Min"
+                            placeholder={t('minPrice')}
                             value={filters.priceMin}
                             onChange={(e) =>
                               setFilters({ ...filters, priceMin: Number(e.target.value) })
@@ -235,7 +266,7 @@ const RealEstateSearch = () => {
                           <span>-</span>
                           <Input
                             type="number"
-                            placeholder="Max"
+                            placeholder={t('maxPrice')}
                             value={filters.priceMax}
                             onChange={(e) =>
                               setFilters({ ...filters, priceMax: Number(e.target.value) })
@@ -246,11 +277,11 @@ const RealEstateSearch = () => {
 
                       {/* Area Range */}
                       <div className="space-y-2">
-                        <Label>Area (m²)</Label>
+                        <Label>{t('areaSize')}</Label>
                         <div className="flex gap-2 items-center">
                           <Input
                             type="number"
-                            placeholder="Min"
+                            placeholder={t('minArea')}
                             value={filters.areaMin}
                             onChange={(e) =>
                               setFilters({ ...filters, areaMin: Number(e.target.value) })
@@ -259,7 +290,7 @@ const RealEstateSearch = () => {
                           <span>-</span>
                           <Input
                             type="number"
-                            placeholder="Max"
+                            placeholder={t('maxArea')}
                             value={filters.areaMax}
                             onChange={(e) =>
                               setFilters({ ...filters, areaMax: Number(e.target.value) })
@@ -270,7 +301,7 @@ const RealEstateSearch = () => {
 
                       {/* Bedrooms */}
                       <div className="space-y-2">
-                        <Label>Number of Bedrooms</Label>
+                        <Label>{t('bedrooms')}</Label>
                         <Select
                           value={filters.bedrooms}
                           onValueChange={(value) =>
@@ -278,7 +309,7 @@ const RealEstateSearch = () => {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select bedrooms" />
+                            <SelectValue placeholder={t('selectBedrooms')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="1">1</SelectItem>
@@ -292,7 +323,7 @@ const RealEstateSearch = () => {
 
                       {/* Living Rooms */}
                       <div className="space-y-2">
-                        <Label>Number of Living Rooms</Label>
+                        <Label>{t('livingRooms')}</Label>
                         <Select
                           value={filters.livingRooms}
                           onValueChange={(value) =>
@@ -300,7 +331,7 @@ const RealEstateSearch = () => {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select living rooms" />
+                            <SelectValue placeholder={t('selectLivingRooms')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="1">1</SelectItem>
@@ -313,7 +344,7 @@ const RealEstateSearch = () => {
 
                       {/* Bathrooms */}
                       <div className="space-y-2">
-                        <Label>Number of Bathrooms</Label>
+                        <Label>{t('bathrooms')}</Label>
                         <Select
                           value={filters.bathrooms}
                           onValueChange={(value) =>
@@ -321,7 +352,7 @@ const RealEstateSearch = () => {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select bathrooms" />
+                            <SelectValue placeholder={t('selectBathrooms')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="1">1</SelectItem>
@@ -334,7 +365,7 @@ const RealEstateSearch = () => {
 
                       {/* Proximity Filters */}
                       <div className="space-y-3">
-                        <Label>Proximity to Points of Interest</Label>
+                        <Label>{t('proximityFilters')}</Label>
                         <div className="space-y-3">
                           <div className="flex items-center space-x-2">
                             <Checkbox
@@ -345,7 +376,7 @@ const RealEstateSearch = () => {
                               }
                             />
                             <label htmlFor="schools" className="text-sm cursor-pointer">
-                              Near Schools
+                              {t('nearSchools')}
                             </label>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -357,7 +388,7 @@ const RealEstateSearch = () => {
                               }
                             />
                             <label htmlFor="universities" className="text-sm cursor-pointer">
-                              Near Universities
+                              {t('nearUniversities')}
                             </label>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -369,7 +400,7 @@ const RealEstateSearch = () => {
                               }
                             />
                             <label htmlFor="hospitals" className="text-sm cursor-pointer">
-                              Near Hospitals/Clinics
+                              {t('nearHospitals')}
                             </label>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -381,7 +412,7 @@ const RealEstateSearch = () => {
                               }
                             />
                             <label htmlFor="mosques" className="text-sm cursor-pointer">
-                              Near Mosques
+                              {t('nearMosques')}
                             </label>
                           </div>
                         </div>
@@ -392,15 +423,15 @@ const RealEstateSearch = () => {
                         className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg" 
                         onClick={() => setShowFilters(false)}
                       >
-                        <Search className="h-4 w-4 mr-2" />
-                        Apply Filters
+                        <Search className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                        {t('applyFilters')}
                       </Button>
                     </div>
                   </SheetContent>
                 </Sheet>
                 <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg">
-                  <Search className="h-5 w-5 mr-2" />
-                  Search
+                  <Search className={`h-5 w-5 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                  {t('search')}
                 </Button>
               </div>
             </div>
@@ -410,7 +441,7 @@ const RealEstateSearch = () => {
         {/* AI Chatbot Button */}
         <Button
           size="lg"
-          className="fixed bottom-6 right-6 z-20 rounded-full h-16 w-16 bg-gradient-to-br from-primary to-accent hover:opacity-90 shadow-glow transition-all hover:scale-110 animate-pulse"
+          className={`fixed bottom-6 z-20 rounded-full h-16 w-16 bg-gradient-to-br from-primary to-accent hover:opacity-90 shadow-glow transition-all hover:scale-110 animate-pulse ${i18n.language === 'ar' ? 'left-6' : 'right-6'}`}
           onClick={() => setShowChatbot(!showChatbot)}
         >
           {showChatbot ? (
@@ -422,14 +453,14 @@ const RealEstateSearch = () => {
 
         {/* Chatbot Panel */}
         {showChatbot && (
-          <Card className="fixed bottom-24 right-6 z-20 w-96 h-[500px] shadow-elegant border-primary/10 bg-gradient-to-b from-card to-card/95 backdrop-blur-md animate-scale-in">
+          <Card className={`fixed bottom-24 z-20 w-96 h-[500px] shadow-elegant border-primary/10 bg-gradient-to-b from-card to-card/95 backdrop-blur-md animate-scale-in ${i18n.language === 'ar' ? 'left-6' : 'right-6'}`}>
             <div className="flex flex-col h-full p-5">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                     <Sparkles className="h-4 w-4 text-primary-foreground" />
                   </div>
-                  <h3 className="font-semibold text-lg">AI Assistant</h3>
+                  <h3 className="font-semibold text-lg">{t('aiAssistant')}</h3>
                 </div>
                 <Button
                   variant="ghost"
@@ -443,19 +474,17 @@ const RealEstateSearch = () => {
               <div className="flex-1 overflow-y-auto mb-4 space-y-3">
                 <div className="bg-gradient-to-br from-primary/10 to-accent/10 p-4 rounded-xl border border-primary/20 animate-fade-in">
                   <p className="text-sm leading-relaxed">
-                    👋 Hello! I'm your AI assistant. I can help you find the perfect property,
-                    answer questions about neighborhoods, or provide information about the
-                    local area. How can I assist you today?
+                    {t('helpMessage')}
                   </p>
                 </div>
               </div>
               <div className="flex gap-2">
                 <Input 
-                  placeholder="Ask me anything..." 
+                  placeholder={t('askQuestion')}
                   className="border-primary/20 focus-visible:ring-primary"
                 />
                 <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity">
-                  Send
+                  {t('send')}
                 </Button>
               </div>
             </div>
