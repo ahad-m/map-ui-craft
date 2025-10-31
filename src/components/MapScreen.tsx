@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { APIProvider, Map } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Plus, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,14 @@ const MapScreen = () => {
     { icon: UtensilsCrossed, label: t('restaurants') },
     { icon: Shirt, label: t('apparel') },
     { icon: ShoppingBag, label: t('shopping') },
+  ];
+
+  // Sample locations for markers
+  const locations = [
+    { lat: 24.7136, lng: 46.6753, title: 'Riyadh Center' },
+    { lat: 24.7242, lng: 46.6819, title: 'Al Olaya District' },
+    { lat: 24.7017, lng: 46.6590, title: 'Kingdom Tower' },
+    { lat: 24.7300, lng: 46.6500, title: 'Diplomatic Quarter' },
   ];
 
   if (showApiInput) {
@@ -126,7 +134,20 @@ const MapScreen = () => {
             defaultZoom={12}
             gestureHandling="greedy"
             disableDefaultUI={false}
-          />
+          >
+            {locations.map((location, index) => (
+              <AdvancedMarker
+                key={index}
+                position={{ lat: location.lat, lng: location.lng }}
+              >
+                <Pin
+                  background={'#16a34a'}
+                  borderColor={'#15803d'}
+                  glyphColor={'#ffffff'}
+                />
+              </AdvancedMarker>
+            ))}
+          </Map>
         </div>
 
         {/* Floating Controls */}

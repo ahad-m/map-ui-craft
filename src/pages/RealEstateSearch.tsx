@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +33,15 @@ const RealEstateSearch = () => {
     const newLang = i18n.language === 'en' ? 'ar' : 'en';
     i18n.changeLanguage(newLang);
   };
+
+  // Sample property listings
+  const properties = [
+    { lat: 24.7136, lng: 46.6753, price: '1,500,000', type: 'Villa', bedrooms: 4, area: 350 },
+    { lat: 24.7242, lng: 46.6819, price: '800,000', type: 'Apartment', bedrooms: 3, area: 180 },
+    { lat: 24.7017, lng: 46.6590, price: '2,200,000', type: 'Villa', bedrooms: 5, area: 450 },
+    { lat: 24.7300, lng: 46.6500, price: '1,200,000', type: 'Apartment', bedrooms: 4, area: 250 },
+    { lat: 24.7100, lng: 46.6700, price: '950,000', type: 'Apartment', bedrooms: 2, area: 150 },
+  ];
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -122,7 +131,19 @@ const RealEstateSearch = () => {
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
-          />
+          >
+            {properties.map((property, index) => (
+              <AdvancedMarker
+                key={index}
+                position={{ lat: property.lat, lng: property.lng }}
+              >
+                <div className="bg-white rounded-lg shadow-lg p-2 border-2 border-primary cursor-pointer hover:scale-110 transition-transform">
+                  <div className="text-xs font-bold text-primary">{property.price} SAR</div>
+                  <div className="text-[10px] text-muted-foreground">{property.type} • {property.bedrooms} BR</div>
+                </div>
+              </AdvancedMarker>
+            ))}
+          </Map>
         </div>
 
         {/* Top Search Bar */}
