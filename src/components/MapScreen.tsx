@@ -16,8 +16,6 @@ const MapScreen = () => {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [mapCenter, setMapCenter] = useState({ lat: 24.7136, lng: 46.6753 });
-  const [mapZoom, setMapZoom] = useState(12);
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
@@ -53,13 +51,8 @@ const MapScreen = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const newCenter = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setMapCenter(newCenter);
-          setMapZoom(15);
           toast.success(t('locationFound') || 'Location found');
+          // You can add logic here to re-center the map if needed
         },
         () => {
           toast.error(t('locationError') || 'Could not get your location');
@@ -153,8 +146,8 @@ const MapScreen = () => {
         {/* Map View */}
         <div className="absolute inset-0">
           <Map
-            center={mapCenter}
-            zoom={mapZoom}
+            defaultCenter={{ lat: 24.7136, lng: 46.6753 }}
+            defaultZoom={12}
             gestureHandling="greedy"
             disableDefaultUI={false}
           />
@@ -194,7 +187,6 @@ const MapScreen = () => {
               variant="ghost"
               className="flex flex-col items-center gap-1 h-auto py-2 px-4"
               onClick={() => {
-                setMapZoom(12);
                 toast.info(t('exploreMode') || 'Explore mode');
               }}
             >
