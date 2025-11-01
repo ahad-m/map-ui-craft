@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart } from 'lucide-react';
+import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart, MapPin, Camera, Edit, Star, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ const MapScreen = () => {
   const [mapCenter, setMapCenter] = useState({ lat: 24.7136, lng: 46.6753 });
   const [mapZoom, setMapZoom] = useState(12);
   const [showExploreSheet, setShowExploreSheet] = useState(false);
+  const [showContributeSheet, setShowContributeSheet] = useState(false);
 
   const exploreCategories = [
     { icon: UtensilsCrossed, label: t('restaurants'), nameAr: 'مطاعم' },
@@ -30,6 +31,14 @@ const MapScreen = () => {
     { icon: Fuel, label: 'Gas Stations', nameAr: 'محطات وقود' },
     { icon: Building2, label: 'Hotels', nameAr: 'فنادق' },
     { icon: ShoppingBag, label: t('shopping'), nameAr: 'تسوق' },
+  ];
+
+  const contributeOptions = [
+    { icon: MapPin, label: 'Add a place', nameAr: 'إضافة مكان' },
+    { icon: Edit, label: 'Edit place info', nameAr: 'تعديل معلومات' },
+    { icon: Camera, label: 'Add photos', nameAr: 'إضافة صور' },
+    { icon: Star, label: 'Write a review', nameAr: 'كتابة تقييم' },
+    { icon: MessageSquare, label: 'Answer questions', nameAr: 'الإجابة على الأسئلة' },
   ];
 
   useEffect(() => {
@@ -107,7 +116,12 @@ const MapScreen = () => {
   };
 
   const handleContribute = () => {
-    toast.info(t('contributeFeature') || 'Contribute feature coming soon');
+    setShowContributeSheet(true);
+  };
+
+  const handleContributeOption = (option: string) => {
+    setShowContributeSheet(false);
+    toast.info(`${option} - ${t('comingSoon') || 'Coming soon'}`);
   };
 
   const categories = [
@@ -294,14 +308,37 @@ const MapScreen = () => {
               <span className="text-xs font-semibold text-primary">{t('riyalEstate')}</span>
             </Button>
 
-            <Button
-              variant="ghost"
-              className="flex flex-col items-center gap-1 h-auto py-2 px-4"
-              onClick={handleContribute}
-            >
-              <Plus className="h-5 w-5" />
-              <span className="text-xs">{t('contribute')}</span>
-            </Button>
+            <Sheet open={showContributeSheet} onOpenChange={setShowContributeSheet}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex flex-col items-center gap-1 h-auto py-2 px-4"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span className="text-xs">{t('contribute')}</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[60vh]">
+                <SheetHeader>
+                  <SheetTitle>{t('contributeToMaps') || 'Contribute to Maps'}</SheetTitle>
+                </SheetHeader>
+                <div className="space-y-3 mt-6">
+                  {contributeOptions.map((option) => (
+                    <Button
+                      key={option.label}
+                      variant="outline"
+                      className="w-full h-16 flex items-center justify-start gap-4 px-6 hover:bg-primary/10"
+                      onClick={() => handleContributeOption(i18n.language === 'ar' ? option.nameAr : option.label)}
+                    >
+                      <option.icon className="h-6 w-6" />
+                      <span className="text-base font-medium">
+                        {i18n.language === 'ar' ? option.nameAr : option.label}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
