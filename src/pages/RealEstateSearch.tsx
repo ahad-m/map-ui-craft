@@ -531,88 +531,132 @@ const RealEstateSearch = () => {
                       <div className="space-y-2">
                         <Label>{t('schools')}</Label>
                         
-                        {/* School Gender Filter (Optional) */}
-                        <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value === 'all' ? '' : value, selectedSchool: '' })}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Gender (Optional)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All</SelectItem>
-                            <SelectItem value="Boys">Boys</SelectItem>
-                            <SelectItem value="Girls">Girls</SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        {/* School Level Filter (Optional) */}
-                        {filters.schoolGender && (
-                          <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all' ? '' : value, selectedSchool: '' })}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Stage (Optional)" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Levels</SelectItem>
-                              <SelectItem value="ابتدائي">Elementary</SelectItem>
-                              <SelectItem value="متوسط">Middle</SelectItem>
-                              <SelectItem value="ثانوي">High School</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-
                         {/* School Selection */}
-                        {(filters.schoolGender || filters.schoolLevel) && (
-                          <Popover open={openSchoolCombobox} onOpenChange={setOpenSchoolCombobox}>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" role="combobox" className="w-full justify-between">
-                                {filters.selectedSchool
-                                  ? allSchools.find((s) => s.id === filters.selectedSchool)?.name || t('selectSchool')
-                                  : t('selectSchool')}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[400px] p-0">
-                              <Command>
-                                <CommandInput placeholder={t('searchSchool')} />
-                                <CommandList>
-                                  <CommandEmpty>{t('noSchoolFound')}</CommandEmpty>
-                                  <CommandGroup>
+                        <Popover open={openSchoolCombobox} onOpenChange={setOpenSchoolCombobox}>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" className="w-full justify-between">
+                              {filters.selectedSchool
+                                ? allSchools.find((s) => s.id === filters.selectedSchool)?.name || t('selectSchool')
+                                : t('selectSchool')}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[400px] p-0">
+                            <Command>
+                              <CommandInput placeholder={t('searchSchool')} />
+                              <CommandList>
+                                <CommandEmpty>{t('noSchoolFound')}</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    onSelect={() => {
+                                      setFilters({ ...filters, selectedSchool: '' });
+                                      setOpenSchoolCombobox(false);
+                                    }}
+                                  >
+                                    <Check className={cn("mr-2 h-4 w-4", !filters.selectedSchool ? "opacity-100" : "opacity-0")} />
+                                    {t('none')}
+                                  </CommandItem>
+                                  {allSchools.map((school) => (
                                     <CommandItem
+                                      key={school.id}
+                                      value={`${school.name} ${school.district || ''}`}
                                       onSelect={() => {
-                                        setFilters({ ...filters, selectedSchool: '' });
+                                        setFilters({ ...filters, selectedSchool: school.id || '' });
                                         setOpenSchoolCombobox(false);
                                       }}
                                     >
-                                      <Check className={cn("mr-2 h-4 w-4", !filters.selectedSchool ? "opacity-100" : "opacity-0")} />
-                                      {t('none')}
+                                      <Check className={cn("mr-2 h-4 w-4", filters.selectedSchool === school.id ? "opacity-100" : "opacity-0")} />
+                                      {school.name} {school.district ? `- ${school.district}` : ''}
                                     </CommandItem>
-                                    {allSchools.map((school) => (
-                                      <CommandItem
-                                        key={school.id}
-                                        value={`${school.name} ${school.district || ''}`}
-                                        onSelect={() => {
-                                          setFilters({ ...filters, selectedSchool: school.id || '' });
-                                          setOpenSchoolCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.selectedSchool === school.id ? "opacity-100" : "opacity-0")} />
-                                        {school.name} {school.district ? `- ${school.district}` : ''}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        )}
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* Optional Filters */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* School Gender Filter */}
+                          <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value === 'all' ? '' : value })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="Boys">Boys</SelectItem>
+                              <SelectItem value="Girls">Girls</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          {/* School Level Filter */}
+                          <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all' ? '' : value })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="ابتدائي">Elementary</SelectItem>
+                              <SelectItem value="متوسط">Middle</SelectItem>
+                              <SelectItem value="ثانوي">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       {/* Universities */}
                       <div className="space-y-2">
                         <Label>{t('universities')}</Label>
                         
-                        {/* University Gender Filter (Optional) */}
-                        <Select value={filters.universityGender} onValueChange={(value) => setFilters({ ...filters, universityGender: value === 'all' ? '' : value, selectedUniversity: '' })}>
+                        {/* University Selection */}
+                        <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" className="w-full justify-between">
+                              {filters.selectedUniversity || t('selectUniversity')}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[400px] p-0">
+                            <Command>
+                              <CommandInput placeholder={t('searchUniversity')} />
+                              <CommandList>
+                                <CommandEmpty>{t('noUniversityFound')}</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    onSelect={() => {
+                                      setFilters({ ...filters, selectedUniversity: '' });
+                                      setOpenUniversityCombobox(false);
+                                    }}
+                                  >
+                                    <Check className={cn("mr-2 h-4 w-4", !filters.selectedUniversity ? "opacity-100" : "opacity-0")} />
+                                    {t('none')}
+                                  </CommandItem>
+                                  {allUniversities.map((uni, index) => {
+                                    const uniName = i18n.language === 'ar' ? uni.name_ar : uni.name_en;
+                                    return (
+                                      <CommandItem
+                                        key={index}
+                                        value={uniName || ''}
+                                        onSelect={() => {
+                                          setFilters({ ...filters, selectedUniversity: uniName || '' });
+                                          setOpenUniversityCombobox(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", filters.selectedUniversity === uniName ? "opacity-100" : "opacity-0")} />
+                                        {uniName}
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* Optional Gender Filter */}
+                        <Select value={filters.universityGender} onValueChange={(value) => setFilters({ ...filters, universityGender: value === 'all' ? '' : value })}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Gender (Optional)" />
+                            <SelectValue placeholder="Filter by Gender (Optional)" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All</SelectItem>
@@ -620,53 +664,6 @@ const RealEstateSearch = () => {
                             <SelectItem value="Girls">Girls</SelectItem>
                           </SelectContent>
                         </Select>
-
-                        {/* University Selection */}
-                        {filters.universityGender && (
-                          <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" role="combobox" className="w-full justify-between">
-                                {filters.selectedUniversity || t('selectUniversity')}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[400px] p-0">
-                              <Command>
-                                <CommandInput placeholder={t('searchUniversity')} />
-                                <CommandList>
-                                  <CommandEmpty>{t('noUniversityFound')}</CommandEmpty>
-                                  <CommandGroup>
-                                    <CommandItem
-                                      onSelect={() => {
-                                        setFilters({ ...filters, selectedUniversity: '' });
-                                        setOpenUniversityCombobox(false);
-                                      }}
-                                    >
-                                      <Check className={cn("mr-2 h-4 w-4", !filters.selectedUniversity ? "opacity-100" : "opacity-0")} />
-                                      {t('none')}
-                                    </CommandItem>
-                                    {allUniversities.map((uni, index) => {
-                                      const uniName = i18n.language === 'ar' ? uni.name_ar : uni.name_en;
-                                      return (
-                                        <CommandItem
-                                          key={index}
-                                          value={uniName || ''}
-                                          onSelect={() => {
-                                            setFilters({ ...filters, selectedUniversity: uniName || '' });
-                                            setOpenUniversityCombobox(false);
-                                          }}
-                                        >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.selectedUniversity === uniName ? "opacity-100" : "opacity-0")} />
-                                          {uniName}
-                                        </CommandItem>
-                                      );
-                                    })}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        )}
                       </div>
 
                       {/* Proximity Filters */}
