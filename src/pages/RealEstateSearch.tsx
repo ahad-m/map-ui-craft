@@ -520,6 +520,34 @@ const RealEstateSearch = () => {
                       <div className="space-y-2">
                         <Label>{t('schools')}</Label>
                         
+                        {/* Optional Filters First */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* School Gender Filter */}
+                          <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value === 'all' ? '' : value })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="Boys">Boys</SelectItem>
+                              <SelectItem value="Girls">Girls</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          {/* School Level Filter */}
+                          <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all' ? '' : value })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All</SelectItem>
+                              <SelectItem value="ابتدائي">Elementary</SelectItem>
+                              <SelectItem value="متوسط">Middle</SelectItem>
+                              <SelectItem value="ثانوي">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
                         {/* School Selection */}
                         <Popover open={openSchoolCombobox} onOpenChange={setOpenSchoolCombobox}>
                           <PopoverTrigger asChild>
@@ -563,34 +591,6 @@ const RealEstateSearch = () => {
                             </Command>
                           </PopoverContent>
                         </Popover>
-
-                        {/* Optional Filters */}
-                        <div className="grid grid-cols-2 gap-2">
-                          {/* School Gender Filter */}
-                          <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value === 'all' ? '' : value })}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Gender" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All</SelectItem>
-                              <SelectItem value="Boys">Boys</SelectItem>
-                              <SelectItem value="Girls">Girls</SelectItem>
-                            </SelectContent>
-                          </Select>
-
-                          {/* School Level Filter */}
-                          <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all' ? '' : value })}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Level" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All</SelectItem>
-                              <SelectItem value="ابتدائي">Elementary</SelectItem>
-                              <SelectItem value="متوسط">Middle</SelectItem>
-                              <SelectItem value="ثانوي">High</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
                       </div>
 
                       {/* Universities */}
