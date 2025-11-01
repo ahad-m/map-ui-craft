@@ -52,6 +52,8 @@ const RealEstateSearch = () => {
     bathrooms: '',
     nearSchools: false,
     nearUniversities: false,
+    nearMetro: false,
+    maxMetroTime: 15, // Maximum walking time to metro in minutes
     nearHospitals: false,
     nearMosques: false,
   });
@@ -112,7 +114,14 @@ const RealEstateSearch = () => {
         const priceMatch = price >= filters.priceMin && price <= filters.priceMax;
         const areaMatch = area >= filters.areaMin && area <= filters.areaMax;
         
-        return priceMatch && areaMatch;
+        // Filter by metro proximity if enabled
+        let metroMatch = true;
+        if (filters.nearMetro && property.time_to_metro_min) {
+          const metroTime = parseFloat(property.time_to_metro_min);
+          metroMatch = !isNaN(metroTime) && metroTime <= filters.maxMetroTime;
+        }
+        
+        return priceMatch && areaMatch && metroMatch;
       });
 
       // If exact results found, return them
@@ -179,7 +188,14 @@ const RealEstateSearch = () => {
           livingRoomMatch = Math.abs(property.halls - targetHalls) <= 1 || property.halls >= targetHalls;
         }
         
-        return priceMatch && areaMatch && bedroomMatch && bathroomMatch && livingRoomMatch;
+        // Filter by metro proximity with tolerance if enabled
+        let metroMatch = true;
+        if (filters.nearMetro && property.time_to_metro_min) {
+          const metroTime = parseFloat(property.time_to_metro_min);
+          metroMatch = !isNaN(metroTime) && metroTime <= (filters.maxMetroTime * 1.5); // 50% tolerance for similar results
+        }
+        
+        return priceMatch && areaMatch && bedroomMatch && bathroomMatch && livingRoomMatch && metroMatch;
       });
 
       setShowingSimilarResults(similarResults.length > 0);
@@ -682,6 +698,33 @@ const RealEstateSearch = () => {
                               {t('nearUniversities')}
                             </label>
                           </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="metro"
+                              checked={filters.nearMetro}
+                              onCheckedChange={(checked) =>
+                                setFilters({ ...filters, nearMetro: checked as boolean })
+                              }
+                            />
+                            <label htmlFor="metro" className="text-sm cursor-pointer">
+                              {t('nearMetro')} ({filters.maxMetroTime} {t('minutes')})
+                            </label>
+                          </div>
+                          {filters.nearMetro && (
+                            <div className="ml-6 space-y-2">
+                              <Label className="text-xs">{t('maxWalkingTime')}: {filters.maxMetroTime} {t('minutes')}</Label>
+                              <Slider
+                                value={[filters.maxMetroTime]}
+                                onValueChange={(value) =>
+                                  setFilters({ ...filters, maxMetroTime: value[0] })
+                                }
+                                min={5}
+                                max={30}
+                                step={5}
+                                className="w-full"
+                              />
+                            </div>
+                          )}
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               id="hospitals"
