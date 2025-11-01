@@ -18,8 +18,7 @@ import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [apiKey, setApiKey] = useState('');
-  const [showApiInput, setShowApiInput] = useState(true);
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
   const [transactionType, setTransactionType] = useState<'rent' | 'sale'>('sale');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -241,64 +240,6 @@ const RealEstateSearch = () => {
     enabled: filters.nearUniversities,
   });
 
-  if (showApiInput) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-accent/5">
-        <Card className="p-8 max-w-md w-full space-y-6 shadow-elegant border-0 bg-gradient-to-b from-card to-card/50 backdrop-blur-sm">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleLanguage}
-            className="absolute top-4 right-4 gap-2"
-          >
-            <Languages className="h-4 w-4" />
-            {i18n.language === 'en' ? 'العربية' : 'English'}
-          </Button>
-          <div className="flex items-center justify-center mb-4">
-            <img 
-              src={riyalEstateLogo} 
-              alt="RiyalEstate" 
-              className="h-20 w-20 rounded-full object-cover ring-4 ring-primary/20"
-            />
-          </div>
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              {t('welcome')}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t('enterApiKey')}
-            </p>
-          </div>
-          <p className="text-xs text-muted-foreground text-center">
-            Get your API key from{' '}
-            <a
-              href="https://console.cloud.google.com/google/maps-apis"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline hover:text-accent transition-colors"
-            >
-              Google Cloud Console
-            </a>
-          </p>
-          <Input
-            type="text"
-            placeholder={t('apiKeyPlaceholder')}
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="border-primary/20 focus-visible:ring-primary"
-          />
-          <Button
-            onClick={() => apiKey && setShowApiInput(false)}
-            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg"
-            disabled={!apiKey}
-          >
-            <Sparkles className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
-            {t('continue')}
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <APIProvider apiKey={apiKey}>
