@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus } from 'lucide-react';
@@ -11,8 +11,7 @@ import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 const MapScreen = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [apiKey, setApiKey] = useState('');
-  const [showApiInput, setShowApiInput] = useState(true);
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
@@ -30,49 +29,6 @@ const MapScreen = () => {
     { icon: Shirt, label: t('apparel') },
     { icon: ShoppingBag, label: t('shopping') },
   ];
-
-  if (showApiInput) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="p-6 max-w-md w-full space-y-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleLanguage}
-            className="absolute top-4 right-4 gap-2"
-          >
-            <Languages className="h-4 w-4" />
-            {i18n.language === 'en' ? 'العربية' : 'English'}
-          </Button>
-          <h2 className="text-xl font-semibold">{t('enterGoogleMapsKey')}</h2>
-          <p className="text-sm text-muted-foreground">
-            {t('getApiKey')}{' '}
-            <a
-              href="https://console.cloud.google.com/google/maps-apis"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline"
-            >
-              {t('googleCloudConsole')}
-            </a>
-          </p>
-          <Input
-            type="text"
-            placeholder={t('yourGoogleMapsKey')}
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-          />
-          <Button
-            onClick={() => apiKey && setShowApiInput(false)}
-            className="w-full"
-            disabled={!apiKey}
-          >
-            {t('continue')}
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <APIProvider apiKey={apiKey}>
