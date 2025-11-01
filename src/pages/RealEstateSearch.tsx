@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -14,19 +14,6 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
-
-// Calculate distance between two coordinates in km
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const R = 6371; // Earth's radius in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-};
 
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
@@ -68,35 +55,7 @@ const RealEstateSearch = () => {
     nearMosques: false,
   });
 
-  // Fetch schools from Supabase
-  const { data: schools = [] } = useQuery({
-    queryKey: ['schools'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('schools')
-        .select('*')
-        .not('lat', 'is', null)
-        .not('lon', 'is', null);
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch universities from Supabase
-  const { data: universities = [] } = useQuery({
-    queryKey: ['universities'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('universities')
-        .select('*')
-        .not('lat', 'is', null)
-        .not('lon', 'is', null);
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch properties from Supabase with proximity filtering
+  // Fetch properties from Supabase
   const { data: properties = [], isLoading } = useQuery({
     queryKey: ['properties', transactionType, filters, searchQuery],
     queryFn: async () => {
@@ -140,11 +99,11 @@ const RealEstateSearch = () => {
       // Filter by valid coordinates
       query = query.not('final_lat', 'is', null).not('final_lon', 'is', null);
 
-      const { data, error } = await query.limit(500);
+      const { data, error } = await query.limit(100);
       if (error) throw error;
 
-      // Additional client-side filtering
-      let filteredProperties = (data || []).filter(property => {
+      // Additional client-side filtering for price and area (since they're text fields)
+      return (data || []).filter(property => {
         const price = parseFloat(property.price_num?.replace(/,/g, '') || '0');
         const area = parseFloat(property.area_m2?.replace(/,/g, '') || '0');
         
@@ -153,38 +112,6 @@ const RealEstateSearch = () => {
         
         return priceMatch && areaMatch;
       });
-
-      // Apply proximity filters
-      if (filters.nearSchools || filters.nearUniversities) {
-        const maxDistance = 2; // 2km radius
-        
-        filteredProperties = filteredProperties.filter(property => {
-          const propLat = parseFloat(property.final_lat);
-          const propLon = parseFloat(property.final_lon);
-          
-          if (isNaN(propLat) || isNaN(propLon)) return false;
-
-          let meetsProximity = true;
-
-          if (filters.nearSchools) {
-            const nearSchool = schools.some(school => 
-              calculateDistance(propLat, propLon, school.lat, school.lon) <= maxDistance
-            );
-            meetsProximity = meetsProximity && nearSchool;
-          }
-
-          if (filters.nearUniversities) {
-            const nearUniversity = universities.some(uni => 
-              calculateDistance(propLat, propLon, uni.lat, uni.lon) <= maxDistance
-            );
-            meetsProximity = meetsProximity && nearUniversity;
-          }
-
-          return meetsProximity;
-        });
-      }
-
-      return filteredProperties;
     },
   });
 
@@ -268,7 +195,7 @@ const RealEstateSearch = () => {
               
               return (
                 <AdvancedMarker
-                  key={`property-${property.id}`}
+                  key={property.id}
                   position={{ lat, lng: lon }}
                   onClick={() => setSelectedProperty(property)}
                 >
@@ -280,30 +207,6 @@ const RealEstateSearch = () => {
                 </AdvancedMarker>
               );
             })}
-
-            {/* School Markers */}
-            {filters.nearSchools && schools.map((school, idx) => (
-              <AdvancedMarker
-                key={`school-${idx}`}
-                position={{ lat: school.lat, lng: school.lon }}
-              >
-                <div className="bg-blue-500 p-2 rounded-full shadow-lg">
-                  <School className="h-4 w-4 text-white" />
-                </div>
-              </AdvancedMarker>
-            ))}
-
-            {/* University Markers */}
-            {filters.nearUniversities && universities.map((uni, idx) => (
-              <AdvancedMarker
-                key={`uni-${idx}`}
-                position={{ lat: uni.lat, lng: uni.lon }}
-              >
-                <div className="bg-purple-500 p-2 rounded-full shadow-lg">
-                  <GraduationCap className="h-4 w-4 text-white" />
-                </div>
-              </AdvancedMarker>
-            ))}
           </Map>
         </div>
 
