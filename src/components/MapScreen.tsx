@@ -158,7 +158,11 @@ const MapContent = () => {
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
     if (category === t('home')) {
-      navigate('/search');
+      // Reset to default Riyadh location
+      setMapCenter({ lat: 24.7136, lng: 46.6753 });
+      setMapZoom(12);
+      clearSearch();
+      toast.info(t('backToHome') || 'Back to home location');
     } else {
       setShowExploreSheet(false);
       toast.success(`${t('searching') || 'Searching'}: ${category}`);
