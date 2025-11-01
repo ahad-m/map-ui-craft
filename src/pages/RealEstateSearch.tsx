@@ -435,8 +435,10 @@ const RealEstateSearch = () => {
                     <div className="space-y-8 mt-6 pb-4">
                       {/* Property Details Section */}
                       <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
-                        <h3 className="font-semibold text-sm flex items-center gap-2 text-primary">
-                          <MapPin className="h-4 w-4" />
+                        <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
+                          <div className="p-1.5 rounded-md bg-primary/15">
+                            <MapPin className="h-4 w-4 text-primary" />
+                          </div>
                           {t('propertyDetails')}
                         </h3>
                         
@@ -514,8 +516,10 @@ const RealEstateSearch = () => {
 
                       {/* Price & Area Section */}
                       <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
-                        <h3 className="font-semibold text-sm flex items-center gap-2 text-primary">
-                          <Maximize className="h-4 w-4" />
+                        <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
+                          <div className="p-1.5 rounded-md bg-primary/15">
+                            <Maximize className="h-4 w-4 text-primary" />
+                          </div>
                           {t('priceAndArea')}
                         </h3>
                         
@@ -556,8 +560,10 @@ const RealEstateSearch = () => {
 
                       {/* Rooms Section */}
                       <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
-                        <h3 className="font-semibold text-sm flex items-center gap-2 text-primary">
-                          <Bed className="h-4 w-4" />
+                        <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
+                          <div className="p-1.5 rounded-md bg-primary/15">
+                            <Bed className="h-4 w-4 text-primary" />
+                          </div>
                           {t('rooms')}
                         </h3>
                         
@@ -648,8 +654,10 @@ const RealEstateSearch = () => {
 
                       {/* Education Section */}
                       <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
-                        <h3 className="font-semibold text-sm flex items-center gap-2 text-primary">
-                          <School className="h-4 w-4" />
+                        <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
+                          <div className="p-1.5 rounded-md bg-primary/15">
+                            <School className="h-4 w-4 text-primary" />
+                          </div>
                           {t('education')}
                         </h3>
                         
@@ -782,8 +790,10 @@ const RealEstateSearch = () => {
 
                       {/* Proximity Filters Section */}
                       <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
-                        <h3 className="font-semibold text-sm flex items-center gap-2 text-primary">
-                          <MapPin className="h-4 w-4" />
+                        <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
+                          <div className="p-1.5 rounded-md bg-primary/15">
+                            <MapPin className="h-4 w-4 text-primary" />
+                          </div>
                           {t('proximityFilters')}
                         </h3>
                         <div className="space-y-3">
