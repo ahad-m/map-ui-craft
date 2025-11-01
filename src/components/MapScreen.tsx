@@ -25,6 +25,26 @@ const MapScreen = () => {
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
 
+  // Get user location on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(location);
+          setMapCenter(location);
+          setMapZoom(15);
+        },
+        (error) => {
+          console.log('Location access denied or unavailable', error);
+        }
+      );
+    }
+  }, []);
+
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'ar' : 'en';
     i18n.changeLanguage(newLang);
