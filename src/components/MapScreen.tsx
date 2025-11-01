@@ -178,6 +178,7 @@ const MapScreen = () => {
           <Map
             defaultCenter={{ lat: 24.7136, lng: 46.6753 }}
             defaultZoom={12}
+            mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
             key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
