@@ -525,25 +525,25 @@ const RealEstateSearch = () => {
                           {/* School Gender Filter */}
                           <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value === 'all' ? '' : value })}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Gender" />
+                              <SelectValue placeholder={t('gender')} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">All</SelectItem>
-                              <SelectItem value="Boys">Boys</SelectItem>
-                              <SelectItem value="Girls">Girls</SelectItem>
+                              <SelectItem value="all">{t('all')}</SelectItem>
+                              <SelectItem value="Boys">{t('boys')}</SelectItem>
+                              <SelectItem value="Girls">{t('girls')}</SelectItem>
                             </SelectContent>
                           </Select>
 
                           {/* School Level Filter */}
                           <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all' ? '' : value })}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Level" />
+                              <SelectValue placeholder={t('level')} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">All</SelectItem>
-                              <SelectItem value="ابتدائي">Elementary</SelectItem>
-                              <SelectItem value="متوسط">Middle</SelectItem>
-                              <SelectItem value="ثانوي">High</SelectItem>
+                              <SelectItem value="all">{t('all')}</SelectItem>
+                              <SelectItem value="ابتدائي">{t('elementary')}</SelectItem>
+                              <SelectItem value="متوسط">{t('middle')}</SelectItem>
+                              <SelectItem value="ثانوي">{t('high')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

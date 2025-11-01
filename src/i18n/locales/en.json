@@ -79,5 +79,13 @@
   "noExactMatches": "No exact matches found - showing similar results",
   "pageNotFound": "Page not found",
   "oops": "Oops! Page not found",
-  "returnToHome": "Return to Home"
+  "returnToHome": "Return to Home",
+  "gender": "Gender",
+  "all": "All",
+  "boys": "Boys",
+  "girls": "Girls",
+  "level": "Level",
+  "elementary": "Elementary",
+  "middle": "Middle",
+  "high": "High"
 }
