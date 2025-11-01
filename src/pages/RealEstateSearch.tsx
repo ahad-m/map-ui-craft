@@ -360,11 +360,12 @@ const RealEstateSearch = () => {
                 <Sheet open={showFilters} onOpenChange={setShowFilters}>
                   <SheetTrigger asChild>
                     <Button 
-                      variant="outline"
-                      className="gap-2 px-4 bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/30 hover:border-primary hover:from-primary/20 hover:to-accent/20 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg group"
+                      size="lg"
+                      className="gap-3 px-6 py-6 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] text-primary-foreground font-bold text-base shadow-glow hover:bg-[position:100%_0] hover:scale-110 transition-all duration-500 animate-pulse hover:animate-none border-2 border-primary-foreground/20 group relative overflow-hidden"
                     >
-                      <SlidersHorizontal className="h-5 w-5 text-primary group-hover:rotate-90 transition-transform duration-300" />
-                      <span className="font-semibold text-primary hidden sm:inline">{t('advancedFilters')}</span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                      <SlidersHorizontal className="h-6 w-6 group-hover:rotate-180 transition-transform duration-500 relative z-10" />
+                      <span className="relative z-10">{t('advancedFilters')}</span>
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto bg-gradient-to-b from-card to-card/95">
