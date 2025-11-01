@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -17,6 +18,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
+import { PropertyDetailsDialog } from '@/components/PropertyDetailsDialog';
+import { useFavorites } from '@/hooks/useFavorites';
 
 const NEIGHBORHOODS = [
   'أبرق الرغامة', 'أم الحمام الشرقي', 'أم الحمام الغربي', 'أم سليم', 'احد', 'اشبيلية',
@@ -44,6 +47,9 @@ const RealEstateSearch = () => {
   const [openNeighborhoodCombobox, setOpenNeighborhoodCombobox] = useState(false);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 24.7136, lng: 46.6753 });
   const [mapZoom, setMapZoom] = useState(12);
+  const [showPropertyDialog, setShowPropertyDialog] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
   // Update document direction based on language
   useEffect(() => {
@@ -175,6 +181,22 @@ const RealEstateSearch = () => {
     (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity
   );
 
+  const favoriteProperties = properties.filter(p => favorites.includes(p.id));
+
+  const handlePropertyClick = (property: any) => {
+    setSelectedProperty(property);
+    setShowPropertyDialog(true);
+  };
+
+  const handleToggleFavorite = (propertyId: string) => {
+    toggleFavorite(propertyId);
+    if (isFavorite(propertyId)) {
+      toast({ title: t('removedFromFavorites') });
+    } else {
+      toast({ title: t('addedToFavorites') });
+    }
+  };
+
   // Update map center
   useEffect(() => {
     if (selectedSchoolData) {
@@ -237,13 +259,18 @@ const RealEstateSearch = () => {
                 <AdvancedMarker
                   key={property.id}
                   position={{ lat, lng: lon }}
-                  onClick={() => setSelectedProperty(property)}
+                  onClick={() => handlePropertyClick(property)}
                 >
-                  <Pin
-                    background={transactionType === 'sale' ? '#16a34a' : '#0ea5e9'}
-                    borderColor={transactionType === 'sale' ? '#15803d' : '#0284c7'}
-                    glyphColor={'#ffffff'}
-                  />
+                  <div className="relative">
+                    <Pin
+                      background={transactionType === 'sale' ? '#16a34a' : '#0ea5e9'}
+                      borderColor={transactionType === 'sale' ? '#15803d' : '#0284c7'}
+                      glyphColor={'#ffffff'}
+                    />
+                    {isFavorite(property.id) && (
+                      <Heart className="absolute -top-2 -right-2 h-4 w-4 fill-red-500 text-red-500" />
+                    )}
+                  </div>
                 </AdvancedMarker>
               );
             })}
@@ -296,15 +323,30 @@ const RealEstateSearch = () => {
                   </h1>
                   <p className="text-xs text-muted-foreground">{t('propertySearch')}</p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleLanguage}
-                  className="gap-2"
-                >
-                  <Languages className="h-4 w-4" />
-                  {i18n.language === 'en' ? 'ع' : 'EN'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFavorites(true)}
+                    className="gap-2 relative"
+                  >
+                    <Heart className={`h-4 w-4 ${favorites.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                    {favorites.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {favorites.length}
+                      </span>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleLanguage}
+                    className="gap-2"
+                  >
+                    <Languages className="h-4 w-4" />
+                    {i18n.language === 'en' ? 'ع' : 'EN'}
+                  </Button>
+                </div>
               </div>
 
               <div className="flex gap-2">
@@ -676,68 +718,98 @@ const RealEstateSearch = () => {
           </Card>
         </div>
 
-        {/* Property Details Card */}
-        {selectedProperty && (
-          <div className="absolute bottom-24 left-4 right-4 z-10 animate-fade-in">
-            <Card className="p-4 bg-card/98 backdrop-blur-md shadow-elegant border-primary/10">
-              <div className="flex gap-4">
-                {selectedProperty.image_url && (
-                  <img 
-                    src={selectedProperty.image_url} 
-                    alt={selectedProperty.title}
-                    className="w-24 h-24 object-cover rounded-lg"
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold text-sm line-clamp-2">{selectedProperty.title}</h3>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 flex-shrink-0"
-                      onClick={() => setSelectedProperty(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {selectedProperty.district}, {selectedProperty.city}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2 flex-wrap">
-                    {selectedProperty.rooms && (
-                      <span className="flex items-center gap-1">
-                        <Bed className="h-3 w-3" />
-                        {selectedProperty.rooms}
-                      </span>
-                    )}
-                    {selectedProperty.baths && (
-                      <span className="flex items-center gap-1">
-                        <Bath className="h-3 w-3" />
-                        {selectedProperty.baths}
-                      </span>
-                    )}
-                    {selectedProperty.area_m2 && (
-                      <span className="flex items-center gap-1">
-                        <Maximize className="h-3 w-3" />
-                        {selectedProperty.area_m2} m²
-                      </span>
-                    )}
-                    {selectedProperty.time_to_metro_min && (
-                      <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                        <MapPin className="h-3 w-3" />
-                        {Math.round(parseFloat(selectedProperty.time_to_metro_min))} {t('minToMetro')}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-primary font-bold text-lg">
-                    {selectedProperty.price_num} {selectedProperty.price_currency}
-                    {selectedProperty.price_period && ` / ${selectedProperty.price_period}`}
-                  </p>
+        {/* Property Details Dialog */}
+        <PropertyDetailsDialog
+          property={selectedProperty}
+          isOpen={showPropertyDialog}
+          onClose={() => {
+            setShowPropertyDialog(false);
+            setSelectedProperty(null);
+          }}
+          isFavorite={selectedProperty ? isFavorite(selectedProperty.id) : false}
+          onToggleFavorite={() => selectedProperty && handleToggleFavorite(selectedProperty.id)}
+        />
+
+        {/* Favorites Sheet */}
+        <Sheet open={showFavorites} onOpenChange={setShowFavorites}>
+          <SheetContent side={i18n.language === 'ar' ? 'left' : 'right'} className="w-full sm:max-w-lg overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-red-500 fill-red-500" />
+                {t('favorites')} ({favoriteProperties.length})
+              </SheetTitle>
+            </SheetHeader>
+            <div className="mt-6 space-y-4">
+              {favoriteProperties.length === 0 ? (
+                <div className="text-center py-12">
+                  <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">{t('noFavorites')}</p>
                 </div>
-              </div>
-            </Card>
-          </div>
-        )}
+              ) : (
+                favoriteProperties.map(property => (
+                  <Card
+                    key={property.id}
+                    className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => {
+                      setSelectedProperty(property);
+                      setShowPropertyDialog(true);
+                      setShowFavorites(false);
+                    }}
+                  >
+                    <div className="flex gap-3">
+                      {property.image_url && (
+                        <img
+                          src={property.image_url}
+                          alt={property.title}
+                          className="w-24 h-24 object-cover rounded-lg"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold text-sm line-clamp-2">{property.title}</h3>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleFavorite(property.id);
+                            }}
+                          >
+                            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {property.district}, {property.city}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs mb-2">
+                          {property.rooms && (
+                            <span className="flex items-center gap-1">
+                              <Bed className="h-3 w-3" /> {property.rooms}
+                            </span>
+                          )}
+                          {property.baths && (
+                            <span className="flex items-center gap-1">
+                              <Bath className="h-3 w-3" /> {property.baths}
+                            </span>
+                          )}
+                          {property.area_m2 && (
+                            <span className="flex items-center gap-1">
+                              <Maximize className="h-3 w-3" /> {property.area_m2} m²
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-primary font-bold">
+                          {property.price_num} {property.price_currency}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
 
         {/* Results Count */}
         {!selectedProperty && (

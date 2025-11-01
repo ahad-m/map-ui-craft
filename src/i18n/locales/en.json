@@ -87,5 +87,11 @@
   "level": "Level",
   "elementary": "Elementary",
   "middle": "Middle",
-  "high": "High"
+  "high": "High",
+  "description": "Description",
+  "viewDetails": "View Details",
+  "favorites": "Favorites",
+  "noFavorites": "No favorite properties yet",
+  "addedToFavorites": "Added to favorites",
+  "removedFromFavorites": "Removed from favorites"
 }

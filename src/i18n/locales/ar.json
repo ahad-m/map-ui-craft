@@ -89,5 +89,11 @@
   "level": "المرحلة",
   "elementary": "ابتدائي",
   "middle": "متوسط",
-  "high": "ثانوي"
+  "high": "ثانوي",
+  "description": "الوصف",
+  "viewDetails": "عرض التفاصيل",
+  "favorites": "المفضلة",
+  "noFavorites": "لا توجد عقارات مفضلة بعد",
+  "addedToFavorites": "تمت الإضافة للمفضلة",
+  "removedFromFavorites": "تمت الإزالة من المفضلة"
 }
