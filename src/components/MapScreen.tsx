@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart, MapPin, Camera, Edit, Star, MessageSquare, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { toast } from 'sonner';
-import { PlacesAutocomplete } from './PlacesAutocomplete';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 
-const MapScreen = () => {
+const MapContent = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -26,6 +24,45 @@ const MapScreen = () => {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  const places = useMapsLibrary('places');
+  const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesService = useRef<google.maps.places.PlacesService | null>(null);
+
+  useEffect(() => {
+    if (!places) return;
+    autocompleteService.current = new places.AutocompleteService();
+    placesService.current = new places.PlacesService(document.createElement('div'));
+  }, [places]);
+
+  useEffect(() => {
+    if (!autocompleteService.current || !searchQuery || searchQuery.length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      autocompleteService.current?.getPlacePredictions(
+        {
+          input: searchQuery,
+          componentRestrictions: { country: 'sa' },
+          language: i18n.language,
+        },
+        (predictions, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+            setSearchResults(predictions);
+            setShowSearchResults(true);
+          } else {
+            setSearchResults([]);
+            setShowSearchResults(false);
+          }
+        }
+      );
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, i18n.language]);
 
   const exploreCategories = [
     { icon: UtensilsCrossed, label: t('restaurants'), nameAr: 'مطاعم' },
@@ -77,12 +114,22 @@ const MapScreen = () => {
   };
 
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      setShowSearchResults(true);
+    if (searchQuery.trim() && searchResults.length > 0) {
+      const firstResult = searchResults[0];
+      if (placesService.current) {
+        placesService.current.getDetails(
+          { placeId: firstResult.place_id, fields: ['name', 'geometry', 'formatted_address'] },
+          (place, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+              handlePlaceSelect(place);
+            }
+          }
+        );
+      }
     }
   };
 
-  const handlePlaceSelect = (place: google.maps.places.PlaceResult | null) => {
+  const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
     if (place && place.geometry && place.geometry.location) {
       const location = {
         lat: place.geometry.location.lat(),
@@ -95,11 +142,6 @@ const MapScreen = () => {
       setShowSearchResults(false);
       toast.success(place.name || 'Location found');
     }
-  };
-
-  const handlePredictionsChange = (predictions: google.maps.places.AutocompletePrediction[]) => {
-    setSearchResults(predictions);
-    setShowSearchResults(predictions.length > 0);
   };
 
   const clearSearch = () => {
@@ -163,14 +205,7 @@ const MapScreen = () => {
   ];
 
   return (
-    <APIProvider apiKey={apiKey} libraries={['places']}>
-      <PlacesAutocomplete
-        onPlaceSelect={handlePlaceSelect}
-        onPredictionsChange={handlePredictionsChange}
-        inputRef={searchInputRef}
-        searchQuery={searchQuery}
-      />
-      <div className="relative h-screen w-full overflow-hidden bg-background">
+    <div className="relative h-screen w-full overflow-hidden bg-background">
         {/* Top Search Bar */}
         <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm border-b">
           <div className="p-4 space-y-3">
@@ -214,15 +249,16 @@ const MapScreen = () => {
                           key={result.place_id}
                           className="w-full p-4 hover:bg-accent transition-colors text-start flex items-start gap-3"
                           onClick={() => {
-                            const placesService = new google.maps.places.PlacesService(document.createElement('div'));
-                            placesService.getDetails(
-                              { placeId: result.place_id, fields: ['name', 'geometry', 'formatted_address'] },
-                              (place, status) => {
-                                if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-                                  handlePlaceSelect(place);
+                            if (placesService.current) {
+                              placesService.current.getDetails(
+                                { placeId: result.place_id, fields: ['name', 'geometry', 'formatted_address'] },
+                                (place, status) => {
+                                  if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+                                    handlePlaceSelect(place);
+                                  }
                                 }
-                              }
-                            );
+                              );
+                            }
                           }}
                         >
                           <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
@@ -436,6 +472,15 @@ const MapScreen = () => {
           </div>
         </div>
       </div>
+    );
+};
+
+const MapScreen = () => {
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+  
+  return (
+    <APIProvider apiKey={apiKey} libraries={['places']}>
+      <MapContent />
     </APIProvider>
   );
 };
