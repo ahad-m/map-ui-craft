@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { APIProvider, Map } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,9 @@ const MapScreen = () => {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState({ lat: 24.7136, lng: 46.6753 });
+  const [mapZoom, setMapZoom] = useState(12);
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
@@ -51,8 +54,15 @@ const MapScreen = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(location);
+          setMapCenter(location);
+          setMapZoom(16);
+          
           toast.success(t('locationFound') || 'Location found');
-          // You can add logic here to re-center the map if needed
         },
         () => {
           toast.error(t('locationError') || 'Could not get your location');
@@ -150,7 +160,20 @@ const MapScreen = () => {
             defaultZoom={12}
             gestureHandling="greedy"
             disableDefaultUI={false}
-          />
+            key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
+          >
+            {/* User Location Marker */}
+            {userLocation && (
+              <AdvancedMarker position={userLocation}>
+                <div className="relative">
+                  {/* Blue circle for user location */}
+                  <div className="w-5 h-5 bg-blue-500 rounded-full border-4 border-white shadow-lg" />
+                  {/* Outer pulse circle */}
+                  <div className="absolute inset-0 w-5 h-5 bg-blue-400/30 rounded-full animate-ping" />
+                </div>
+              </AdvancedMarker>
+            )}
+          </Map>
         </div>
 
         {/* Floating Controls */}
