@@ -59,6 +59,7 @@
   "latestInArea": "Latest in the area",
   "loading": "Loading...",
   "propertiesFound": "properties found",
+  "noExactMatches": "No exact matches found - showing similar results",
   "pageNotFound": "Page not found",
   "oops": "Oops! Page not found",
   "returnToHome": "Return to Home"

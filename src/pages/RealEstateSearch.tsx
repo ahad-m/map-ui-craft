@@ -25,6 +25,7 @@ const RealEstateSearch = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
+  const [showingSimilarResults, setShowingSimilarResults] = useState(false);
 
   // Update document direction based on language
   useEffect(() => {
@@ -55,55 +56,56 @@ const RealEstateSearch = () => {
     nearMosques: false,
   });
 
-  // Fetch properties from Supabase
+  // Fetch properties from Supabase with exact match first, then similar
   const { data: properties = [], isLoading } = useQuery({
     queryKey: ['properties', transactionType, filters, searchQuery],
     queryFn: async () => {
-      let query = supabase
+      // First, try exact match query
+      let exactQuery = supabase
         .from('properties')
         .select('*')
         .eq('purpose', transactionType === 'sale' ? 'للبيع' : 'للايجار');
 
-      // Apply filters
+      // Apply exact filters
       if (filters.propertyType) {
-        query = query.ilike('property_type', `%${filters.propertyType}%`);
+        exactQuery = exactQuery.eq('property_type', filters.propertyType);
       }
       if (filters.city) {
-        query = query.ilike('city', `%${filters.city}%`);
+        exactQuery = exactQuery.eq('city', filters.city);
       }
       if (filters.neighborhood) {
-        query = query.ilike('district', `%${filters.neighborhood}%`);
+        exactQuery = exactQuery.eq('district', filters.neighborhood);
       }
       if (searchQuery) {
-        query = query.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
+        exactQuery = exactQuery.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
       }
       if (filters.bedrooms) {
         const bedroomCount = filters.bedrooms === '5+' ? 5 : parseInt(filters.bedrooms);
-        query = filters.bedrooms === '5+' 
-          ? query.gte('rooms', bedroomCount)
-          : query.eq('rooms', bedroomCount);
+        exactQuery = filters.bedrooms === '5+' 
+          ? exactQuery.gte('rooms', bedroomCount)
+          : exactQuery.eq('rooms', bedroomCount);
       }
       if (filters.bathrooms) {
         const bathroomCount = filters.bathrooms === '4+' ? 4 : parseInt(filters.bathrooms);
-        query = filters.bathrooms === '4+' 
-          ? query.gte('baths', bathroomCount)
-          : query.eq('baths', bathroomCount);
+        exactQuery = filters.bathrooms === '4+' 
+          ? exactQuery.gte('baths', bathroomCount)
+          : exactQuery.eq('baths', bathroomCount);
       }
       if (filters.livingRooms) {
         const hallCount = filters.livingRooms === '4+' ? 4 : parseInt(filters.livingRooms);
-        query = filters.livingRooms === '4+' 
-          ? query.gte('halls', hallCount)
-          : query.eq('halls', hallCount);
+        exactQuery = filters.livingRooms === '4+' 
+          ? exactQuery.gte('halls', hallCount)
+          : exactQuery.eq('halls', hallCount);
       }
 
       // Filter by valid coordinates
-      query = query.not('final_lat', 'is', null).not('final_lon', 'is', null);
+      exactQuery = exactQuery.not('final_lat', 'is', null).not('final_lon', 'is', null);
 
-      const { data, error } = await query.limit(100);
-      if (error) throw error;
+      const { data: exactData, error: exactError } = await exactQuery.limit(100);
+      if (exactError) throw exactError;
 
-      // Additional client-side filtering for price and area (since they're text fields)
-      return (data || []).filter(property => {
+      // Additional client-side filtering for exact price and area
+      let exactResults = (exactData || []).filter(property => {
         const price = parseFloat(property.price_num?.replace(/,/g, '') || '0');
         const area = parseFloat(property.area_m2?.replace(/,/g, '') || '0');
         
@@ -112,6 +114,76 @@ const RealEstateSearch = () => {
         
         return priceMatch && areaMatch;
       });
+
+      // If exact results found, return them
+      if (exactResults.length > 0) {
+        setShowingSimilarResults(false);
+        return exactResults;
+      }
+
+      // No exact matches, try similar results with relaxed filters
+      let similarQuery = supabase
+        .from('properties')
+        .select('*')
+        .eq('purpose', transactionType === 'sale' ? 'للبيع' : 'للايجار');
+
+      // Apply relaxed filters (using ilike instead of eq for more flexible matching)
+      if (filters.propertyType) {
+        similarQuery = similarQuery.ilike('property_type', `%${filters.propertyType}%`);
+      }
+      if (filters.city) {
+        similarQuery = similarQuery.ilike('city', `%${filters.city}%`);
+      }
+      if (filters.neighborhood) {
+        similarQuery = similarQuery.ilike('district', `%${filters.neighborhood}%`);
+      }
+      if (searchQuery) {
+        similarQuery = similarQuery.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
+      }
+
+      // Filter by valid coordinates
+      similarQuery = similarQuery.not('final_lat', 'is', null).not('final_lon', 'is', null);
+
+      const { data: similarData, error: similarError } = await similarQuery.limit(100);
+      if (similarError) throw similarError;
+
+      // Client-side filtering with relaxed price and area ranges (±20% tolerance)
+      const similarResults = (similarData || []).filter(property => {
+        const price = parseFloat(property.price_num?.replace(/,/g, '') || '0');
+        const area = parseFloat(property.area_m2?.replace(/,/g, '') || '0');
+        
+        const priceTolerance = (filters.priceMax - filters.priceMin) * 0.2;
+        const areaTolerance = (filters.areaMax - filters.areaMin) * 0.2;
+        
+        const priceMatch = price >= (filters.priceMin - priceTolerance) && 
+                          price <= (filters.priceMax + priceTolerance);
+        const areaMatch = area >= (filters.areaMin - areaTolerance) && 
+                         area <= (filters.areaMax + areaTolerance);
+        
+        // For bedrooms, bathrooms, living rooms - match or close (±1)
+        let bedroomMatch = true;
+        if (filters.bedrooms && property.rooms) {
+          const targetBedrooms = filters.bedrooms === '5+' ? 5 : parseInt(filters.bedrooms);
+          bedroomMatch = Math.abs(property.rooms - targetBedrooms) <= 1 || property.rooms >= targetBedrooms;
+        }
+        
+        let bathroomMatch = true;
+        if (filters.bathrooms && property.baths) {
+          const targetBathrooms = filters.bathrooms === '4+' ? 4 : parseInt(filters.bathrooms);
+          bathroomMatch = Math.abs(property.baths - targetBathrooms) <= 1 || property.baths >= targetBathrooms;
+        }
+        
+        let livingRoomMatch = true;
+        if (filters.livingRooms && property.halls) {
+          const targetHalls = filters.livingRooms === '4+' ? 4 : parseInt(filters.livingRooms);
+          livingRoomMatch = Math.abs(property.halls - targetHalls) <= 1 || property.halls >= targetHalls;
+        }
+        
+        return priceMatch && areaMatch && bedroomMatch && bathroomMatch && livingRoomMatch;
+      });
+
+      setShowingSimilarResults(similarResults.length > 0);
+      return similarResults;
     },
   });
 
@@ -670,9 +742,16 @@ const RealEstateSearch = () => {
         {!selectedProperty && (
           <div className="absolute bottom-24 left-4 right-4 z-10">
             <Card className="p-3 bg-card/95 backdrop-blur-sm shadow-elegant border-primary/10">
-              <p className="text-sm font-medium text-center">
-                {isLoading ? t('loading') : `${properties.length} ${t('propertiesFound')}`}
-              </p>
+              <div className="text-center">
+                <p className="text-sm font-medium">
+                  {isLoading ? t('loading') : `${properties.length} ${t('propertiesFound')}`}
+                </p>
+                {showingSimilarResults && properties.length > 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    {t('noExactMatches')}
+                  </p>
+                )}
+              </div>
             </Card>
           </div>
         )}
