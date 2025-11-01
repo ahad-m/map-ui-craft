@@ -531,12 +531,12 @@ const RealEstateSearch = () => {
                         <Label>{t('schools')}</Label>
                         
                         {/* School Gender Filter (Optional) */}
-                        <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value, selectedSchool: '' })}>
+                        <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value === 'all' ? '' : value, selectedSchool: '' })}>
                           <SelectTrigger>
                             <SelectValue placeholder="Gender (Optional)" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All</SelectItem>
+                            <SelectItem value="all">All</SelectItem>
                             <SelectItem value="Boys">Boys</SelectItem>
                             <SelectItem value="Girls">Girls</SelectItem>
                           </SelectContent>
@@ -544,12 +544,12 @@ const RealEstateSearch = () => {
 
                         {/* School Level Filter (Optional) */}
                         {filters.schoolGender && (
-                          <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value, selectedSchool: '' })}>
+                          <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all' ? '' : value, selectedSchool: '' })}>
                             <SelectTrigger>
                               <SelectValue placeholder="Stage (Optional)" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">All Levels</SelectItem>
+                              <SelectItem value="all">All Levels</SelectItem>
                               <SelectItem value="ابتدائي">Elementary</SelectItem>
                               <SelectItem value="متوسط">Middle</SelectItem>
                               <SelectItem value="ثانوي">High School</SelectItem>
@@ -609,12 +609,12 @@ const RealEstateSearch = () => {
                         <Label>{t('universities')}</Label>
                         
                         {/* University Gender Filter (Optional) */}
-                        <Select value={filters.universityGender} onValueChange={(value) => setFilters({ ...filters, universityGender: value, selectedUniversity: '' })}>
+                        <Select value={filters.universityGender} onValueChange={(value) => setFilters({ ...filters, universityGender: value === 'all' ? '' : value, selectedUniversity: '' })}>
                           <SelectTrigger>
                             <SelectValue placeholder="Gender (Optional)" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All</SelectItem>
+                            <SelectItem value="all">All</SelectItem>
                             <SelectItem value="Boys">Boys</SelectItem>
                             <SelectItem value="Girls">Girls</SelectItem>
                           </SelectContent>
