@@ -70,7 +70,6 @@ const RealEstateSearch = () => {
     schoolGender: '',
     schoolLevel: '',
     selectedSchool: '',
-    universityGender: '',
     selectedUniversity: '',
     nearMetro: false,
     minMetroTime: 5,
@@ -157,28 +156,19 @@ const RealEstateSearch = () => {
 
   const selectedSchoolData = allSchools.find(school => school.id === filters.selectedSchool);
 
-  // Fetch universities with filters
+  // Fetch all universities without gender filter
   const { data: allUniversities = [] } = useQuery({
-    queryKey: ['universities', filters.universityGender],
+    queryKey: ['universities'],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('universities')
         .select('*')
         .not('lat', 'is', null)
         .not('lon', 'is', null)
         .not('name_ar', 'is', null)
-        .not('name_en', 'is', null);
+        .not('name_en', 'is', null)
+        .order('name_ar', { ascending: true });
       
-      if (filters.universityGender === 'Girls') {
-        query = query.or('name_ar.ilike.%بنات%,name_ar.ilike.%النساء%,name_en.ilike.%Women%,name_en.ilike.%Girls%');
-      } else if (filters.universityGender === 'Boys') {
-        query = query.not('name_ar', 'ilike', '%بنات%')
-          .not('name_ar', 'ilike', '%النساء%')
-          .not('name_en', 'ilike', '%Women%')
-          .not('name_en', 'ilike', '%Girls%');
-      }
-      
-      const { data, error } = await query.order('name_ar', { ascending: true });
       if (error) throw error;
       return data || [];
     },
@@ -223,7 +213,6 @@ const RealEstateSearch = () => {
       schoolGender: '',
       schoolLevel: '',
       selectedSchool: '',
-      universityGender: '',
       selectedUniversity: '',
       nearMetro: false,
       minMetroTime: 5,
@@ -608,7 +597,7 @@ const RealEstateSearch = () => {
                       <div className="space-y-2">
                         <Label>{t('universities')}</Label>
                         
-                        {/* University Selection */}
+                        {/* University Selection with Search */}
                         <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
                           <PopoverTrigger asChild>
                             <Button variant="outline" role="combobox" className="w-full justify-between">
@@ -652,18 +641,6 @@ const RealEstateSearch = () => {
                             </Command>
                           </PopoverContent>
                         </Popover>
-
-                        {/* Optional Gender Filter */}
-                        <Select value={filters.universityGender} onValueChange={(value) => setFilters({ ...filters, universityGender: value === 'all' ? '' : value })}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Filter by Gender (Optional)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All</SelectItem>
-                            <SelectItem value="Boys">Boys</SelectItem>
-                            <SelectItem value="Girls">Girls</SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
 
                       {/* Proximity Filters */}
