@@ -365,14 +365,6 @@ const RealEstateSearch = () => {
                     >
                       <SlidersHorizontal className="h-5 w-5 text-primary group-hover:rotate-90 transition-transform duration-300" />
                       <span className="font-semibold text-primary hidden sm:inline">{t('advancedFilters')}</span>
-                      <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold animate-pulse">
-                        {Object.entries(filters).filter(([key, v]) => {
-                          if (typeof v === 'boolean') return v === true;
-                          if (typeof v === 'string') return v && v !== 'الرياض';
-                          if (typeof v === 'number') return v !== 50000000 && v !== 2000 && v !== 0 && v !== 5;
-                          return false;
-                        }).length}
-                      </span>
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto bg-gradient-to-b from-card to-card/95">
