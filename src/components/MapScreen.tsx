@@ -1,13 +1,14 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart, MapPin, Camera, Edit, Star, MessageSquare } from 'lucide-react';
+import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart, MapPin, Camera, Edit, Star, MessageSquare, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { toast } from 'sonner';
+import { PlacesAutocomplete } from './PlacesAutocomplete';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 
 const MapScreen = () => {
@@ -21,6 +22,10 @@ const MapScreen = () => {
   const [mapZoom, setMapZoom] = useState(12);
   const [showExploreSheet, setShowExploreSheet] = useState(false);
   const [showContributeSheet, setShowContributeSheet] = useState(false);
+  const [searchResults, setSearchResults] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const exploreCategories = [
     { icon: UtensilsCrossed, label: t('restaurants'), nameAr: 'مطاعم' },
@@ -73,9 +78,35 @@ const MapScreen = () => {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      toast.success(t('searchingFor') || `Searching for: ${searchQuery}`);
-      // In a real app, this would geocode the address and update the map
+      setShowSearchResults(true);
     }
+  };
+
+  const handlePlaceSelect = (place: google.maps.places.PlaceResult | null) => {
+    if (place && place.geometry && place.geometry.location) {
+      const location = {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+      };
+      setMapCenter(location);
+      setMapZoom(17);
+      setSelectedPlace(place);
+      setSearchQuery(place.name || '');
+      setShowSearchResults(false);
+      toast.success(place.name || 'Location found');
+    }
+  };
+
+  const handlePredictionsChange = (predictions: google.maps.places.AutocompletePrediction[]) => {
+    setSearchResults(predictions);
+    setShowSearchResults(predictions.length > 0);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+    setSelectedPlace(null);
   };
 
   const handleVoiceSearch = () => {
@@ -132,7 +163,13 @@ const MapScreen = () => {
   ];
 
   return (
-    <APIProvider apiKey={apiKey}>
+    <APIProvider apiKey={apiKey} libraries={['places']}>
+      <PlacesAutocomplete
+        onPlaceSelect={handlePlaceSelect}
+        onPredictionsChange={handlePredictionsChange}
+        inputRef={searchInputRef}
+        searchQuery={searchQuery}
+      />
       <div className="relative h-screen w-full overflow-hidden bg-background">
         {/* Top Search Bar */}
         <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm border-b">
@@ -141,12 +178,24 @@ const MapScreen = () => {
               <div className="flex-1 relative">
                 <Search className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground ${i18n.language === 'ar' ? 'right-3' : 'left-3'} pointer-events-none`} />
                 <Input
+                  ref={searchInputRef}
                   placeholder={t('searchHere')}
-                  className={`h-12 bg-card ${i18n.language === 'ar' ? 'pr-10 pl-10' : 'pl-10 pr-10'}`}
+                  className={`h-12 bg-card ${i18n.language === 'ar' ? 'pr-10 pl-20' : 'pl-10 pr-20'}`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  onFocus={() => searchResults.length > 0 && setShowSearchResults(true)}
                 />
+                {searchQuery && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className={`absolute top-1/2 -translate-y-1/2 h-8 w-8 ${i18n.language === 'ar' ? 'left-10' : 'right-10'}`}
+                    onClick={clearSearch}
+                  >
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                )}
                 <Button
                   size="icon"
                   variant="ghost"
@@ -155,6 +204,37 @@ const MapScreen = () => {
                 >
                   <Mic className="h-5 w-5 text-muted-foreground" />
                 </Button>
+
+                {/* Search Results Dropdown */}
+                {showSearchResults && searchResults.length > 0 && (
+                  <Card className="absolute top-full left-0 right-0 mt-2 max-h-96 overflow-y-auto z-50 shadow-lg">
+                    <div className="divide-y">
+                      {searchResults.map((result) => (
+                        <button
+                          key={result.place_id}
+                          className="w-full p-4 hover:bg-accent transition-colors text-start flex items-start gap-3"
+                          onClick={() => {
+                            const placesService = new google.maps.places.PlacesService(document.createElement('div'));
+                            placesService.getDetails(
+                              { placeId: result.place_id, fields: ['name', 'geometry', 'formatted_address'] },
+                              (place, status) => {
+                                if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+                                  handlePlaceSelect(place);
+                                }
+                              }
+                            );
+                          }}
+                        >
+                          <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{result.structured_formatting.main_text}</p>
+                            <p className="text-xs text-muted-foreground truncate">{result.structured_formatting.secondary_text}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </Card>
+                )}
               </div>
               <Sheet>
                 <SheetTrigger asChild>
@@ -218,6 +298,20 @@ const MapScreen = () => {
                   <div className="w-5 h-5 bg-blue-500 rounded-full border-4 border-white shadow-lg" />
                   {/* Outer pulse circle */}
                   <div className="absolute inset-0 w-5 h-5 bg-blue-400/30 rounded-full animate-ping" />
+                </div>
+              </AdvancedMarker>
+            )}
+
+            {/* Selected Place Marker */}
+            {selectedPlace && selectedPlace.geometry && selectedPlace.geometry.location && (
+              <AdvancedMarker 
+                position={{
+                  lat: selectedPlace.geometry.location.lat(),
+                  lng: selectedPlace.geometry.location.lng()
+                }}
+              >
+                <div className="bg-red-500 p-2 rounded-full shadow-lg">
+                  <MapPin className="h-6 w-6 text-white" />
                 </div>
               </AdvancedMarker>
             )}
