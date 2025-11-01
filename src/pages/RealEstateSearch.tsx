@@ -30,6 +30,8 @@ const RealEstateSearch = () => {
   const [showingSimilarResults, setShowingSimilarResults] = useState(false);
   const [openSchoolCombobox, setOpenSchoolCombobox] = useState(false);
   const [openUniversityCombobox, setOpenUniversityCombobox] = useState(false);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 24.7136, lng: 46.6753 });
+  const [mapZoom, setMapZoom] = useState(12);
 
   // Update document direction based on language
   useEffect(() => {
@@ -247,6 +249,38 @@ const RealEstateSearch = () => {
     (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity
   );
 
+  // Update map center when school is selected
+  useEffect(() => {
+    if (selectedSchoolData) {
+      setMapCenter({ lat: selectedSchoolData.lat, lng: selectedSchoolData.lon });
+      setMapZoom(15);
+    }
+  }, [selectedSchoolData]);
+
+  // Update map center when university is selected
+  useEffect(() => {
+    if (selectedUniversityData) {
+      setMapCenter({ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon });
+      setMapZoom(15);
+    }
+  }, [selectedUniversityData]);
+
+  // Reset map view when filters are cleared
+  useEffect(() => {
+    if (!filters.selectedSchool && !filters.selectedUniversity && properties.length > 0) {
+      // Calculate bounds of all properties
+      const lats = properties.map(p => parseFloat(p.final_lat)).filter(lat => !isNaN(lat));
+      const lngs = properties.map(p => parseFloat(p.final_lon)).filter(lng => !isNaN(lng));
+      
+      if (lats.length > 0 && lngs.length > 0) {
+        const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+        const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+        setMapCenter({ lat: avgLat, lng: avgLng });
+        setMapZoom(12);
+      }
+    }
+  }, [properties, filters.selectedSchool, filters.selectedUniversity]);
+
 
   return (
     <APIProvider apiKey={apiKey}>
@@ -254,8 +288,8 @@ const RealEstateSearch = () => {
         {/* Map Background */}
         <div className="absolute inset-0">
           <Map
-            defaultCenter={{ lat: 24.7136, lng: 46.6753 }}
-            defaultZoom={12}
+            center={mapCenter}
+            zoom={mapZoom}
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
