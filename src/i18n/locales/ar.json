@@ -105,5 +105,9 @@
   "kindergarten": "روضة",
   "elementary": "ابتدائي",
   "middle": "متوسط",
-  "high": "ثانوي"
+  "high": "ثانوي",
+  "propertyDetails": "تفاصيل العقار",
+  "priceAndArea": "السعر والمساحة",
+  "rooms": "الغرف",
+  "education": "التعليم"
 }

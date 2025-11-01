@@ -401,325 +401,371 @@ const RealEstateSearch = () => {
                       <span className="relative z-10">{t('advancedFilters')}</span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto bg-gradient-to-b from-card to-card/95">
-                    <SheetHeader className="pb-4 border-b border-border">
-                      <div className="flex items-center gap-2">
-                        <SlidersHorizontal className="h-5 w-5 text-primary" />
-                        <SheetTitle className="text-xl">{t('advancedFilters')}</SheetTitle>
+                  <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto bg-background/98 backdrop-blur-md">
+                    <SheetHeader className="pb-6 border-b-2 border-primary/20">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <SlidersHorizontal className="h-5 w-5 text-primary" />
+                        </div>
+                        <SheetTitle className="text-2xl font-bold">{t('advancedFilters')}</SheetTitle>
                       </div>
                     </SheetHeader>
-                    <div className="space-y-6 mt-6">
-                      {/* Property Type */}
-                      <div className="space-y-2">
-                        <Label>{t('propertyType')}</Label>
-                        <Select
-                          value={filters.propertyType}
-                          onValueChange={(value) => setFilters({ ...filters, propertyType: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('selectPropertyType')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="استوديو">{t('studio')}</SelectItem>
-                            <SelectItem value="شقق">{t('apartments')}</SelectItem>
-                            <SelectItem value="فلل">{t('villas')}</SelectItem>
-                            <SelectItem value="تاون هاوس">{t('townhouse')}</SelectItem>
-                            <SelectItem value="دوبلكس">{t('duplex')}</SelectItem>
-                            <SelectItem value="دور">{t('floor')}</SelectItem>
-                            <SelectItem value="عمائر">{t('buildings')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Neighborhood with Search */}
-                      <div className="space-y-2">
-                        <Label>{t('neighborhood')}</Label>
-                        <Popover open={openNeighborhoodCombobox} onOpenChange={setOpenNeighborhoodCombobox}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className="w-full justify-between"
+                    
+                    <div className="space-y-8 mt-6 pb-4">
+                      {/* Property Details Section */}
+                      <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
+                        <h3 className="font-semibold text-sm flex items-center gap-2 text-primary">
+                          <MapPin className="h-4 w-4" />
+                          {t('propertyDetails')}
+                        </h3>
+                        
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('propertyType')}</Label>
+                            <Select
+                              value={filters.propertyType}
+                              onValueChange={(value) => setFilters({ ...filters, propertyType: value })}
                             >
-                              {filters.neighborhood || t('selectNeighborhood')}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[400px] p-0">
-                            <Command>
-                              <CommandInput placeholder={t('searchNeighborhood')} />
-                              <CommandList>
-                                <CommandEmpty>{t('noNeighborhoodFound')}</CommandEmpty>
-                                <CommandGroup>
-                                  <CommandItem
-                                    onSelect={() => {
-                                      setFilters({ ...filters, neighborhood: '' });
-                                      setOpenNeighborhoodCombobox(false);
-                                    }}
-                                  >
-                                    <Check className={cn("mr-2 h-4 w-4", !filters.neighborhood ? "opacity-100" : "opacity-0")} />
-                                    {t('none')}
-                                  </CommandItem>
-                                  {NEIGHBORHOODS.map((neighborhood) => (
-                                    <CommandItem
-                                      key={neighborhood}
-                                      value={neighborhood}
-                                      onSelect={() => {
-                                        setFilters({ ...filters, neighborhood });
-                                        setOpenNeighborhoodCombobox(false);
-                                      }}
-                                    >
-                                      <Check className={cn("mr-2 h-4 w-4", filters.neighborhood === neighborhood ? "opacity-100" : "opacity-0")} />
-                                      {neighborhood}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder={t('selectPropertyType')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="استوديو">{t('studio')}</SelectItem>
+                                <SelectItem value="شقق">{t('apartments')}</SelectItem>
+                                <SelectItem value="فلل">{t('villas')}</SelectItem>
+                                <SelectItem value="تاون هاوس">{t('townhouse')}</SelectItem>
+                                <SelectItem value="دوبلكس">{t('duplex')}</SelectItem>
+                                <SelectItem value="دور">{t('floor')}</SelectItem>
+                                <SelectItem value="عمائر">{t('buildings')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                      {/* Maximum Price */}
-                      <div className="space-y-2">
-                        <Label>{t('maxPrice')} (SAR)</Label>
-                        <Input
-                          type="number"
-                          placeholder={t('maxPrice')}
-                          value={filters.maxPrice}
-                          onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
-                        />
-                      </div>
-
-                      {/* Area Range */}
-                      <div className="space-y-2">
-                        <Label>{t('areaSize')}</Label>
-                        <div className="flex gap-2 items-center">
-                          <Input
-                            type="number"
-                            placeholder={t('minArea')}
-                            value={filters.areaMin}
-                            onChange={(e) => setFilters({ ...filters, areaMin: Number(e.target.value) })}
-                          />
-                          <span>-</span>
-                          <Input
-                            type="number"
-                            placeholder={t('maxArea')}
-                            value={filters.areaMax}
-                            onChange={(e) => setFilters({ ...filters, areaMax: Number(e.target.value) })}
-                          />
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('neighborhood')}</Label>
+                            <Popover open={openNeighborhoodCombobox} onOpenChange={setOpenNeighborhoodCombobox}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between bg-background hover:bg-accent"
+                                >
+                                  {filters.neighborhood || t('selectNeighborhood')}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[400px] p-0 z-[100]">
+                                <Command>
+                                  <CommandInput placeholder={t('searchNeighborhood')} />
+                                  <CommandList>
+                                    <CommandEmpty>{t('noNeighborhoodFound')}</CommandEmpty>
+                                    <CommandGroup>
+                                      <CommandItem
+                                        onSelect={() => {
+                                          setFilters({ ...filters, neighborhood: '' });
+                                          setOpenNeighborhoodCombobox(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", !filters.neighborhood ? "opacity-100" : "opacity-0")} />
+                                        {t('none')}
+                                      </CommandItem>
+                                      {NEIGHBORHOODS.map((neighborhood) => (
+                                        <CommandItem
+                                          key={neighborhood}
+                                          value={neighborhood}
+                                          onSelect={() => {
+                                            setFilters({ ...filters, neighborhood });
+                                            setOpenNeighborhoodCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.neighborhood === neighborhood ? "opacity-100" : "opacity-0")} />
+                                          {neighborhood}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Bedrooms */}
-                      <div className="space-y-2">
-                        <Label>{t('bedrooms')}</Label>
-                        <Select value={filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5+'].includes(filters.bedrooms)) ? 'other' : filters.bedrooms} onValueChange={(value) => setFilters({ ...filters, bedrooms: value })}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('selectBedrooms')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="2">2</SelectItem>
-                            <SelectItem value="3">3</SelectItem>
-                            <SelectItem value="4">4</SelectItem>
-                            <SelectItem value="5+">5+</SelectItem>
-                            <SelectItem value="other">{t('other')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {(filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5+', ''].includes(filters.bedrooms))) && (
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder={t('customValue')}
-                            value={filters.bedrooms === 'other' ? '' : filters.bedrooms}
-                            onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
-                          />
-                        )}
-                      </div>
-
-                      {/* Living Rooms */}
-                      <div className="space-y-2">
-                        <Label>{t('livingRooms')}</Label>
-                        <Select value={filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4+'].includes(filters.livingRooms)) ? 'other' : filters.livingRooms} onValueChange={(value) => setFilters({ ...filters, livingRooms: value })}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('selectLivingRooms')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="2">2</SelectItem>
-                            <SelectItem value="3">3</SelectItem>
-                            <SelectItem value="4+">4+</SelectItem>
-                            <SelectItem value="other">{t('other')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {(filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4+', ''].includes(filters.livingRooms))) && (
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder={t('customValue')}
-                            value={filters.livingRooms === 'other' ? '' : filters.livingRooms}
-                            onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
-                          />
-                        )}
-                      </div>
-
-                      {/* Bathrooms */}
-                      <div className="space-y-2">
-                        <Label>{t('bathrooms')}</Label>
-                        <Select value={filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4+'].includes(filters.bathrooms)) ? 'other' : filters.bathrooms} onValueChange={(value) => setFilters({ ...filters, bathrooms: value })}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('selectBathrooms')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="2">2</SelectItem>
-                            <SelectItem value="3">3</SelectItem>
-                            <SelectItem value="4+">4+</SelectItem>
-                            <SelectItem value="other">{t('other')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {(filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4+', ''].includes(filters.bathrooms))) && (
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder={t('customValue')}
-                            value={filters.bathrooms === 'other' ? '' : filters.bathrooms}
-                            onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
-                          />
-                        )}
-                      </div>
-
-                      {/* Schools */}
-                      <div className="space-y-2">
-                        <Label>{t('schools')}</Label>
+                      {/* Price & Area Section */}
+                      <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
+                        <h3 className="font-semibold text-sm flex items-center gap-2 text-primary">
+                          <Maximize className="h-4 w-4" />
+                          {t('priceAndArea')}
+                        </h3>
                         
-                        {/* School Gender Filter */}
-                        <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value === 'all' ? '' : value })}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('gender')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">{t('all')}</SelectItem>
-                            <SelectItem value="Boys">{t('boys')}</SelectItem>
-                            <SelectItem value="Girls">{t('girls')}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('maxPrice')} (SAR)</Label>
+                            <Input
+                              type="number"
+                              placeholder={t('maxPrice')}
+                              value={filters.maxPrice}
+                              onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
+                              className="bg-background"
+                            />
+                          </div>
 
-                        {/* School Level Filter */}
-                        <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all_levels' ? '' : value })}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('schoolLevel')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all_levels">{t('allLevels')}</SelectItem>
-                            <SelectItem value="all">{t('combined')}</SelectItem>
-                            <SelectItem value="nursery">{t('nursery')}</SelectItem>
-                            <SelectItem value="kindergarten">{t('kindergarten')}</SelectItem>
-                            <SelectItem value="elementary">{t('elementary')}</SelectItem>
-                            <SelectItem value="middle">{t('middle')}</SelectItem>
-                            <SelectItem value="high">{t('high')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        {/* School Selection */}
-                        <Popover open={openSchoolCombobox} onOpenChange={setOpenSchoolCombobox}>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" role="combobox" className="w-full justify-between">
-                              {filters.selectedSchool
-                                ? allSchools.find((s) => s.id === filters.selectedSchool)?.name || t('selectSchool')
-                                : t('selectSchool')}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[400px] p-0">
-                            <Command>
-                              <CommandInput placeholder={t('searchSchool')} />
-                              <CommandList>
-                                <CommandEmpty>{t('noSchoolFound')}</CommandEmpty>
-                                <CommandGroup>
-                                  <CommandItem
-                                    onSelect={() => {
-                                      setFilters({ ...filters, selectedSchool: '' });
-                                      setOpenSchoolCombobox(false);
-                                    }}
-                                  >
-                                    <Check className={cn("mr-2 h-4 w-4", !filters.selectedSchool ? "opacity-100" : "opacity-0")} />
-                                    {t('none')}
-                                  </CommandItem>
-                                  {allSchools.map((school) => (
-                                    <CommandItem
-                                      key={school.id}
-                                      value={`${school.name} ${school.district || ''}`}
-                                      onSelect={() => {
-                                        setFilters({ ...filters, selectedSchool: school.id || '' });
-                                        setOpenSchoolCombobox(false);
-                                      }}
-                                    >
-                                      <Check className={cn("mr-2 h-4 w-4", filters.selectedSchool === school.id ? "opacity-100" : "opacity-0")} />
-                                      {school.name} {school.district ? `- ${school.district}` : ''}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('areaSize')}</Label>
+                            <div className="flex gap-2 items-center">
+                              <Input
+                                type="number"
+                                placeholder={t('minArea')}
+                                value={filters.areaMin}
+                                onChange={(e) => setFilters({ ...filters, areaMin: Number(e.target.value) })}
+                                className="bg-background"
+                              />
+                              <span className="text-muted-foreground">-</span>
+                              <Input
+                                type="number"
+                                placeholder={t('maxArea')}
+                                value={filters.areaMax}
+                                onChange={(e) => setFilters({ ...filters, areaMax: Number(e.target.value) })}
+                                className="bg-background"
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Universities */}
-                      <div className="space-y-2">
-                        <Label>{t('universities')}</Label>
+                      {/* Rooms Section */}
+                      <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
+                        <h3 className="font-semibold text-sm flex items-center gap-2 text-primary">
+                          <Bed className="h-4 w-4" />
+                          {t('rooms')}
+                        </h3>
                         
-                        {/* University Selection with Search */}
-                        <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" role="combobox" className="w-full justify-between">
-                              {filters.selectedUniversity || t('selectUniversity')}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[400px] p-0">
-                            <Command>
-                              <CommandInput placeholder={t('searchUniversity')} />
-                              <CommandList>
-                                <CommandEmpty>{t('noUniversityFound')}</CommandEmpty>
-                                <CommandGroup>
-                                  <CommandItem
-                                    onSelect={() => {
-                                      setFilters({ ...filters, selectedUniversity: '' });
-                                      setOpenUniversityCombobox(false);
-                                    }}
-                                  >
-                                    <Check className={cn("mr-2 h-4 w-4", !filters.selectedUniversity ? "opacity-100" : "opacity-0")} />
-                                    {t('none')}
-                                  </CommandItem>
-                                  {allUniversities.map((uni, index) => {
-                                    const uniName = i18n.language === 'ar' ? uni.name_ar : uni.name_en;
-                                    return (
+                        <div className="space-y-3">
+                          {/* Bedrooms */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('bedrooms')}</Label>
+                            <Select value={filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5+'].includes(filters.bedrooms)) ? 'other' : filters.bedrooms} onValueChange={(value) => setFilters({ ...filters, bedrooms: value })}>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder={t('selectBedrooms')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1">1</SelectItem>
+                                <SelectItem value="2">2</SelectItem>
+                                <SelectItem value="3">3</SelectItem>
+                                <SelectItem value="4">4</SelectItem>
+                                <SelectItem value="5+">5+</SelectItem>
+                                <SelectItem value="other">{t('other')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {(filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5+', ''].includes(filters.bedrooms))) && (
+                              <Input
+                                type="number"
+                                min="1"
+                                placeholder={t('customValue')}
+                                value={filters.bedrooms === 'other' ? '' : filters.bedrooms}
+                                onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
+                                className="bg-background"
+                              />
+                            )}
+                          </div>
+
+                          {/* Living Rooms */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('livingRooms')}</Label>
+                            <Select value={filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4+'].includes(filters.livingRooms)) ? 'other' : filters.livingRooms} onValueChange={(value) => setFilters({ ...filters, livingRooms: value })}>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder={t('selectLivingRooms')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1">1</SelectItem>
+                                <SelectItem value="2">2</SelectItem>
+                                <SelectItem value="3">3</SelectItem>
+                                <SelectItem value="4+">4+</SelectItem>
+                                <SelectItem value="other">{t('other')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {(filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4+', ''].includes(filters.livingRooms))) && (
+                              <Input
+                                type="number"
+                                min="1"
+                                placeholder={t('customValue')}
+                                value={filters.livingRooms === 'other' ? '' : filters.livingRooms}
+                                onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
+                                className="bg-background"
+                              />
+                            )}
+                          </div>
+
+                          {/* Bathrooms */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('bathrooms')}</Label>
+                            <Select value={filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4+'].includes(filters.bathrooms)) ? 'other' : filters.bathrooms} onValueChange={(value) => setFilters({ ...filters, bathrooms: value })}>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder={t('selectBathrooms')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1">1</SelectItem>
+                                <SelectItem value="2">2</SelectItem>
+                                <SelectItem value="3">3</SelectItem>
+                                <SelectItem value="4+">4+</SelectItem>
+                                <SelectItem value="other">{t('other')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {(filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4+', ''].includes(filters.bathrooms))) && (
+                              <Input
+                                type="number"
+                                min="1"
+                                placeholder={t('customValue')}
+                                value={filters.bathrooms === 'other' ? '' : filters.bathrooms}
+                                onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
+                                className="bg-background"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Education Section */}
+                      <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
+                        <h3 className="font-semibold text-sm flex items-center gap-2 text-primary">
+                          <School className="h-4 w-4" />
+                          {t('education')}
+                        </h3>
+                        
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('schools')}</Label>
+                            
+                            {/* School Gender Filter */}
+                            <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value === 'all' ? '' : value })}>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder={t('gender')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">{t('all')}</SelectItem>
+                                <SelectItem value="Boys">{t('boys')}</SelectItem>
+                                <SelectItem value="Girls">{t('girls')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            {/* School Level Filter */}
+                            <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all_levels' ? '' : value })}>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder={t('schoolLevel')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all_levels">{t('allLevels')}</SelectItem>
+                                <SelectItem value="all">{t('combined')}</SelectItem>
+                                <SelectItem value="nursery">{t('nursery')}</SelectItem>
+                                <SelectItem value="kindergarten">{t('kindergarten')}</SelectItem>
+                                <SelectItem value="elementary">{t('elementary')}</SelectItem>
+                                <SelectItem value="middle">{t('middle')}</SelectItem>
+                                <SelectItem value="high">{t('high')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            {/* School Selection */}
+                            <Popover open={openSchoolCombobox} onOpenChange={setOpenSchoolCombobox}>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" role="combobox" className="w-full justify-between bg-background hover:bg-accent">
+                                  {filters.selectedSchool
+                                    ? allSchools.find((s) => s.id === filters.selectedSchool)?.name || t('selectSchool')
+                                    : t('selectSchool')}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[400px] p-0 z-[100]">
+                                <Command>
+                                  <CommandInput placeholder={t('searchSchool')} />
+                                  <CommandList>
+                                    <CommandEmpty>{t('noSchoolFound')}</CommandEmpty>
+                                    <CommandGroup>
                                       <CommandItem
-                                        key={index}
-                                        value={uniName || ''}
                                         onSelect={() => {
-                                          setFilters({ ...filters, selectedUniversity: uniName || '' });
+                                          setFilters({ ...filters, selectedSchool: '' });
+                                          setOpenSchoolCombobox(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", !filters.selectedSchool ? "opacity-100" : "opacity-0")} />
+                                        {t('none')}
+                                      </CommandItem>
+                                      {allSchools.map((school) => (
+                                        <CommandItem
+                                          key={school.id}
+                                          value={`${school.name} ${school.district || ''}`}
+                                          onSelect={() => {
+                                            setFilters({ ...filters, selectedSchool: school.id || '' });
+                                            setOpenSchoolCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.selectedSchool === school.id ? "opacity-100" : "opacity-0")} />
+                                          {school.name} {school.district ? `- ${school.district}` : ''}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">{t('universities')}</Label>
+                            
+                            {/* University Selection with Search */}
+                            <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" role="combobox" className="w-full justify-between bg-background hover:bg-accent">
+                                  {filters.selectedUniversity || t('selectUniversity')}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[400px] p-0 z-[100]">
+                                <Command>
+                                  <CommandInput placeholder={t('searchUniversity')} />
+                                  <CommandList>
+                                    <CommandEmpty>{t('noUniversityFound')}</CommandEmpty>
+                                    <CommandGroup>
+                                      <CommandItem
+                                        onSelect={() => {
+                                          setFilters({ ...filters, selectedUniversity: '' });
                                           setOpenUniversityCombobox(false);
                                         }}
                                       >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.selectedUniversity === uniName ? "opacity-100" : "opacity-0")} />
-                                        {uniName}
+                                        <Check className={cn("mr-2 h-4 w-4", !filters.selectedUniversity ? "opacity-100" : "opacity-0")} />
+                                        {t('none')}
                                       </CommandItem>
-                                    );
-                                  })}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                                      {allUniversities.map((uni, index) => {
+                                        const uniName = i18n.language === 'ar' ? uni.name_ar : uni.name_en;
+                                        return (
+                                          <CommandItem
+                                            key={index}
+                                            value={uniName || ''}
+                                            onSelect={() => {
+                                              setFilters({ ...filters, selectedUniversity: uniName || '' });
+                                              setOpenUniversityCombobox(false);
+                                            }}
+                                          >
+                                            <Check className={cn("mr-2 h-4 w-4", filters.selectedUniversity === uniName ? "opacity-100" : "opacity-0")} />
+                                            {uniName}
+                                          </CommandItem>
+                                        );
+                                      })}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Proximity Filters */}
-                      <div className="space-y-3">
-                        <Label>{t('proximityFilters')}</Label>
+                      {/* Proximity Filters Section */}
+                      <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
+                        <h3 className="font-semibold text-sm flex items-center gap-2 text-primary">
+                          <MapPin className="h-4 w-4" />
+                          {t('proximityFilters')}
+                        </h3>
                         <div className="space-y-3">
                           <div className="flex items-center space-x-2">
                             <Checkbox

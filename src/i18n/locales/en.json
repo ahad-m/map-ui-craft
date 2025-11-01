@@ -103,5 +103,9 @@
   "kindergarten": "Kindergarten",
   "elementary": "Elementary",
   "middle": "Middle",
-  "high": "High"
+  "high": "High",
+  "propertyDetails": "Property Details",
+  "priceAndArea": "Price & Area",
+  "rooms": "Rooms",
+  "education": "Education"
 }
