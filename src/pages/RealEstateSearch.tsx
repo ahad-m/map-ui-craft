@@ -21,16 +21,6 @@ import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 import { PropertyDetailsDialog } from '@/components/PropertyDetailsDialog';
 import { useFavorites } from '@/hooks/useFavorites';
 
-const NEIGHBORHOODS = [
-  'أبرق الرغامة', 'أم الحمام الشرقي', 'أم الحمام الغربي', 'أم سليم', 'احد', 'اشبيلية',
-  'الازدهار', 'الاندلس', 'البادية', 'البديع الغربي', 'البديعة', 'البرية', 'البيان',
-  'التعاون', 'الجرادية', 'الجزيرة', 'الجنادرية', 'الحائر', 'الحزم', 'الحمراء',
-  'الخالدية', 'الخليج', 'الدار البيضاء', 'الدريهمية', 'الديرة', 'الرائد', 'الراية',
-  'الربوة', 'الربيع', 'الرحمانية', 'الرفيعة', 'الرمال', 'الرماية', 'الروابي',
-  'الروضة', 'الريان', 'الزاهر', 'الزهراء', 'الزهرة', 'السامر', 'السحاب', 'السد',
-  'السعادة', 'السلام', 'السلي', 'السليمانية', 'السويدي', 'السويدي الغربي',
-  'الشرفية', 'الشعلة'
-];
 
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
@@ -81,6 +71,24 @@ const RealEstateSearch = () => {
     minMetroTime: 5,
     nearHospitals: false,
     nearMosques: false,
+  });
+
+  // Fetch unique neighborhoods from Supabase
+  const { data: neighborhoods = [] } = useQuery({
+    queryKey: ['neighborhoods'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('district')
+        .not('district', 'is', null)
+        .order('district');
+      
+      if (error) throw error;
+      
+      // Get unique neighborhoods and filter out empty strings
+      const uniqueNeighborhoods = [...new Set(data.map(p => p.district))].filter(n => n && n.trim() !== '');
+      return uniqueNeighborhoods.sort();
+    },
   });
 
   // Fetch properties from Supabase
@@ -492,7 +500,7 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.neighborhood ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
-                                      {NEIGHBORHOODS.map((neighborhood) => (
+                                      {neighborhoods.map((neighborhood) => (
                                         <CommandItem
                                           key={neighborhood}
                                           value={neighborhood}
