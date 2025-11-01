@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus } from 'lucide-react';
+import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,18 @@ const MapScreen = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [mapCenter, setMapCenter] = useState({ lat: 24.7136, lng: 46.6753 });
   const [mapZoom, setMapZoom] = useState(12);
+  const [showExploreSheet, setShowExploreSheet] = useState(false);
+
+  const exploreCategories = [
+    { icon: UtensilsCrossed, label: t('restaurants'), nameAr: 'مطاعم' },
+    { icon: Coffee, label: 'Cafes', nameAr: 'مقاهي' },
+    { icon: ShoppingCart, label: 'Supermarkets', nameAr: 'سوبر ماركت' },
+    { icon: Hospital, label: 'Hospitals', nameAr: 'مستشفيات' },
+    { icon: GraduationCap, label: 'Schools', nameAr: 'مدارس' },
+    { icon: Fuel, label: 'Gas Stations', nameAr: 'محطات وقود' },
+    { icon: Building2, label: 'Hotels', nameAr: 'فنادق' },
+    { icon: ShoppingBag, label: t('shopping'), nameAr: 'تسوق' },
+  ];
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
@@ -66,7 +78,8 @@ const MapScreen = () => {
     if (category === t('home')) {
       navigate('/search');
     } else {
-      toast.info(`${t('filtering') || 'Filtering'}: ${category}`);
+      setShowExploreSheet(false);
+      toast.success(`${t('searching') || 'Searching'}: ${category}`);
     }
   };
 
@@ -227,16 +240,37 @@ const MapScreen = () => {
         {/* Bottom Navigation */}
         <div className="absolute bottom-0 left-0 right-0 z-10 bg-background border-t">
           <div className="flex items-center justify-around p-2 pb-safe">
-            <Button
-              variant="ghost"
-              className="flex flex-col items-center gap-1 h-auto py-2 px-4"
-              onClick={() => {
-                toast.info(t('exploreMode') || 'Explore mode');
-              }}
-            >
-              <Search className="h-5 w-5" />
-              <span className="text-xs">{t('explore')}</span>
-            </Button>
+            <Sheet open={showExploreSheet} onOpenChange={setShowExploreSheet}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex flex-col items-center gap-1 h-auto py-2 px-4"
+                >
+                  <Search className="h-5 w-5" />
+                  <span className="text-xs">{t('explore')}</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[70vh]">
+                <SheetHeader>
+                  <SheetTitle>{t('exploreNearby') || 'Explore nearby'}</SheetTitle>
+                </SheetHeader>
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  {exploreCategories.map((category) => (
+                    <Button
+                      key={category.label}
+                      variant="outline"
+                      className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-primary/10"
+                      onClick={() => handleCategoryClick(category.label)}
+                    >
+                      <category.icon className="h-8 w-8" />
+                      <span className="text-sm font-medium">
+                        {i18n.language === 'ar' ? category.nameAr : category.label}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
 
             <Button
               variant="ghost"
