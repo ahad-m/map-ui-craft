@@ -24,6 +24,8 @@
   "enterCity": "أدخل المدينة",
   "neighborhood": "الحي",
   "selectNeighborhood": "اختر الحي",
+  "searchNeighborhood": "ابحث عن حي...",
+  "noNeighborhoodFound": "لم يتم العثور على حي",
   "priceRange": "نطاق السعر (ريال)",
   "minPrice": "أقل سعر",
   "maxPrice": "أعلى سعر",

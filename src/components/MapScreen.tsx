@@ -66,6 +66,7 @@ const MapScreen = () => {
                   variant="secondary"
                   className="flex-shrink-0 gap-2"
                   size="sm"
+                  onClick={() => cat.label === t('home') ? navigate('/search') : null}
                 >
                   <cat.icon className="h-4 w-4" />
                   {cat.label}

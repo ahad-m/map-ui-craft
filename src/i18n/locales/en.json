@@ -24,6 +24,8 @@
   "enterCity": "Enter city",
   "neighborhood": "Neighborhood",
   "selectNeighborhood": "Select neighborhood",
+  "searchNeighborhood": "Search neighborhood...",
+  "noNeighborhoodFound": "No neighborhood found",
   "priceRange": "Price Range (SAR)",
   "minPrice": "Min Price",
   "maxPrice": "Max Price",
@@ -39,11 +41,11 @@
   "proximityFilters": "Proximity Filters",
   "schools": "Schools",
   "selectSchool": "Select a school",
-  "searchSchool": "Search for a school...",
+  "searchSchool": "Search school...",
   "noSchoolFound": "No school found",
   "universities": "Universities",
   "selectUniversity": "Select a university",
-  "searchUniversity": "Search for a university...",
+  "searchUniversity": "Search university...",
   "noUniversityFound": "No university found",
   "none": "None",
   "nearMetro": "Near Metro Station",
@@ -79,4 +81,3 @@
   "oops": "Oops! Page not found",
   "returnToHome": "Return to Home"
 }
-
