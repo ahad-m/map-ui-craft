@@ -316,29 +316,46 @@ const RealEstateSearch = () => {
               );
             })}
 
-            {/* Selected School Marker */}
-            {selectedSchoolData && (
-              <AdvancedMarker
-                key={`school-${selectedSchoolData.id}`}
-                position={{ lat: selectedSchoolData.lat, lng: selectedSchoolData.lon }}
-              >
-                <div className="bg-blue-500 p-2 rounded-full shadow-lg">
-                  <School className="h-5 w-5 text-white" />
-                </div>
-              </AdvancedMarker>
-            )}
+            {/* All Schools Markers */}
+            {allSchools.map((school) => {
+              const isSelected = school.id === filters.selectedSchool;
+              return (
+                <AdvancedMarker
+                  key={`school-${school.id}`}
+                  position={{ lat: school.lat, lng: school.lon }}
+                  onClick={() => {
+                    setFilters({ ...filters, selectedSchool: school.id });
+                    setMapCenter({ lat: school.lat, lng: school.lon });
+                    setMapZoom(15);
+                  }}
+                >
+                  <div className={`${isSelected ? 'bg-blue-600 scale-125' : 'bg-blue-500'} p-2 rounded-full shadow-lg transition-all hover:scale-110 cursor-pointer`}>
+                    <School className="h-4 w-4 text-white" />
+                  </div>
+                </AdvancedMarker>
+              );
+            })}
 
-            {/* Selected University Marker */}
-            {selectedUniversityData && (
-              <AdvancedMarker
-                key={`university-${selectedUniversityData.name_ar}`}
-                position={{ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon }}
-              >
-                <div className="bg-purple-500 p-2 rounded-full shadow-lg">
-                  <GraduationCap className="h-5 w-5 text-white" />
-                </div>
-              </AdvancedMarker>
-            )}
+            {/* All Universities Markers */}
+            {allUniversities.map((university, index) => {
+              const uniName = i18n.language === 'ar' ? university.name_ar : university.name_en;
+              const isSelected = uniName === filters.selectedUniversity;
+              return (
+                <AdvancedMarker
+                  key={`university-${university.name_ar || index}`}
+                  position={{ lat: university.lat, lng: university.lon }}
+                  onClick={() => {
+                    setFilters({ ...filters, selectedUniversity: uniName });
+                    setMapCenter({ lat: university.lat, lng: university.lon });
+                    setMapZoom(15);
+                  }}
+                >
+                  <div className={`${isSelected ? 'bg-purple-600 scale-125' : 'bg-purple-500'} p-2 rounded-full shadow-lg transition-all hover:scale-110 cursor-pointer`}>
+                    <GraduationCap className="h-4 w-4 text-white" />
+                  </div>
+                </AdvancedMarker>
+              );
+            })}
           </Map>
         </div>
 
