@@ -77,18 +77,20 @@ const RealEstateSearch = () => {
   const { data: neighborhoods = [] } = useQuery({
     queryKey: ['neighborhoods'],
     queryFn: async () => {
-      // Fetch all districts with a high limit to get all neighborhoods
+      // Fetch all districts - removed limit to get everything
       const { data, error } = await supabase
         .from('properties')
         .select('district')
         .not('district', 'is', null)
-        .limit(100000);
+        .not('district', 'eq', '');
       
       if (error) throw error;
       
-      // Get unique neighborhoods and filter out empty strings
-      const uniqueNeighborhoods = [...new Set(data?.map(p => p.district) || [])].filter(n => n && n.trim() !== '');
-      return uniqueNeighborhoods.sort();
+      // Get unique neighborhoods, filter out empty/null values, and sort
+      const uniqueNeighborhoods = [...new Set(
+        data?.map(p => p.district?.trim()).filter(n => n && n !== '') || []
+      )];
+      return uniqueNeighborhoods.sort((a, b) => a.localeCompare(b, 'ar'));
     },
   });
 
