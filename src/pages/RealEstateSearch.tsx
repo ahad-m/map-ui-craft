@@ -462,10 +462,13 @@ const RealEstateSearch = () => {
                             <SelectValue placeholder={t('selectPropertyType')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="apartment">{t('apartment')}</SelectItem>
-                            <SelectItem value="villa">{t('villa')}</SelectItem>
-                            <SelectItem value="land">{t('land')}</SelectItem>
-                            <SelectItem value="commercial">{t('commercial')}</SelectItem>
+                            <SelectItem value="استوديو">{t('studio')}</SelectItem>
+                            <SelectItem value="شقق">{t('apartments')}</SelectItem>
+                            <SelectItem value="فلل">{t('villas')}</SelectItem>
+                            <SelectItem value="تاون هاوس">{t('townhouse')}</SelectItem>
+                            <SelectItem value="دوبلكس">{t('duplex')}</SelectItem>
+                            <SelectItem value="دور">{t('floor')}</SelectItem>
+                            <SelectItem value="عمائر">{t('buildings')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
