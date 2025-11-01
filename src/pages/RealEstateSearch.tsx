@@ -142,7 +142,8 @@ const RealEstateSearch = () => {
         .not('name', 'is', null);
       
       if (filters.schoolGender) {
-        query = query.eq('gender', filters.schoolGender === 'Boys' ? 'بنين' : 'بنات');
+        const genderValue = filters.schoolGender === 'Boys' ? 'boys' : filters.schoolGender === 'Girls' ? 'girls' : 'both';
+        query = query.eq('gender', genderValue);
       }
       if (filters.schoolLevel) {
         query = query.contains('levels_pg_array', `{${filters.schoolLevel}}`);
@@ -541,9 +542,9 @@ const RealEstateSearch = () => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">{t('all')}</SelectItem>
-                              <SelectItem value="ابتدائي">{t('elementary')}</SelectItem>
-                              <SelectItem value="متوسط">{t('middle')}</SelectItem>
-                              <SelectItem value="ثانوي">{t('high')}</SelectItem>
+                              <SelectItem value="elementary">{t('elementary')}</SelectItem>
+                              <SelectItem value="middle">{t('middle')}</SelectItem>
+                              <SelectItem value="high">{t('high')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
