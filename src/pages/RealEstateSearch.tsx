@@ -68,7 +68,6 @@ const RealEstateSearch = () => {
     livingRooms: '',
     bathrooms: '',
     schoolGender: '',
-    schoolLevel: '',
     selectedSchool: '',
     selectedUniversity: '',
     nearMetro: false,
@@ -132,7 +131,7 @@ const RealEstateSearch = () => {
 
   // Fetch schools with filters
   const { data: allSchools = [] } = useQuery({
-    queryKey: ['schools', filters.schoolGender, filters.schoolLevel],
+    queryKey: ['schools', filters.schoolGender],
     queryFn: async () => {
       let query = supabase
         .from('schools')
@@ -144,9 +143,6 @@ const RealEstateSearch = () => {
       if (filters.schoolGender) {
         const genderValue = filters.schoolGender === 'Boys' ? 'boys' : filters.schoolGender === 'Girls' ? 'girls' : 'both';
         query = query.eq('gender', genderValue);
-      }
-      if (filters.schoolLevel) {
-        query = query.contains('levels_pg_array', `{${filters.schoolLevel}}`);
       }
       
       const { data, error } = await query.order('name', { ascending: true });
@@ -212,7 +208,6 @@ const RealEstateSearch = () => {
       livingRooms: '',
       bathrooms: '',
       schoolGender: '',
-      schoolLevel: '',
       selectedSchool: '',
       selectedUniversity: '',
       nearMetro: false,
@@ -521,33 +516,17 @@ const RealEstateSearch = () => {
                       <div className="space-y-2">
                         <Label>{t('schools')}</Label>
                         
-                        {/* Optional Filters First */}
-                        <div className="grid grid-cols-2 gap-2">
-                          {/* School Gender Filter */}
-                          <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value === 'all' ? '' : value })}>
-                            <SelectTrigger>
-                              <SelectValue placeholder={t('gender')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">{t('all')}</SelectItem>
-                              <SelectItem value="Boys">{t('boys')}</SelectItem>
-                              <SelectItem value="Girls">{t('girls')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-
-                          {/* School Level Filter */}
-                          <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all' ? '' : value })}>
-                            <SelectTrigger>
-                              <SelectValue placeholder={t('level')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">{t('all')}</SelectItem>
-                              <SelectItem value="elementary">{t('elementary')}</SelectItem>
-                              <SelectItem value="middle">{t('middle')}</SelectItem>
-                              <SelectItem value="high">{t('high')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        {/* School Gender Filter */}
+                        <Select value={filters.schoolGender} onValueChange={(value) => setFilters({ ...filters, schoolGender: value === 'all' ? '' : value })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('gender')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">{t('all')}</SelectItem>
+                            <SelectItem value="Boys">{t('boys')}</SelectItem>
+                            <SelectItem value="Girls">{t('girls')}</SelectItem>
+                          </SelectContent>
+                        </Select>
 
                         {/* School Selection */}
                         <Popover open={openSchoolCombobox} onOpenChange={setOpenSchoolCombobox}>
