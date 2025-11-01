@@ -670,12 +670,11 @@ const RealEstateSearch = () => {
                             </Select>
 
                             {/* School Level Filter */}
-                            <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all_levels' ? '' : value })}>
+                            <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value })}>
                               <SelectTrigger className="bg-background">
                                 <SelectValue placeholder={t('schoolLevel')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="all_levels">{t('allLevels')}</SelectItem>
                                 <SelectItem value="all">{t('combined')}</SelectItem>
                                 <SelectItem value="nursery">{t('nursery')}</SelectItem>
                                 <SelectItem value="kindergarten">{t('kindergarten')}</SelectItem>
