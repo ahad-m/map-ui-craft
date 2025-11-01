@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft } from 'lucide-react';
+import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/integrations/supabase/client';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 
 const RealEstateSearch = () => {
@@ -22,6 +24,7 @@ const RealEstateSearch = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
 
   // Update document direction based on language
   useEffect(() => {
@@ -50,6 +53,66 @@ const RealEstateSearch = () => {
     nearUniversities: false,
     nearHospitals: false,
     nearMosques: false,
+  });
+
+  // Fetch properties from Supabase
+  const { data: properties = [], isLoading } = useQuery({
+    queryKey: ['properties', transactionType, filters, searchQuery],
+    queryFn: async () => {
+      let query = supabase
+        .from('properties')
+        .select('*')
+        .eq('purpose', transactionType === 'sale' ? 'للبيع' : 'للايجار');
+
+      // Apply filters
+      if (filters.propertyType) {
+        query = query.ilike('property_type', `%${filters.propertyType}%`);
+      }
+      if (filters.city) {
+        query = query.ilike('city', `%${filters.city}%`);
+      }
+      if (filters.neighborhood) {
+        query = query.ilike('district', `%${filters.neighborhood}%`);
+      }
+      if (searchQuery) {
+        query = query.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
+      }
+      if (filters.bedrooms) {
+        const bedroomCount = filters.bedrooms === '5+' ? 5 : parseInt(filters.bedrooms);
+        query = filters.bedrooms === '5+' 
+          ? query.gte('rooms', bedroomCount)
+          : query.eq('rooms', bedroomCount);
+      }
+      if (filters.bathrooms) {
+        const bathroomCount = filters.bathrooms === '4+' ? 4 : parseInt(filters.bathrooms);
+        query = filters.bathrooms === '4+' 
+          ? query.gte('baths', bathroomCount)
+          : query.eq('baths', bathroomCount);
+      }
+      if (filters.livingRooms) {
+        const hallCount = filters.livingRooms === '4+' ? 4 : parseInt(filters.livingRooms);
+        query = filters.livingRooms === '4+' 
+          ? query.gte('halls', hallCount)
+          : query.eq('halls', hallCount);
+      }
+
+      // Filter by valid coordinates
+      query = query.not('final_lat', 'is', null).not('final_lon', 'is', null);
+
+      const { data, error } = await query.limit(100);
+      if (error) throw error;
+
+      // Additional client-side filtering for price and area (since they're text fields)
+      return (data || []).filter(property => {
+        const price = parseFloat(property.price_num?.replace(/,/g, '') || '0');
+        const area = parseFloat(property.area_m2?.replace(/,/g, '') || '0');
+        
+        const priceMatch = price >= filters.priceMin && price <= filters.priceMax;
+        const areaMatch = area >= filters.areaMin && area <= filters.areaMax;
+        
+        return priceMatch && areaMatch;
+      });
+    },
   });
 
   if (showApiInput) {
@@ -122,7 +185,29 @@ const RealEstateSearch = () => {
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
-          />
+          >
+            {/* Property Markers */}
+            {properties.map((property) => {
+              const lat = parseFloat(property.final_lat);
+              const lon = parseFloat(property.final_lon);
+              
+              if (isNaN(lat) || isNaN(lon)) return null;
+              
+              return (
+                <AdvancedMarker
+                  key={property.id}
+                  position={{ lat, lng: lon }}
+                  onClick={() => setSelectedProperty(property)}
+                >
+                  <Pin
+                    background={transactionType === 'sale' ? '#16a34a' : '#0ea5e9'}
+                    borderColor={transactionType === 'sale' ? '#15803d' : '#0284c7'}
+                    glyphColor={'#ffffff'}
+                  />
+                </AdvancedMarker>
+              );
+            })}
+          </Map>
         </div>
 
         {/* Top Search Bar */}
@@ -447,6 +532,74 @@ const RealEstateSearch = () => {
             </div>
           </Card>
         </div>
+
+        {/* Property Details Card */}
+        {selectedProperty && (
+          <div className="absolute bottom-24 left-4 right-4 z-10 animate-fade-in">
+            <Card className="p-4 bg-card/98 backdrop-blur-md shadow-elegant border-primary/10">
+              <div className="flex gap-4">
+                {selectedProperty.image_url && (
+                  <img 
+                    src={selectedProperty.image_url} 
+                    alt={selectedProperty.title}
+                    className="w-24 h-24 object-cover rounded-lg"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="font-semibold text-sm line-clamp-2">{selectedProperty.title}</h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 flex-shrink-0"
+                      onClick={() => setSelectedProperty(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {selectedProperty.district}, {selectedProperty.city}
+                  </p>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                    {selectedProperty.rooms && (
+                      <span className="flex items-center gap-1">
+                        <Bed className="h-3 w-3" />
+                        {selectedProperty.rooms}
+                      </span>
+                    )}
+                    {selectedProperty.baths && (
+                      <span className="flex items-center gap-1">
+                        <Bath className="h-3 w-3" />
+                        {selectedProperty.baths}
+                      </span>
+                    )}
+                    {selectedProperty.area_m2 && (
+                      <span className="flex items-center gap-1">
+                        <Maximize className="h-3 w-3" />
+                        {selectedProperty.area_m2} m²
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-primary font-bold text-lg">
+                    {selectedProperty.price_num} {selectedProperty.price_currency}
+                    {selectedProperty.price_period && ` / ${selectedProperty.price_period}`}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Results Count */}
+        {!selectedProperty && (
+          <div className="absolute bottom-24 left-4 right-4 z-10">
+            <Card className="p-3 bg-card/95 backdrop-blur-sm shadow-elegant border-primary/10">
+              <p className="text-sm font-medium text-center">
+                {isLoading ? t('loading') : `${properties.length} ${t('propertiesFound')}`}
+              </p>
+            </Card>
+          </div>
+        )}
 
         {/* AI Chatbot Button */}
         <Button
