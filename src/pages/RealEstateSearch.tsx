@@ -603,18 +603,18 @@ const RealEstateSearch = () => {
                       <div className="space-y-2">
                         <Label>{t('schools')}</Label>
                         <Select
-                          value={filters.selectedSchool}
+                          value={filters.selectedSchool || 'none'}
                           onValueChange={(value) =>
-                            setFilters({ ...filters, selectedSchool: value })
+                            setFilters({ ...filters, selectedSchool: value === 'none' ? '' : value })
                           }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder={t('selectSchool')} />
                           </SelectTrigger>
                           <SelectContent className="max-h-[300px]">
-                            <SelectItem value="">{t('none')}</SelectItem>
+                            <SelectItem value="none">{t('none')}</SelectItem>
                             {allSchools.map((school) => (
-                              <SelectItem key={school.id} value={school.id || ''}>
+                              <SelectItem key={school.id} value={school.id || `school-${school.name}`}>
                                 {school.name} {school.district ? `- ${school.district}` : ''}
                               </SelectItem>
                             ))}
@@ -626,20 +626,20 @@ const RealEstateSearch = () => {
                       <div className="space-y-2">
                         <Label>{t('universities')}</Label>
                         <Select
-                          value={filters.selectedUniversity}
+                          value={filters.selectedUniversity || 'none'}
                           onValueChange={(value) =>
-                            setFilters({ ...filters, selectedUniversity: value })
+                            setFilters({ ...filters, selectedUniversity: value === 'none' ? '' : value })
                           }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder={t('selectUniversity')} />
                           </SelectTrigger>
                           <SelectContent className="max-h-[300px]">
-                            <SelectItem value="">{t('none')}</SelectItem>
+                            <SelectItem value="none">{t('none')}</SelectItem>
                             {allUniversities.map((uni, index) => (
                               <SelectItem 
                                 key={index} 
-                                value={i18n.language === 'ar' ? uni.name_ar || '' : uni.name_en || ''}
+                                value={i18n.language === 'ar' ? uni.name_ar || `uni-${index}` : uni.name_en || `uni-${index}`}
                               >
                                 {i18n.language === 'ar' ? uni.name_ar : uni.name_en}
                               </SelectItem>
