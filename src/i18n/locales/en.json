@@ -23,7 +23,7 @@
   "city": "City",
   "enterCity": "Enter city",
   "neighborhood": "Neighborhood",
-  "enterNeighborhood": "Enter neighborhood",
+  "selectNeighborhood": "Select neighborhood",
   "priceRange": "Price Range (SAR)",
   "minPrice": "Min Price",
   "maxPrice": "Max Price",

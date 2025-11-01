@@ -41,7 +41,7 @@ const RealEstateSearch = () => {
   // Filter states
   const [filters, setFilters] = useState({
     propertyType: '',
-    city: '',
+    city: 'الرياض', // All properties are in Riyadh
     neighborhood: '',
     priceMin: 0,
     priceMax: 10000000,
@@ -473,28 +473,73 @@ const RealEstateSearch = () => {
                         </Select>
                       </div>
 
-                      {/* City */}
-                      <div className="space-y-2">
-                        <Label>{t('city')}</Label>
-                        <Input
-                          placeholder={t('enterCity')}
-                          value={filters.city}
-                          onChange={(e) =>
-                            setFilters({ ...filters, city: e.target.value })
-                          }
-                        />
-                      </div>
-
+                      {/* City - Hidden since all properties are in Riyadh */}
+                      
                       {/* Neighborhood */}
                       <div className="space-y-2">
                         <Label>{t('neighborhood')}</Label>
-                        <Input
-                          placeholder={t('enterNeighborhood')}
+                        <Select
                           value={filters.neighborhood}
-                          onChange={(e) =>
-                            setFilters({ ...filters, neighborhood: e.target.value })
+                          onValueChange={(value) =>
+                            setFilters({ ...filters, neighborhood: value })
                           }
-                        />
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('selectNeighborhood')} />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            <SelectItem value="أبرق الرغامة">أبرق الرغامة</SelectItem>
+                            <SelectItem value="أم الحمام الشرقي">أم الحمام الشرقي</SelectItem>
+                            <SelectItem value="أم الحمام الغربي">أم الحمام الغربي</SelectItem>
+                            <SelectItem value="أم سليم">أم سليم</SelectItem>
+                            <SelectItem value="احد">احد</SelectItem>
+                            <SelectItem value="اشبيلية">اشبيلية</SelectItem>
+                            <SelectItem value="الازدهار">الازدهار</SelectItem>
+                            <SelectItem value="الاندلس">الاندلس</SelectItem>
+                            <SelectItem value="البادية">البادية</SelectItem>
+                            <SelectItem value="البديع الغربي">البديع الغربي</SelectItem>
+                            <SelectItem value="البديعة">البديعة</SelectItem>
+                            <SelectItem value="البرية">البرية</SelectItem>
+                            <SelectItem value="البيان">البيان</SelectItem>
+                            <SelectItem value="التعاون">التعاون</SelectItem>
+                            <SelectItem value="الجرادية">الجرادية</SelectItem>
+                            <SelectItem value="الجزيرة">الجزيرة</SelectItem>
+                            <SelectItem value="الجنادرية">الجنادرية</SelectItem>
+                            <SelectItem value="الحائر">الحائر</SelectItem>
+                            <SelectItem value="الحزم">الحزم</SelectItem>
+                            <SelectItem value="الحمراء">الحمراء</SelectItem>
+                            <SelectItem value="الخالدية">الخالدية</SelectItem>
+                            <SelectItem value="الخليج">الخليج</SelectItem>
+                            <SelectItem value="الدار البيضاء">الدار البيضاء</SelectItem>
+                            <SelectItem value="الدريهمية">الدريهمية</SelectItem>
+                            <SelectItem value="الديرة">الديرة</SelectItem>
+                            <SelectItem value="الرائد">الرائد</SelectItem>
+                            <SelectItem value="الراية">الراية</SelectItem>
+                            <SelectItem value="الربوة">الربوة</SelectItem>
+                            <SelectItem value="الربيع">الربيع</SelectItem>
+                            <SelectItem value="الرحمانية">الرحمانية</SelectItem>
+                            <SelectItem value="الرفيعة">الرفيعة</SelectItem>
+                            <SelectItem value="الرمال">الرمال</SelectItem>
+                            <SelectItem value="الرماية">الرماية</SelectItem>
+                            <SelectItem value="الروابي">الروابي</SelectItem>
+                            <SelectItem value="الروضة">الروضة</SelectItem>
+                            <SelectItem value="الريان">الريان</SelectItem>
+                            <SelectItem value="الزاهر">الزاهر</SelectItem>
+                            <SelectItem value="الزهراء">الزهراء</SelectItem>
+                            <SelectItem value="الزهرة">الزهرة</SelectItem>
+                            <SelectItem value="السامر">السامر</SelectItem>
+                            <SelectItem value="السحاب">السحاب</SelectItem>
+                            <SelectItem value="السد">السد</SelectItem>
+                            <SelectItem value="السعادة">السعادة</SelectItem>
+                            <SelectItem value="السلام">السلام</SelectItem>
+                            <SelectItem value="السلي">السلي</SelectItem>
+                            <SelectItem value="السليمانية">السليمانية</SelectItem>
+                            <SelectItem value="السويدي">السويدي</SelectItem>
+                            <SelectItem value="السويدي الغربي">السويدي الغربي</SelectItem>
+                            <SelectItem value="الشرفية">الشرفية</SelectItem>
+                            <SelectItem value="الشعلة">الشعلة</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* Price Range */}

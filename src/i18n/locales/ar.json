@@ -23,7 +23,7 @@
   "city": "المدينة",
   "enterCity": "أدخل المدينة",
   "neighborhood": "الحي",
-  "enterNeighborhood": "أدخل الحي",
+  "selectNeighborhood": "اختر الحي",
   "priceRange": "نطاق السعر (ريال)",
   "minPrice": "أقل سعر",
   "maxPrice": "أعلى سعر",
