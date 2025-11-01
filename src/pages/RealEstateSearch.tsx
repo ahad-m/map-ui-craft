@@ -508,7 +508,7 @@ const RealEstateSearch = () => {
                       {/* Bedrooms */}
                       <div className="space-y-2">
                         <Label>{t('bedrooms')}</Label>
-                        <Select value={filters.bedrooms} onValueChange={(value) => setFilters({ ...filters, bedrooms: value })}>
+                        <Select value={filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5+'].includes(filters.bedrooms)) ? 'other' : filters.bedrooms} onValueChange={(value) => setFilters({ ...filters, bedrooms: value })}>
                           <SelectTrigger>
                             <SelectValue placeholder={t('selectBedrooms')} />
                           </SelectTrigger>
@@ -518,14 +518,24 @@ const RealEstateSearch = () => {
                             <SelectItem value="3">3</SelectItem>
                             <SelectItem value="4">4</SelectItem>
                             <SelectItem value="5+">5+</SelectItem>
+                            <SelectItem value="other">{t('other')}</SelectItem>
                           </SelectContent>
                         </Select>
+                        {(filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5+', ''].includes(filters.bedrooms))) && (
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder={t('customValue')}
+                            value={filters.bedrooms === 'other' ? '' : filters.bedrooms}
+                            onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
+                          />
+                        )}
                       </div>
 
                       {/* Living Rooms */}
                       <div className="space-y-2">
                         <Label>{t('livingRooms')}</Label>
-                        <Select value={filters.livingRooms} onValueChange={(value) => setFilters({ ...filters, livingRooms: value })}>
+                        <Select value={filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4+'].includes(filters.livingRooms)) ? 'other' : filters.livingRooms} onValueChange={(value) => setFilters({ ...filters, livingRooms: value })}>
                           <SelectTrigger>
                             <SelectValue placeholder={t('selectLivingRooms')} />
                           </SelectTrigger>
@@ -534,14 +544,24 @@ const RealEstateSearch = () => {
                             <SelectItem value="2">2</SelectItem>
                             <SelectItem value="3">3</SelectItem>
                             <SelectItem value="4+">4+</SelectItem>
+                            <SelectItem value="other">{t('other')}</SelectItem>
                           </SelectContent>
                         </Select>
+                        {(filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4+', ''].includes(filters.livingRooms))) && (
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder={t('customValue')}
+                            value={filters.livingRooms === 'other' ? '' : filters.livingRooms}
+                            onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
+                          />
+                        )}
                       </div>
 
                       {/* Bathrooms */}
                       <div className="space-y-2">
                         <Label>{t('bathrooms')}</Label>
-                        <Select value={filters.bathrooms} onValueChange={(value) => setFilters({ ...filters, bathrooms: value })}>
+                        <Select value={filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4+'].includes(filters.bathrooms)) ? 'other' : filters.bathrooms} onValueChange={(value) => setFilters({ ...filters, bathrooms: value })}>
                           <SelectTrigger>
                             <SelectValue placeholder={t('selectBathrooms')} />
                           </SelectTrigger>
@@ -550,8 +570,18 @@ const RealEstateSearch = () => {
                             <SelectItem value="2">2</SelectItem>
                             <SelectItem value="3">3</SelectItem>
                             <SelectItem value="4+">4+</SelectItem>
+                            <SelectItem value="other">{t('other')}</SelectItem>
                           </SelectContent>
                         </Select>
+                        {(filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4+', ''].includes(filters.bathrooms))) && (
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder={t('customValue')}
+                            value={filters.bathrooms === 'other' ? '' : filters.bathrooms}
+                            onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
+                          />
+                        )}
                       </div>
 
                       {/* Schools */}

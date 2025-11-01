@@ -95,5 +95,7 @@
   "favorites": "المفضلة",
   "noFavorites": "لا توجد عقارات مفضلة بعد",
   "addedToFavorites": "تمت الإضافة للمفضلة",
-  "removedFromFavorites": "تمت الإزالة من المفضلة"
+  "removedFromFavorites": "تمت الإزالة من المفضلة",
+  "other": "أخرى",
+  "customValue": "أدخل قيمة مخصصة"
 }

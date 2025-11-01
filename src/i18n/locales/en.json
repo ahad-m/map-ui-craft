@@ -93,5 +93,7 @@
   "favorites": "Favorites",
   "noFavorites": "No favorite properties yet",
   "addedToFavorites": "Added to favorites",
-  "removedFromFavorites": "Removed from favorites"
+  "removedFromFavorites": "Removed from favorites",
+  "other": "Other",
+  "customValue": "Enter custom value"
 }
