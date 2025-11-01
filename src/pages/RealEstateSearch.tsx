@@ -288,8 +288,8 @@ const RealEstateSearch = () => {
         {/* Map Background */}
         <div className="absolute inset-0">
           <Map
-            center={mapCenter}
-            zoom={mapZoom}
+            defaultCenter={mapCenter}
+            defaultZoom={mapZoom}
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
