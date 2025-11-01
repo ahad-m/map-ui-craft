@@ -49,8 +49,8 @@ const RealEstateSearch = () => {
     bedrooms: '',
     livingRooms: '',
     bathrooms: '',
-    nearSchools: false,
-    nearUniversities: false,
+    selectedSchool: '',
+    selectedUniversity: '',
     nearMetro: false,
     maxMetroTime: 15, // Maximum walking time to metro in minutes
     nearHospitals: false,
@@ -202,43 +202,45 @@ const RealEstateSearch = () => {
     },
   });
 
-  // Fetch schools from Supabase
-  const { data: schools = [] } = useQuery({
-    queryKey: ['schools', filters.nearSchools],
+  // Fetch all schools from Supabase
+  const { data: allSchools = [] } = useQuery({
+    queryKey: ['schools'],
     queryFn: async () => {
-      if (!filters.nearSchools) return [];
-      
       const { data, error } = await supabase
         .from('schools')
         .select('*')
         .not('lat', 'is', null)
         .not('lon', 'is', null)
-        .limit(100);
+        .order('name', { ascending: true });
       
       if (error) throw error;
       return data || [];
     },
-    enabled: filters.nearSchools,
   });
 
-  // Fetch universities from Supabase
-  const { data: universities = [] } = useQuery({
-    queryKey: ['universities', filters.nearUniversities],
+  // Get selected school
+  const selectedSchoolData = allSchools.find(school => school.id === filters.selectedSchool);
+
+  // Fetch all universities from Supabase
+  const { data: allUniversities = [] } = useQuery({
+    queryKey: ['universities'],
     queryFn: async () => {
-      if (!filters.nearUniversities) return [];
-      
       const { data, error } = await supabase
         .from('universities')
         .select('*')
         .not('lat', 'is', null)
         .not('lon', 'is', null)
-        .limit(100);
+        .order('name_ar', { ascending: true });
       
       if (error) throw error;
       return data || [];
     },
-    enabled: filters.nearUniversities,
   });
+
+  // Get selected university
+  const selectedUniversityData = allUniversities.find(uni => 
+    (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity
+  );
 
 
   return (
@@ -275,43 +277,29 @@ const RealEstateSearch = () => {
               );
             })}
 
-            {/* School Markers */}
-            {schools.map((school) => {
-              const lat = school.lat;
-              const lon = school.lon;
-              
-              if (!lat || !lon) return null;
-              
-              return (
-                <AdvancedMarker
-                  key={`school-${school.id}`}
-                  position={{ lat, lng: lon }}
-                >
-                  <div className="bg-blue-500 p-2 rounded-full shadow-lg">
-                    <School className="h-5 w-5 text-white" />
-                  </div>
-                </AdvancedMarker>
-              );
-            })}
+            {/* Selected School Marker */}
+            {selectedSchoolData && (
+              <AdvancedMarker
+                key={`school-${selectedSchoolData.id}`}
+                position={{ lat: selectedSchoolData.lat, lng: selectedSchoolData.lon }}
+              >
+                <div className="bg-blue-500 p-2 rounded-full shadow-lg">
+                  <School className="h-5 w-5 text-white" />
+                </div>
+              </AdvancedMarker>
+            )}
 
-            {/* University Markers */}
-            {universities.map((university, index) => {
-              const lat = university.lat;
-              const lon = university.lon;
-              
-              if (!lat || !lon) return null;
-              
-              return (
-                <AdvancedMarker
-                  key={`university-${index}`}
-                  position={{ lat, lng: lon }}
-                >
-                  <div className="bg-purple-500 p-2 rounded-full shadow-lg">
-                    <GraduationCap className="h-5 w-5 text-white" />
-                  </div>
-                </AdvancedMarker>
-              );
-            })}
+            {/* Selected University Marker */}
+            {selectedUniversityData && (
+              <AdvancedMarker
+                key={`university-${selectedUniversityData.name_ar}`}
+                position={{ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon }}
+              >
+                <div className="bg-purple-500 p-2 rounded-full shadow-lg">
+                  <GraduationCap className="h-5 w-5 text-white" />
+                </div>
+              </AdvancedMarker>
+            )}
           </Map>
         </div>
 
@@ -611,34 +599,59 @@ const RealEstateSearch = () => {
                         </Select>
                       </div>
 
+                      {/* Schools */}
+                      <div className="space-y-2">
+                        <Label>{t('schools')}</Label>
+                        <Select
+                          value={filters.selectedSchool}
+                          onValueChange={(value) =>
+                            setFilters({ ...filters, selectedSchool: value })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('selectSchool')} />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            <SelectItem value="">{t('none')}</SelectItem>
+                            {allSchools.map((school) => (
+                              <SelectItem key={school.id} value={school.id || ''}>
+                                {school.name} {school.district ? `- ${school.district}` : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Universities */}
+                      <div className="space-y-2">
+                        <Label>{t('universities')}</Label>
+                        <Select
+                          value={filters.selectedUniversity}
+                          onValueChange={(value) =>
+                            setFilters({ ...filters, selectedUniversity: value })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('selectUniversity')} />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            <SelectItem value="">{t('none')}</SelectItem>
+                            {allUniversities.map((uni, index) => (
+                              <SelectItem 
+                                key={index} 
+                                value={i18n.language === 'ar' ? uni.name_ar || '' : uni.name_en || ''}
+                              >
+                                {i18n.language === 'ar' ? uni.name_ar : uni.name_en}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       {/* Proximity Filters */}
                       <div className="space-y-3">
                         <Label>{t('proximityFilters')}</Label>
                         <div className="space-y-3">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id="schools"
-                              checked={filters.nearSchools}
-                              onCheckedChange={(checked) =>
-                                setFilters({ ...filters, nearSchools: checked as boolean })
-                              }
-                            />
-                            <label htmlFor="schools" className="text-sm cursor-pointer">
-                              {t('nearSchools')}
-                            </label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id="universities"
-                              checked={filters.nearUniversities}
-                              onCheckedChange={(checked) =>
-                                setFilters({ ...filters, nearUniversities: checked as boolean })
-                              }
-                            />
-                            <label htmlFor="universities" className="text-sm cursor-pointer">
-                              {t('nearUniversities')}
-                            </label>
-                          </div>
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               id="metro"
@@ -710,8 +723,8 @@ const RealEstateSearch = () => {
                               bedrooms: '',
                               livingRooms: '',
                               bathrooms: '',
-                              nearSchools: false,
-                              nearUniversities: false,
+                              selectedSchool: '',
+                              selectedUniversity: '',
                               nearMetro: false,
                               maxMetroTime: 15,
                               nearHospitals: false,
