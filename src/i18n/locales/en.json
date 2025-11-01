@@ -107,5 +107,6 @@
   "propertyDetails": "Property Details",
   "priceAndArea": "Price & Area",
   "rooms": "Rooms",
-  "education": "Education"
+  "education": "Education",
+  "maxMetroDistance": "Maximum Distance from Metro"
 }

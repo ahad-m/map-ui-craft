@@ -104,16 +104,37 @@ const RealEstateSearch = () => {
         query = query.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
       }
       if (filters.bedrooms) {
-        const count = filters.bedrooms === '5+' ? 5 : parseInt(filters.bedrooms);
-        query = filters.bedrooms === '5+' ? query.gte('rooms', count) : query.eq('rooms', count);
+        const bedroomsValue = filters.bedrooms;
+        if (bedroomsValue === '5+') {
+          query = query.gte('rooms', 5);
+        } else if (bedroomsValue !== 'other') {
+          const count = parseInt(bedroomsValue);
+          if (!isNaN(count)) {
+            query = query.eq('rooms', count);
+          }
+        }
       }
       if (filters.bathrooms) {
-        const count = filters.bathrooms === '4+' ? 4 : parseInt(filters.bathrooms);
-        query = filters.bathrooms === '4+' ? query.gte('baths', count) : query.eq('baths', count);
+        const bathroomsValue = filters.bathrooms;
+        if (bathroomsValue === '4+') {
+          query = query.gte('baths', 4);
+        } else if (bathroomsValue !== 'other') {
+          const count = parseInt(bathroomsValue);
+          if (!isNaN(count)) {
+            query = query.eq('baths', count);
+          }
+        }
       }
       if (filters.livingRooms) {
-        const count = filters.livingRooms === '4+' ? 4 : parseInt(filters.livingRooms);
-        query = filters.livingRooms === '4+' ? query.gte('halls', count) : query.eq('halls', count);
+        const livingRoomsValue = filters.livingRooms;
+        if (livingRoomsValue === '4+') {
+          query = query.gte('halls', 4);
+        } else if (livingRoomsValue !== 'other') {
+          const count = parseInt(livingRoomsValue);
+          if (!isNaN(count)) {
+            query = query.eq('halls', count);
+          }
+        }
       }
 
       const { data, error } = await query.limit(100);
@@ -122,13 +143,13 @@ const RealEstateSearch = () => {
       return (data || []).filter(property => {
         const price = parseFloat(property.price_num?.replace(/,/g, '') || '0');
         const area = parseFloat(property.area_m2?.replace(/,/g, '') || '0');
-        const priceMatch = price <= filters.maxPrice;
+        const priceMatch = price > 0 && price <= filters.maxPrice;
         const areaMatch = area >= filters.areaMin && area <= filters.areaMax;
         
         let metroMatch = true;
         if (filters.nearMetro && property.time_to_metro_min) {
           const metroTime = parseFloat(property.time_to_metro_min);
-          metroMatch = !isNaN(metroTime) && metroTime >= filters.minMetroTime;
+          metroMatch = !isNaN(metroTime) && metroTime <= filters.minMetroTime;
         }
         
         return priceMatch && areaMatch && metroMatch;
@@ -778,8 +799,10 @@ const RealEstateSearch = () => {
                             </label>
                           </div>
                           {filters.nearMetro && (
-                            <div className="ml-6 space-y-2">
-                              <Label className="text-xs">Minimum Distance: {filters.minMetroTime} {t('minutes')}</Label>
+                            <div className="ml-6 space-y-2 p-3 bg-background/50 rounded-lg">
+                              <Label className="text-xs font-medium">
+                                {t('maxMetroDistance')}: {filters.minMetroTime} {t('minutes')}
+                              </Label>
                               <Slider
                                 value={[filters.minMetroTime]}
                                 onValueChange={(value) => setFilters({ ...filters, minMetroTime: value[0] })}

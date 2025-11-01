@@ -109,5 +109,6 @@
   "propertyDetails": "تفاصيل العقار",
   "priceAndArea": "السعر والمساحة",
   "rooms": "الغرف",
-  "education": "التعليم"
+  "education": "التعليم",
+  "maxMetroDistance": "الحد الأقصى للمسافة من المترو"
 }
