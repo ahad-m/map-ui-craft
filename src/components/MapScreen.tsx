@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
-import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Plus, Languages } from 'lucide-react';
+import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Plus, Languages, Database } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -185,9 +185,10 @@ const MapScreen = () => {
             <Button
               variant="ghost"
               className="flex flex-col items-center gap-1 h-auto py-2 px-4"
+              onClick={() => navigate('/admin/tables')}
             >
-              <Plus className="h-5 w-5" />
-              <span className="text-xs">{t('contribute')}</span>
+              <Database className="h-5 w-5" />
+              <span className="text-xs">Tables</span>
             </Button>
           </div>
         </div>
