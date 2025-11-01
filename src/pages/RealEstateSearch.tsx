@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -12,7 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 
 const RealEstateSearch = () => {
@@ -25,6 +28,8 @@ const RealEstateSearch = () => {
   const [showChatbot, setShowChatbot] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [showingSimilarResults, setShowingSimilarResults] = useState(false);
+  const [openSchoolCombobox, setOpenSchoolCombobox] = useState(false);
+  const [openUniversityCombobox, setOpenUniversityCombobox] = useState(false);
 
   // Update document direction based on language
   useEffect(() => {
@@ -602,50 +607,130 @@ const RealEstateSearch = () => {
                       {/* Schools */}
                       <div className="space-y-2">
                         <Label>{t('schools')}</Label>
-                        <Select
-                          value={filters.selectedSchool || 'none'}
-                          onValueChange={(value) =>
-                            setFilters({ ...filters, selectedSchool: value === 'none' ? '' : value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('selectSchool')} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[300px]">
-                            <SelectItem value="none">{t('none')}</SelectItem>
-                            {allSchools.map((school) => (
-                              <SelectItem key={school.id} value={school.id || `school-${school.name}`}>
-                                {school.name} {school.district ? `- ${school.district}` : ''}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Popover open={openSchoolCombobox} onOpenChange={setOpenSchoolCombobox}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={openSchoolCombobox}
+                              className="w-full justify-between"
+                            >
+                              {filters.selectedSchool && filters.selectedSchool !== 'none'
+                                ? allSchools.find((school) => school.id === filters.selectedSchool)?.name || t('selectSchool')
+                                : t('selectSchool')}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[400px] p-0">
+                            <Command>
+                              <CommandInput placeholder={t('searchSchool')} />
+                              <CommandList>
+                                <CommandEmpty>{t('noSchoolFound')}</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    value="none"
+                                    onSelect={() => {
+                                      setFilters({ ...filters, selectedSchool: '' });
+                                      setOpenSchoolCombobox(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        !filters.selectedSchool ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {t('none')}
+                                  </CommandItem>
+                                  {allSchools.map((school) => (
+                                    <CommandItem
+                                      key={school.id}
+                                      value={`${school.name} ${school.district || ''}`}
+                                      onSelect={() => {
+                                        setFilters({ ...filters, selectedSchool: school.id || '' });
+                                        setOpenSchoolCombobox(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          filters.selectedSchool === school.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {school.name} {school.district ? `- ${school.district}` : ''}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       {/* Universities */}
                       <div className="space-y-2">
                         <Label>{t('universities')}</Label>
-                        <Select
-                          value={filters.selectedUniversity || 'none'}
-                          onValueChange={(value) =>
-                            setFilters({ ...filters, selectedUniversity: value === 'none' ? '' : value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('selectUniversity')} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[300px]">
-                            <SelectItem value="none">{t('none')}</SelectItem>
-                            {allUniversities.map((uni, index) => (
-                              <SelectItem 
-                                key={index} 
-                                value={i18n.language === 'ar' ? uni.name_ar || `uni-${index}` : uni.name_en || `uni-${index}`}
-                              >
-                                {i18n.language === 'ar' ? uni.name_ar : uni.name_en}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={openUniversityCombobox}
+                              className="w-full justify-between"
+                            >
+                              {filters.selectedUniversity
+                                ? filters.selectedUniversity
+                                : t('selectUniversity')}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[400px] p-0">
+                            <Command>
+                              <CommandInput placeholder={t('searchUniversity')} />
+                              <CommandList>
+                                <CommandEmpty>{t('noUniversityFound')}</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    value="none"
+                                    onSelect={() => {
+                                      setFilters({ ...filters, selectedUniversity: '' });
+                                      setOpenUniversityCombobox(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        !filters.selectedUniversity ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {t('none')}
+                                  </CommandItem>
+                                  {allUniversities.map((uni, index) => {
+                                    const uniName = i18n.language === 'ar' ? uni.name_ar : uni.name_en;
+                                    return (
+                                      <CommandItem
+                                        key={index}
+                                        value={uniName || ''}
+                                        onSelect={() => {
+                                          setFilters({ ...filters, selectedUniversity: uniName || '' });
+                                          setOpenUniversityCombobox(false);
+                                        }}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            filters.selectedUniversity === uniName ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        {uniName}
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       {/* Proximity Filters */}
