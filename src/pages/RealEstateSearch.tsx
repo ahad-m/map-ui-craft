@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -115,6 +115,44 @@ const RealEstateSearch = () => {
     },
   });
 
+  // Fetch schools from Supabase
+  const { data: schools = [] } = useQuery({
+    queryKey: ['schools', filters.nearSchools],
+    queryFn: async () => {
+      if (!filters.nearSchools) return [];
+      
+      const { data, error } = await supabase
+        .from('schools')
+        .select('*')
+        .not('lat', 'is', null)
+        .not('lon', 'is', null)
+        .limit(100);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: filters.nearSchools,
+  });
+
+  // Fetch universities from Supabase
+  const { data: universities = [] } = useQuery({
+    queryKey: ['universities', filters.nearUniversities],
+    queryFn: async () => {
+      if (!filters.nearUniversities) return [];
+      
+      const { data, error } = await supabase
+        .from('universities')
+        .select('*')
+        .not('lat', 'is', null)
+        .not('lon', 'is', null)
+        .limit(100);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: filters.nearUniversities,
+  });
+
   if (showApiInput) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -204,6 +242,44 @@ const RealEstateSearch = () => {
                     borderColor={transactionType === 'sale' ? '#15803d' : '#0284c7'}
                     glyphColor={'#ffffff'}
                   />
+                </AdvancedMarker>
+              );
+            })}
+
+            {/* School Markers */}
+            {schools.map((school) => {
+              const lat = school.lat;
+              const lon = school.lon;
+              
+              if (!lat || !lon) return null;
+              
+              return (
+                <AdvancedMarker
+                  key={`school-${school.id}`}
+                  position={{ lat, lng: lon }}
+                >
+                  <div className="bg-blue-500 p-2 rounded-full shadow-lg">
+                    <School className="h-5 w-5 text-white" />
+                  </div>
+                </AdvancedMarker>
+              );
+            })}
+
+            {/* University Markers */}
+            {universities.map((university, index) => {
+              const lat = university.lat;
+              const lon = university.lon;
+              
+              if (!lat || !lon) return null;
+              
+              return (
+                <AdvancedMarker
+                  key={`university-${index}`}
+                  position={{ lat, lng: lon }}
+                >
+                  <div className="bg-purple-500 p-2 rounded-full shadow-lg">
+                    <GraduationCap className="h-5 w-5 text-white" />
+                  </div>
                 </AdvancedMarker>
               );
             })}
