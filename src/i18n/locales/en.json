@@ -95,5 +95,13 @@
   "addedToFavorites": "Added to favorites",
   "removedFromFavorites": "Removed from favorites",
   "other": "Other",
-  "customValue": "Enter custom value"
+  "customValue": "Enter custom value",
+  "schoolLevel": "School Level",
+  "allLevels": "All Levels",
+  "combined": "Combined (All Levels)",
+  "nursery": "Nursery",
+  "kindergarten": "Kindergarten",
+  "elementary": "Elementary",
+  "middle": "Middle",
+  "high": "High"
 }

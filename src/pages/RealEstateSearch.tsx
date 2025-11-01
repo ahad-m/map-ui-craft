@@ -74,6 +74,7 @@ const RealEstateSearch = () => {
     livingRooms: '',
     bathrooms: '',
     schoolGender: '',
+    schoolLevel: '',
     selectedSchool: '',
     selectedUniversity: '',
     nearMetro: false,
@@ -137,7 +138,7 @@ const RealEstateSearch = () => {
 
   // Fetch schools with filters
   const { data: allSchools = [] } = useQuery({
-    queryKey: ['schools', filters.schoolGender],
+    queryKey: ['schools', filters.schoolGender, filters.schoolLevel],
     queryFn: async () => {
       let query = supabase
         .from('schools')
@@ -149,6 +150,10 @@ const RealEstateSearch = () => {
       if (filters.schoolGender) {
         const genderValue = filters.schoolGender === 'Boys' ? 'boys' : filters.schoolGender === 'Girls' ? 'girls' : 'both';
         query = query.eq('gender', genderValue);
+      }
+      
+      if (filters.schoolLevel) {
+        query = query.eq('primary_level', filters.schoolLevel);
       }
       
       const { data, error } = await query.order('name', { ascending: true });
@@ -230,6 +235,7 @@ const RealEstateSearch = () => {
       livingRooms: '',
       bathrooms: '',
       schoolGender: '',
+      schoolLevel: '',
       selectedSchool: '',
       selectedUniversity: '',
       nearMetro: false,
@@ -597,6 +603,22 @@ const RealEstateSearch = () => {
                             <SelectItem value="all">{t('all')}</SelectItem>
                             <SelectItem value="Boys">{t('boys')}</SelectItem>
                             <SelectItem value="Girls">{t('girls')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {/* School Level Filter */}
+                        <Select value={filters.schoolLevel} onValueChange={(value) => setFilters({ ...filters, schoolLevel: value === 'all_levels' ? '' : value })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('schoolLevel')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all_levels">{t('allLevels')}</SelectItem>
+                            <SelectItem value="all">{t('combined')}</SelectItem>
+                            <SelectItem value="nursery">{t('nursery')}</SelectItem>
+                            <SelectItem value="kindergarten">{t('kindergarten')}</SelectItem>
+                            <SelectItem value="elementary">{t('elementary')}</SelectItem>
+                            <SelectItem value="middle">{t('middle')}</SelectItem>
+                            <SelectItem value="high">{t('high')}</SelectItem>
                           </SelectContent>
                         </Select>
 
