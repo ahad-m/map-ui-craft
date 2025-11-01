@@ -44,9 +44,9 @@ const RealEstateSearch = () => {
     city: 'الرياض', // All properties are in Riyadh
     neighborhood: '',
     priceMin: 0,
-    priceMax: 10000000,
+    priceMax: 50000000, // Updated based on actual data (most properties under 50M)
     areaMin: 0,
-    areaMax: 1000,
+    areaMax: 2000, // Updated based on actual data
     bedrooms: '',
     livingRooms: '',
     bathrooms: '',
@@ -753,13 +753,42 @@ const RealEstateSearch = () => {
                       </div>
 
                       {/* Apply Filters Button */}
-                      <Button 
-                        className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg" 
-                        onClick={() => setShowFilters(false)}
-                      >
-                        <Search className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
-                        {t('applyFilters')}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => {
+                            setFilters({
+                              propertyType: '',
+                              city: 'الرياض',
+                              neighborhood: '',
+                              priceMin: 0,
+                              priceMax: 50000000,
+                              areaMin: 0,
+                              areaMax: 2000,
+                              bedrooms: '',
+                              livingRooms: '',
+                              bathrooms: '',
+                              nearSchools: false,
+                              nearUniversities: false,
+                              nearMetro: false,
+                              maxMetroTime: 15,
+                              nearHospitals: false,
+                              nearMosques: false,
+                            });
+                          }}
+                        >
+                          <X className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                          {t('resetFilters')}
+                        </Button>
+                        <Button 
+                          className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg" 
+                          onClick={() => setShowFilters(false)}
+                        >
+                          <Search className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                          {t('applyFilters')}
+                        </Button>
+                      </div>
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -799,7 +828,7 @@ const RealEstateSearch = () => {
                   <p className="text-xs text-muted-foreground mb-2">
                     {selectedProperty.district}, {selectedProperty.city}
                   </p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2 flex-wrap">
                     {selectedProperty.rooms && (
                       <span className="flex items-center gap-1">
                         <Bed className="h-3 w-3" />
@@ -816,6 +845,12 @@ const RealEstateSearch = () => {
                       <span className="flex items-center gap-1">
                         <Maximize className="h-3 w-3" />
                         {selectedProperty.area_m2} m²
+                      </span>
+                    )}
+                    {selectedProperty.time_to_metro_min && (
+                      <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                        <MapPin className="h-3 w-3" />
+                        {Math.round(parseFloat(selectedProperty.time_to_metro_min))} {t('minToMetro')}
                       </span>
                     )}
                   </div>
