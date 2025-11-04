@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -39,7 +39,6 @@ const RealEstateSearch = () => {
   const [mapZoom, setMapZoom] = useState(12);
   const [showPropertyDialog, setShowPropertyDialog] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
   // Update document direction based on language
@@ -98,7 +97,6 @@ const RealEstateSearch = () => {
   // Fetch properties from Supabase
   const { data: properties = [], isLoading } = useQuery({
     queryKey: ['properties', transactionType, filters, searchQuery],
-    enabled: hasSearched,
     queryFn: async () => {
       let query = supabase
         .from('properties')
@@ -277,20 +275,6 @@ const RealEstateSearch = () => {
       nearHospitals: false,
       nearMosques: false,
     });
-    setHasSearched(false);
-  };
-
-  const handleSearch = () => {
-    // Validate required fields
-    if (!filters.city || !filters.propertyType || filters.maxPrice <= 0) {
-      toast({
-        title: t('validationError') || 'Validation Error',
-        description: t('fillRequiredFields') || 'Please fill all required fields',
-        variant: 'destructive',
-      });
-      return;
-    }
-    setHasSearched(true);
   };
 
   return (
@@ -304,7 +288,7 @@ const RealEstateSearch = () => {
             gestureHandling="greedy"
             disableDefaultUI={false}
           >
-            {hasSearched && properties.map((property) => {
+            {properties.map((property) => {
               const lat = parseFloat(property.final_lat);
               const lon = parseFloat(property.final_lon);
               if (isNaN(lat) || isNaN(lon)) return null;
@@ -471,9 +455,7 @@ const RealEstateSearch = () => {
                         
                         <div className="space-y-3">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">
-                              {t('propertyType')} <span className="text-red-500">*</span>
-                            </Label>
+                            <Label className="text-sm font-medium">{t('propertyType')}</Label>
                             <Select
                               value={filters.propertyType}
                               onValueChange={(value) => setFilters({ ...filters, propertyType: value })}
@@ -554,9 +536,7 @@ const RealEstateSearch = () => {
                         
                         <div className="space-y-3">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">
-                              {t('maxPrice')} (SAR) <span className="text-red-500">*</span>
-                            </Label>
+                            <Label className="text-sm font-medium">{t('maxPrice')} (SAR)</Label>
                             <Input
                               type="number"
                               placeholder={t('maxPrice')}
@@ -870,10 +850,7 @@ const RealEstateSearch = () => {
                     </div>
                   </SheetContent>
                 </Sheet>
-                <Button 
-                  onClick={handleSearch}
-                  className="bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
+                <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
                   <Search className={`h-5 w-5 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
                   {t('search')}
                 </Button>
@@ -976,7 +953,7 @@ const RealEstateSearch = () => {
         </Sheet>
 
         {/* Results Count */}
-        {!selectedProperty && hasSearched && (
+        {!selectedProperty && (
           <div className="absolute bottom-24 left-4 right-4 z-10">
             <Card className="p-3 bg-card/95 backdrop-blur-sm shadow-elegant border-primary/10">
               <div className="text-center">
@@ -994,12 +971,7 @@ const RealEstateSearch = () => {
           className={`fixed bottom-6 z-20 rounded-full h-16 w-16 bg-gradient-to-br from-primary to-accent hover:opacity-90 shadow-glow transition-all hover:scale-110 animate-pulse ${i18n.language === 'ar' ? 'left-6' : 'right-6'}`}
           onClick={() => setShowChatbot(!showChatbot)}
         >
-          {showChatbot ? <X className="h-6 w-6" /> : (
-            <div className="relative">
-              <Bot className="h-6 w-6" />
-              <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-yellow-300" />
-            </div>
-          )}
+          {showChatbot ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
         </Button>
 
         {/* Chatbot Panel */}
