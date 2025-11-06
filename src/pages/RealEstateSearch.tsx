@@ -226,9 +226,7 @@ const RealEstateSearch = () => {
       }
       if (filters.bedrooms) {
         const bedroomsValue = filters.bedrooms;
-        if (bedroomsValue === '5+') {
-          query = query.gte('rooms', 5);
-        } else if (bedroomsValue !== 'other') {
+        if (bedroomsValue !== 'other') {
           const count = parseInt(bedroomsValue);
           if (!isNaN(count)) {
             query = query.eq('rooms', count);
@@ -237,9 +235,7 @@ const RealEstateSearch = () => {
       }
       if (filters.bathrooms) {
         const bathroomsValue = filters.bathrooms;
-        if (bathroomsValue === '4+') {
-          query = query.gte('baths', 4);
-        } else if (bathroomsValue !== 'other') {
+        if (bathroomsValue !== 'other') {
           const count = parseInt(bathroomsValue);
           if (!isNaN(count)) {
             query = query.eq('baths', count);
@@ -248,9 +244,7 @@ const RealEstateSearch = () => {
       }
       if (filters.livingRooms) {
         const livingRoomsValue = filters.livingRooms;
-        if (livingRoomsValue === '4+') {
-          query = query.gte('halls', 4);
-        } else if (livingRoomsValue !== 'other') {
+        if (livingRoomsValue !== 'other') {
           const count = parseInt(livingRoomsValue);
           if (!isNaN(count)) {
             query = query.eq('halls', count);
@@ -758,7 +752,7 @@ const RealEstateSearch = () => {
                           {/* Bedrooms */}
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('bedrooms')}</Label>
-                            <Select value={filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5+'].includes(filters.bedrooms)) ? 'other' : filters.bedrooms} onValueChange={(value) => setFilters({ ...filters, bedrooms: value })}>
+                            <Select value={filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5'].includes(filters.bedrooms)) ? 'other' : filters.bedrooms} onValueChange={(value) => setFilters({ ...filters, bedrooms: value })}>
                               <SelectTrigger className="bg-background">
                                 <SelectValue placeholder={t('selectBedrooms')} />
                               </SelectTrigger>
@@ -767,11 +761,11 @@ const RealEstateSearch = () => {
                                 <SelectItem value="2">2</SelectItem>
                                 <SelectItem value="3">3</SelectItem>
                                 <SelectItem value="4">4</SelectItem>
-                                <SelectItem value="5+">5+</SelectItem>
+                                <SelectItem value="5">5</SelectItem>
                                 <SelectItem value="other">{t('other')}</SelectItem>
                               </SelectContent>
                             </Select>
-                            {(filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5+', ''].includes(filters.bedrooms))) && (
+                            {(filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5', ''].includes(filters.bedrooms))) && (
                               <Input
                                 type="number"
                                 min="1"
@@ -786,7 +780,7 @@ const RealEstateSearch = () => {
                           {/* Living Rooms */}
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('livingRooms')}</Label>
-                            <Select value={filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4+'].includes(filters.livingRooms)) ? 'other' : filters.livingRooms} onValueChange={(value) => setFilters({ ...filters, livingRooms: value })}>
+                            <Select value={filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4', '5'].includes(filters.livingRooms)) ? 'other' : filters.livingRooms} onValueChange={(value) => setFilters({ ...filters, livingRooms: value })}>
                               <SelectTrigger className="bg-background">
                                 <SelectValue placeholder={t('selectLivingRooms')} />
                               </SelectTrigger>
@@ -794,11 +788,12 @@ const RealEstateSearch = () => {
                                 <SelectItem value="1">1</SelectItem>
                                 <SelectItem value="2">2</SelectItem>
                                 <SelectItem value="3">3</SelectItem>
-                                <SelectItem value="4+">4+</SelectItem>
+                                <SelectItem value="4">4</SelectItem>
+                                <SelectItem value="5">5</SelectItem>
                                 <SelectItem value="other">{t('other')}</SelectItem>
                               </SelectContent>
                             </Select>
-                            {(filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4+', ''].includes(filters.livingRooms))) && (
+                            {(filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4', '5', ''].includes(filters.livingRooms))) && (
                               <Input
                                 type="number"
                                 min="1"
@@ -813,7 +808,7 @@ const RealEstateSearch = () => {
                           {/* Bathrooms */}
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('bathrooms')}</Label>
-                            <Select value={filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4+'].includes(filters.bathrooms)) ? 'other' : filters.bathrooms} onValueChange={(value) => setFilters({ ...filters, bathrooms: value })}>
+                            <Select value={filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4', '5'].includes(filters.bathrooms)) ? 'other' : filters.bathrooms} onValueChange={(value) => setFilters({ ...filters, bathrooms: value })}>
                               <SelectTrigger className="bg-background">
                                 <SelectValue placeholder={t('selectBathrooms')} />
                               </SelectTrigger>
@@ -821,11 +816,12 @@ const RealEstateSearch = () => {
                                 <SelectItem value="1">1</SelectItem>
                                 <SelectItem value="2">2</SelectItem>
                                 <SelectItem value="3">3</SelectItem>
-                                <SelectItem value="4+">4+</SelectItem>
+                                <SelectItem value="4">4</SelectItem>
+                                <SelectItem value="5">5</SelectItem>
                                 <SelectItem value="other">{t('other')}</SelectItem>
                               </SelectContent>
                             </Select>
-                            {(filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4+', ''].includes(filters.bathrooms))) && (
+                            {(filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4', '5', ''].includes(filters.bathrooms))) && (
                               <Input
                                 type="number"
                                 min="1"
