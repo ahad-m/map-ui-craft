@@ -137,6 +137,8 @@ const RealEstateSearch = () => {
     bathrooms: '',
     school: '',
     university: '',
+    schoolGender: '',
+    schoolLevel: '',
   });
 
   const [openPropertyTypeCombobox, setOpenPropertyTypeCombobox] = useState(false);
@@ -352,6 +354,62 @@ const RealEstateSearch = () => {
     },
   });
 
+  // Predefined school gender options
+  const predefinedSchoolGenders = ['Boys', 'Girls'];
+
+  // Fetch additional school genders from database with custom search
+  const { data: additionalSchoolGenders = [] } = useQuery({
+    queryKey: ['schoolGenders', customSearchTerms.schoolGender],
+    queryFn: async () => {
+      if (!customSearchTerms.schoolGender) return [];
+      
+      const { data, error } = await supabase
+        .from('schools')
+        .select('gender')
+        .not('gender', 'is', null)
+        .not('gender', 'eq', '')
+        .ilike('gender', `%${customSearchTerms.schoolGender}%`);
+      
+      if (error) throw error;
+      
+      const uniqueGenders = [...new Set(
+        data?.map(s => s.gender?.trim())
+          .filter(g => g && g !== '' && !['boys', 'girls'].includes(g.toLowerCase())) || []
+      )];
+      return uniqueGenders;
+    },
+  });
+
+  const allSchoolGenders = [...predefinedSchoolGenders, ...additionalSchoolGenders];
+
+  // Predefined school level options
+  const predefinedSchoolLevels = ['nursery', 'kindergarten', 'elementary', 'middle', 'high'];
+
+  // Fetch additional school levels from database with custom search
+  const { data: additionalSchoolLevels = [] } = useQuery({
+    queryKey: ['schoolLevels', customSearchTerms.schoolLevel],
+    queryFn: async () => {
+      if (!customSearchTerms.schoolLevel) return [];
+      
+      const { data, error } = await supabase
+        .from('schools')
+        .select('primary_level')
+        .not('primary_level', 'is', null)
+        .not('primary_level', 'eq', '')
+        .ilike('primary_level', `%${customSearchTerms.schoolLevel}%`);
+      
+      if (error) throw error;
+      
+      const uniqueLevels = [...new Set(
+        data?.map(s => s.primary_level?.trim())
+          .filter(l => l && l !== '' && !predefinedSchoolLevels.includes(l.toLowerCase())) || []
+      )];
+      return uniqueLevels;
+    },
+  });
+
+  const allSchoolLevels = [...predefinedSchoolLevels, ...additionalSchoolLevels];
+
   // Fetch schools with filters and custom search
   const { data: allSchools = [] } = useQuery({
     queryKey: ['schools', filters.schoolGender, filters.schoolLevel, customSearchTerms.school],
@@ -481,6 +539,8 @@ const RealEstateSearch = () => {
       bathrooms: '',
       school: '',
       university: '',
+      schoolGender: '',
+      schoolLevel: '',
     });
     setHasSearched(false);
   };
@@ -900,15 +960,18 @@ const RealEstateSearch = () => {
                               </PopoverContent>
                             </Popover>
                             {filters.bedrooms !== '' && filters.bedrooms && !['1', '2', '3', '4', '5'].includes(filters.bedrooms) && (
-                              <Input
-                                type="number"
-                                min="1"
-                                placeholder={t('customValue')}
-                                value={filters.bedrooms}
-                                onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
-                                className="bg-background"
-                                autoFocus
-                              />
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-muted-foreground">{t('enterCustomNumber')}</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  placeholder={t('customValue')}
+                                  value={filters.bedrooms}
+                                  onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
+                                  className="bg-background"
+                                  autoFocus
+                                />
+                              </div>
                             )}
                           </div>
 
@@ -980,15 +1043,18 @@ const RealEstateSearch = () => {
                               </PopoverContent>
                             </Popover>
                             {filters.livingRooms !== '' && filters.livingRooms && !['1', '2', '3', '4', '5'].includes(filters.livingRooms) && (
-                              <Input
-                                type="number"
-                                min="1"
-                                placeholder={t('customValue')}
-                                value={filters.livingRooms}
-                                onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
-                                className="bg-background"
-                                autoFocus
-                              />
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-muted-foreground">{t('enterCustomNumber')}</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  placeholder={t('customValue')}
+                                  value={filters.livingRooms}
+                                  onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
+                                  className="bg-background"
+                                  autoFocus
+                                />
+                              </div>
                             )}
                           </div>
 
@@ -1060,15 +1126,18 @@ const RealEstateSearch = () => {
                               </PopoverContent>
                             </Popover>
                             {filters.bathrooms !== '' && filters.bathrooms && !['1', '2', '3', '4', '5'].includes(filters.bathrooms) && (
-                              <Input
-                                type="number"
-                                min="1"
-                                placeholder={t('customValue')}
-                                value={filters.bathrooms}
-                                onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
-                                className="bg-background"
-                                autoFocus
-                              />
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-muted-foreground">{t('enterCustomNumber')}</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  placeholder={t('customValue')}
+                                  value={filters.bathrooms}
+                                  onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
+                                  className="bg-background"
+                                  autoFocus
+                                />
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1095,45 +1164,47 @@ const RealEstateSearch = () => {
                                   role="combobox"
                                   className="w-full justify-between bg-background hover:bg-accent"
                                 >
-                                  {filters.schoolGender === 'Boys' ? t('boys') : filters.schoolGender === 'Girls' ? t('girls') : t('gender')}
+                                  {filters.schoolGender === 'Boys' ? t('boys') : filters.schoolGender === 'Girls' ? t('girls') : filters.schoolGender || t('gender')}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
-                                  <CommandInput placeholder={t('gender')} />
+                                  <CommandInput 
+                                    placeholder={t('gender')}
+                                    onValueChange={(value) => {
+                                      setCustomSearchTerms({ ...customSearchTerms, schoolGender: value });
+                                    }}
+                                  />
                                   <CommandList>
-                                    <CommandEmpty>{t('notFound')}</CommandEmpty>
+                                    <CommandEmpty>
+                                      {allSchoolGenders.length === 0 ? t('notFound') : t('gender')}
+                                    </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
                                           setFilters({ ...filters, schoolGender: '' });
+                                          setCustomSearchTerms({ ...customSearchTerms, schoolGender: '' });
                                           setOpenSchoolGenderCombobox(false);
                                         }}
                                       >
                                         <Check className={cn("mr-2 h-4 w-4", !filters.schoolGender ? "opacity-100" : "opacity-0")} />
                                         {t('all')}
                                       </CommandItem>
-                                      <CommandItem
-                                        value="Boys"
-                                        onSelect={() => {
-                                          setFilters({ ...filters, schoolGender: 'Boys' });
-                                          setOpenSchoolGenderCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.schoolGender === 'Boys' ? "opacity-100" : "opacity-0")} />
-                                        {t('boys')}
-                                      </CommandItem>
-                                      <CommandItem
-                                        value="Girls"
-                                        onSelect={() => {
-                                          setFilters({ ...filters, schoolGender: 'Girls' });
-                                          setOpenSchoolGenderCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.schoolGender === 'Girls' ? "opacity-100" : "opacity-0")} />
-                                        {t('girls')}
-                                      </CommandItem>
+                                      {allSchoolGenders.map((gender) => (
+                                        <CommandItem
+                                          key={gender}
+                                          value={gender}
+                                          onSelect={() => {
+                                            setFilters({ ...filters, schoolGender: gender });
+                                            setCustomSearchTerms({ ...customSearchTerms, schoolGender: '' });
+                                            setOpenSchoolGenderCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.schoolGender === gender ? "opacity-100" : "opacity-0")} />
+                                          {gender === 'Boys' ? t('boys') : gender === 'Girls' ? t('girls') : gender}
+                                        </CommandItem>
+                                      ))}
                                     </CommandGroup>
                                   </CommandList>
                                 </Command>
@@ -1153,75 +1224,52 @@ const RealEstateSearch = () => {
                                    filters.schoolLevel === 'elementary' ? t('elementary') :
                                    filters.schoolLevel === 'middle' ? t('middle') :
                                    filters.schoolLevel === 'high' ? t('high') :
-                                   t('schoolLevel')}
+                                   filters.schoolLevel || t('schoolLevel')}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
-                                  <CommandInput placeholder={t('schoolLevel')} />
+                                  <CommandInput 
+                                    placeholder={t('schoolLevel')}
+                                    onValueChange={(value) => {
+                                      setCustomSearchTerms({ ...customSearchTerms, schoolLevel: value });
+                                    }}
+                                  />
                                   <CommandList>
-                                    <CommandEmpty>{t('notFound')}</CommandEmpty>
+                                    <CommandEmpty>
+                                      {allSchoolLevels.length === 0 ? t('notFound') : t('schoolLevel')}
+                                    </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
                                           setFilters({ ...filters, schoolLevel: '' });
+                                          setCustomSearchTerms({ ...customSearchTerms, schoolLevel: '' });
                                           setOpenSchoolLevelCombobox(false);
                                         }}
                                       >
                                         <Check className={cn("mr-2 h-4 w-4", !filters.schoolLevel ? "opacity-100" : "opacity-0")} />
                                         {t('combined')}
                                       </CommandItem>
-                                      <CommandItem
-                                        value="nursery"
-                                        onSelect={() => {
-                                          setFilters({ ...filters, schoolLevel: 'nursery' });
-                                          setOpenSchoolLevelCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.schoolLevel === 'nursery' ? "opacity-100" : "opacity-0")} />
-                                        {t('nursery')}
-                                      </CommandItem>
-                                      <CommandItem
-                                        value="kindergarten"
-                                        onSelect={() => {
-                                          setFilters({ ...filters, schoolLevel: 'kindergarten' });
-                                          setOpenSchoolLevelCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.schoolLevel === 'kindergarten' ? "opacity-100" : "opacity-0")} />
-                                        {t('kindergarten')}
-                                      </CommandItem>
-                                      <CommandItem
-                                        value="elementary"
-                                        onSelect={() => {
-                                          setFilters({ ...filters, schoolLevel: 'elementary' });
-                                          setOpenSchoolLevelCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.schoolLevel === 'elementary' ? "opacity-100" : "opacity-0")} />
-                                        {t('elementary')}
-                                      </CommandItem>
-                                      <CommandItem
-                                        value="middle"
-                                        onSelect={() => {
-                                          setFilters({ ...filters, schoolLevel: 'middle' });
-                                          setOpenSchoolLevelCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.schoolLevel === 'middle' ? "opacity-100" : "opacity-0")} />
-                                        {t('middle')}
-                                      </CommandItem>
-                                      <CommandItem
-                                        value="high"
-                                        onSelect={() => {
-                                          setFilters({ ...filters, schoolLevel: 'high' });
-                                          setOpenSchoolLevelCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.schoolLevel === 'high' ? "opacity-100" : "opacity-0")} />
-                                        {t('high')}
-                                      </CommandItem>
+                                      {allSchoolLevels.map((level) => (
+                                        <CommandItem
+                                          key={level}
+                                          value={level}
+                                          onSelect={() => {
+                                            setFilters({ ...filters, schoolLevel: level });
+                                            setCustomSearchTerms({ ...customSearchTerms, schoolLevel: '' });
+                                            setOpenSchoolLevelCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.schoolLevel === level ? "opacity-100" : "opacity-0")} />
+                                          {level === 'nursery' ? t('nursery') :
+                                           level === 'kindergarten' ? t('kindergarten') :
+                                           level === 'elementary' ? t('elementary') :
+                                           level === 'middle' ? t('middle') :
+                                           level === 'high' ? t('high') :
+                                           level}
+                                        </CommandItem>
+                                      ))}
                                     </CommandGroup>
                                   </CommandList>
                                 </Command>

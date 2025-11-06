@@ -110,5 +110,6 @@
   "education": "Education",
   "maxMetroDistance": "Maximum Distance from Metro",
   "typeToSearchDatabase": "Type to search database for custom values",
-  "notFound": "Not Found"
+  "notFound": "Not Found",
+  "enterCustomNumber": "Enter Custom Number"
 }

@@ -112,5 +112,6 @@
   "education": "التعليم",
   "maxMetroDistance": "الحد الأقصى للمسافة من المترو",
   "typeToSearchDatabase": "اكتب للبحث في قاعدة البيانات عن قيم مخصصة",
-  "notFound": "غير موجود"
+  "notFound": "غير موجود",
+  "enterCustomNumber": "أدخل الرقم المخصص"
 }
