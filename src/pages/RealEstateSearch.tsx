@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 import { PropertyDetailsDialog } from '@/components/PropertyDetailsDialog';
 import { useFavorites } from '@/hooks/useFavorites';
-
+import { useRealEstateAssistant } from '@/hooks/useRealEstateAssistant';
 
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
@@ -40,6 +40,51 @@ const RealEstateSearch = () => {
   const [showPropertyDialog, setShowPropertyDialog] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const {
+    messages,
+    isLoading: isChatLoading,
+    isBackendOnline,
+    searchResults: chatSearchResults,
+    sendMessage,
+    selectSearchMode,
+  } = useRealEstateAssistant();
+
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll للرسائل
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // تحديث العقارات عند البحث من الـ chatbot
+  useEffect(() => {
+    if (chatSearchResults.length > 0) {
+      // تحديث العقارات المعروضة على الخريطة
+      // ملاحظة: قد تحتاج تعديل اسم الدالة حسب الكود الموجود
+      // تحديث العقارات من Chatbot
+      setChatbotProperties(chatSearchResults);
+      setShowChatbotResults(true);
+      
+      // إغلاق الـ chatbot
+      setIsChatOpen(false);
+    }
+  }, [chatSearchResults]);
+
+  // دالة إرسال رسالة
+  const handleSendMessage = async () => {
+    if (!chatInput.trim() || isChatLoading) return;
+    await sendMessage(chatInput);
+    setChatInput('');
+  };
+
+  // دالة اختيار نمط البحث
+  const handleSearchModeSelection = async (mode: 'exact' | 'similar') => {
+    await selectSearchMode(mode);
+  };
+
+  
 
   // Update document direction based on language
   useEffect(() => {
@@ -95,6 +140,10 @@ const RealEstateSearch = () => {
   });
 
   // Fetch properties from Supabase
+    // State للعقارات من Chatbot
+  const [chatbotProperties, setChatbotProperties] = useState<any[]>([]);
+  const [showChatbotResults, setShowChatbotResults] = useState(false);
+
   const { data: properties = [], isLoading } = useQuery({
     queryKey: ['properties', transactionType, filters, searchQuery],
     queryFn: async () => {
@@ -218,7 +267,10 @@ const RealEstateSearch = () => {
     (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity
   );
 
-  const favoriteProperties = properties.filter(p => favorites.includes(p.id));
+
+  // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
+  const displayedProperties = showChatbotResults ? chatbotProperties : properties;
+  const displayedFavorites = displayedProperties.filter(p => favorites.includes(p.id));
 
   const handlePropertyClick = (property: any) => {
     setSelectedProperty(property);
@@ -243,8 +295,8 @@ const RealEstateSearch = () => {
       setMapCenter({ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon });
       setMapZoom(15);
     } else if (properties.length > 0) {
-      const lats = properties.map(p => parseFloat(p.final_lat)).filter(lat => !isNaN(lat));
-      const lngs = properties.map(p => parseFloat(p.final_lon)).filter(lng => !isNaN(lng));
+      const lats = displayedProperties.map(p => parseFloat(p.final_lat)).filter(lat => !isNaN(lat));
+      const lngs = displayedProperties.map(p => parseFloat(p.final_lon)).filter(lng => !isNaN(lng));
       
       if (lats.length > 0 && lngs.length > 0) {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
@@ -288,7 +340,7 @@ const RealEstateSearch = () => {
             gestureHandling="greedy"
             disableDefaultUI={false}
           >
-            {properties.map((property) => {
+            {displayedProperties.map((property) => {
               const lat = parseFloat(property.final_lat);
               const lon = parseFloat(property.final_lon);
               if (isNaN(lat) || isNaN(lon)) return null;
@@ -877,17 +929,17 @@ const RealEstateSearch = () => {
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <Heart className="h-5 w-5 text-red-500 fill-red-500" />
-                {t('favorites')} ({favoriteProperties.length})
+                {t('favorites')} ({displayedFavorites.length})
               </SheetTitle>
             </SheetHeader>
             <div className="mt-6 space-y-4">
-              {favoriteProperties.length === 0 ? (
+              {displayedFavorites.length === 0 ? (
                 <div className="text-center py-12">
                   <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">{t('noFavorites')}</p>
                 </div>
               ) : (
-                favoriteProperties.map(property => (
+                displayedFavorites.map(property => (
                   <Card
                     key={property.id}
                     className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
@@ -952,66 +1004,156 @@ const RealEstateSearch = () => {
           </SheetContent>
         </Sheet>
 
+                {/* Clear Chatbot Results Button */}
+        {showChatbotResults && (
+          <div className="absolute top-24 left-4 z-10">
+            <Button
+              onClick={() => {
+                setShowChatbotResults(false);
+                setChatbotProperties([]);
+              }}
+              variant="outline"
+              className="bg-white/95 backdrop-blur-sm shadow-lg"
+            >
+              <X className="h-4 w-4 mr-2" />
+              {i18n.language === 'ar' ? 'إلغاء نتائج المساعد' : 'Clear Assistant Results'}
+            </Button>
+          </div>
+        )}
+
         {/* Results Count */}
         {!selectedProperty && (
           <div className="absolute bottom-24 left-4 right-4 z-10">
             <Card className="p-3 bg-card/95 backdrop-blur-sm shadow-elegant border-primary/10">
               <div className="text-center">
                 <p className="text-sm font-medium">
-                  {isLoading ? t('loading') : `${properties.length} ${t('propertiesFound')}`}
+                  {isLoading ? t('loading') : `${displayedProperties.length} ${t('propertiesFound')}`}
                 </p>
               </div>
             </Card>
           </div>
         )}
 
-        {/* AI Chatbot Button */}
-        <Button
-          size="lg"
-          className={`fixed bottom-6 z-20 rounded-full h-16 w-16 bg-gradient-to-br from-primary to-accent hover:opacity-90 shadow-glow transition-all hover:scale-110 animate-pulse ${i18n.language === 'ar' ? 'left-6' : 'right-6'}`}
-          onClick={() => setShowChatbot(!showChatbot)}
-        >
-          {showChatbot ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-        </Button>
+        {/* Chatbot Floating Button */}
+        <div className="fixed bottom-6 left-6 z-50">
+          <Button
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 relative"
+          >
+            <Bot className="h-6 w-6 text-white" />
+            {isBackendOnline && (
+              <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></span>
+            )}
+          </Button>
+        </div>
 
         {/* Chatbot Panel */}
-        {showChatbot && (
-          <Card className={`fixed bottom-24 z-20 w-96 h-[500px] shadow-elegant border-primary/10 bg-gradient-to-b from-card to-card/95 backdrop-blur-md animate-scale-in ${i18n.language === 'ar' ? 'left-6' : 'right-6'}`}>
-            <div className="flex flex-col h-full p-5">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Sparkles className="h-4 w-4 text-primary-foreground" />
-                  </div>
-                  <h3 className="font-semibold text-lg">{t('aiAssistant')}</h3>
-                </div>
+        {isChatOpen && (
+          <div className="fixed bottom-24 left-6 w-96 h-[500px] bg-white rounded-lg shadow-2xl z-50 flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5" />
+                <span className="font-semibold">المساعد العقاري الذكي</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isBackendOnline ? (
+                  <span className="text-xs bg-green-500 px-2 py-1 rounded-full">متصل</span>
+                ) : (
+                  <span className="text-xs bg-red-500 px-2 py-1 rounded-full">غير متصل</span>
+                )}
                 <Button
                   variant="ghost"
-                  size="icon"
-                  onClick={() => setShowChatbot(false)}
-                  className="hover:bg-primary/10"
+                  size="sm"
+                  onClick={() => setIsChatOpen(false)}
+                  className="text-white hover:bg-white/20"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex-1 overflow-y-auto mb-4 space-y-3">
-                <div className="bg-gradient-to-br from-primary/10 to-accent/10 p-4 rounded-xl border border-primary/20 animate-fade-in">
-                  <p className="text-sm leading-relaxed">
-                    {t('helpMessage')}
-                  </p>
-                </div>
+            </div>
+
+            {/* Messages Area */}
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 ${
+                        msg.type === 'user'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-900'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      
+                      {/* أزرار اختيار نمط البحث */}
+                      {msg.criteria && msg.type === 'assistant' && (
+                        <div className="mt-3 space-y-2">
+                          <Button
+                            onClick={() => handleSearchModeSelection('exact')}
+                            disabled={isChatLoading}
+                            className="w-full bg-white text-blue-600 hover:bg-gray-50 border border-blue-600"
+                            size="sm"
+                          >
+                            بس المطابق
+                          </Button>
+                          <Button
+                            onClick={() => handleSearchModeSelection('similar')}
+                            disabled={isChatLoading}
+                            className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                            size="sm"
+                          >
+                            اللي يشبهه
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Loading indicator */}
+                {isChatLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 rounded-lg p-3">
+                      <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
               </div>
+            </ScrollArea>
+
+            {/* Input Area */}
+            <div className="p-4 border-t">
               <div className="flex gap-2">
-                <Input 
-                  placeholder={t('askQuestion')}
-                  className="border-primary/20 focus-visible:ring-primary"
+                <Input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="اكتب طلبك هنا..."
+                  disabled={isChatLoading || !isBackendOnline}
+                  className="flex-1"
+                  dir="rtl"
                 />
-                <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity">
-                  {t('send')}
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={isChatLoading || !isBackendOnline || !chatInput.trim()}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isChatLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
-          </Card>
+          </div>
         )}
       </div>
     </APIProvider>
