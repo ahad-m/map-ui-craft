@@ -130,9 +130,39 @@ const RealEstateSearch = () => {
 
   // Custom search states for database-wide search
   const [customSearchTerms, setCustomSearchTerms] = useState({
+    propertyType: '',
     neighborhood: '',
     school: '',
     university: '',
+  });
+
+  const [openPropertyTypeCombobox, setOpenPropertyTypeCombobox] = useState(false);
+
+  // Fetch unique property types from Supabase with custom search
+  const { data: propertyTypes = [] } = useQuery({
+    queryKey: ['propertyTypes', customSearchTerms.propertyType],
+    queryFn: async () => {
+      let query = supabase
+        .from('properties')
+        .select('property_type')
+        .not('property_type', 'is', null)
+        .not('property_type', 'eq', '');
+      
+      // If custom search term exists, filter by it
+      if (customSearchTerms.propertyType) {
+        query = query.ilike('property_type', `%${customSearchTerms.propertyType}%`);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      // Get unique property types, filter out empty/null values, and sort
+      const uniquePropertyTypes = [...new Set(
+        data?.map(p => p.property_type?.trim()).filter(n => n && n !== '') || []
+      )];
+      return uniquePropertyTypes.sort((a, b) => a.localeCompare(b, 'ar'));
+    },
   });
 
   // Fetch unique neighborhoods from Supabase with custom search
@@ -362,6 +392,7 @@ const RealEstateSearch = () => {
       nearMosques: false,
     });
     setCustomSearchTerms({
+      propertyType: '',
       neighborhood: '',
       school: '',
       university: '',
@@ -548,23 +579,59 @@ const RealEstateSearch = () => {
                         <div className="space-y-3">
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('propertyType')}</Label>
-                            <Select
-                              value={filters.propertyType}
-                              onValueChange={(value) => setFilters({ ...filters, propertyType: value })}
-                            >
-                              <SelectTrigger className="bg-background">
-                                <SelectValue placeholder={t('selectPropertyType')} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="استوديو">{t('studio')}</SelectItem>
-                                <SelectItem value="شقق">{t('apartments')}</SelectItem>
-                                <SelectItem value="فلل">{t('villas')}</SelectItem>
-                                <SelectItem value="تاون هاوس">{t('townhouse')}</SelectItem>
-                                <SelectItem value="دوبلكس">{t('duplex')}</SelectItem>
-                                <SelectItem value="دور">{t('floor')}</SelectItem>
-                                <SelectItem value="عمائر">{t('buildings')}</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Popover open={openPropertyTypeCombobox} onOpenChange={setOpenPropertyTypeCombobox}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between bg-background hover:bg-accent"
+                                >
+                                  {filters.propertyType || t('selectPropertyType')}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[400px] p-0 z-[100]">
+                                <Command>
+                                  <CommandInput 
+                                    placeholder={t('propertyType')} 
+                                    onValueChange={(value) => {
+                                      setCustomSearchTerms({ ...customSearchTerms, propertyType: value });
+                                    }}
+                                  />
+                                  <CommandList>
+                                    <CommandEmpty>
+                                      {propertyTypes.length === 0 ? t('notFound') : t('selectPropertyType')}
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                      <CommandItem
+                                        onSelect={() => {
+                                          setFilters({ ...filters, propertyType: '' });
+                                          setCustomSearchTerms({ ...customSearchTerms, propertyType: '' });
+                                          setOpenPropertyTypeCombobox(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", !filters.propertyType ? "opacity-100" : "opacity-0")} />
+                                        {t('none')}
+                                      </CommandItem>
+                                      {propertyTypes.map((type) => (
+                                        <CommandItem
+                                          key={type}
+                                          value={type}
+                                          onSelect={() => {
+                                            setFilters({ ...filters, propertyType: type });
+                                            setCustomSearchTerms({ ...customSearchTerms, propertyType: '' });
+                                            setOpenPropertyTypeCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.propertyType === type ? "opacity-100" : "opacity-0")} />
+                                          {type}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                           </div>
 
                           <div className="space-y-2">
