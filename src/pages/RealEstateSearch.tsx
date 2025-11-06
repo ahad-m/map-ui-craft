@@ -913,6 +913,14 @@ const RealEstateSearch = () => {
                                     onValueChange={(value) => {
                                       setCustomSearchTerms({ ...customSearchTerms, bedrooms: value });
                                     }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && customSearchTerms.bedrooms && /^\d+$/.test(customSearchTerms.bedrooms)) {
+                                        e.preventDefault();
+                                        setFilters({ ...filters, bedrooms: customSearchTerms.bedrooms });
+                                        setCustomSearchTerms({ ...customSearchTerms, bedrooms: '' });
+                                        setOpenBedroomsCombobox(false);
+                                      }
+                                    }}
                                   />
                                    <CommandList>
                                     <CommandEmpty>
@@ -1023,6 +1031,14 @@ const RealEstateSearch = () => {
                                     onValueChange={(value) => {
                                       setCustomSearchTerms({ ...customSearchTerms, livingRooms: value });
                                     }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && customSearchTerms.livingRooms && /^\d+$/.test(customSearchTerms.livingRooms)) {
+                                        e.preventDefault();
+                                        setFilters({ ...filters, livingRooms: customSearchTerms.livingRooms });
+                                        setCustomSearchTerms({ ...customSearchTerms, livingRooms: '' });
+                                        setOpenLivingRoomsCombobox(false);
+                                      }
+                                    }}
                                   />
                                   <CommandList>
                                     <CommandEmpty>
@@ -1132,6 +1148,14 @@ const RealEstateSearch = () => {
                                     placeholder={t('bathrooms')} 
                                     onValueChange={(value) => {
                                       setCustomSearchTerms({ ...customSearchTerms, bathrooms: value });
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && customSearchTerms.bathrooms && /^\d+$/.test(customSearchTerms.bathrooms)) {
+                                        e.preventDefault();
+                                        setFilters({ ...filters, bathrooms: customSearchTerms.bathrooms });
+                                        setCustomSearchTerms({ ...customSearchTerms, bathrooms: '' });
+                                        setOpenBathroomsCombobox(false);
+                                      }
                                     }}
                                   />
                                   <CommandList>
