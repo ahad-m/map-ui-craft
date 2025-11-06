@@ -110,5 +110,7 @@
   "priceAndArea": "السعر والمساحة",
   "rooms": "الغرف",
   "education": "التعليم",
-  "maxMetroDistance": "الحد الأقصى للمسافة من المترو"
+  "maxMetroDistance": "الحد الأقصى للمسافة من المترو",
+  "typeToSearchDatabase": "اكتب للبحث في قاعدة البيانات عن قيم مخصصة",
+  "notFound": "غير موجود"
 }

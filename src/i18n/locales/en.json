@@ -108,5 +108,7 @@
   "priceAndArea": "Price & Area",
   "rooms": "Rooms",
   "education": "Education",
-  "maxMetroDistance": "Maximum Distance from Metro"
+  "maxMetroDistance": "Maximum Distance from Metro",
+  "typeToSearchDatabase": "Type to search database for custom values",
+  "notFound": "Not Found"
 }

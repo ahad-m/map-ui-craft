@@ -128,16 +128,30 @@ const RealEstateSearch = () => {
     nearMosques: false,
   });
 
-  // Fetch unique neighborhoods from Supabase
+  // Custom search states for database-wide search
+  const [customSearchTerms, setCustomSearchTerms] = useState({
+    propertyType: '',
+    neighborhood: '',
+    school: '',
+    university: '',
+  });
+
+  // Fetch unique neighborhoods from Supabase with custom search
   const { data: neighborhoods = [] } = useQuery({
-    queryKey: ['neighborhoods'],
+    queryKey: ['neighborhoods', customSearchTerms.neighborhood],
     queryFn: async () => {
-      // Fetch all districts - removed limit to get everything
-      const { data, error } = await supabase
+      let query = supabase
         .from('properties')
         .select('district')
         .not('district', 'is', null)
         .not('district', 'eq', '');
+      
+      // If custom search term exists, filter by it
+      if (customSearchTerms.neighborhood) {
+        query = query.ilike('district', `%${customSearchTerms.neighborhood}%`);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       
@@ -155,7 +169,7 @@ const RealEstateSearch = () => {
   const [showChatbotResults, setShowChatbotResults] = useState(false);
 
   const { data: properties = [], isLoading } = useQuery({
-    queryKey: ['properties', transactionType, filters, searchQuery],
+    queryKey: ['properties', transactionType, filters, searchQuery, customSearchTerms],
     queryFn: async () => {
       let query = supabase
         .from('properties')
@@ -166,6 +180,10 @@ const RealEstateSearch = () => {
 
       if (filters.propertyType) {
         query = query.eq('property_type', filters.propertyType);
+      }
+      // Custom property type search
+      if (customSearchTerms.propertyType && !filters.propertyType) {
+        query = query.ilike('property_type', `%${customSearchTerms.propertyType}%`);
       }
       if (filters.neighborhood) {
         query = query.eq('district', filters.neighborhood);
@@ -227,9 +245,9 @@ const RealEstateSearch = () => {
     },
   });
 
-  // Fetch schools with filters
+  // Fetch schools with filters and custom search
   const { data: allSchools = [] } = useQuery({
-    queryKey: ['schools', filters.schoolGender, filters.schoolLevel],
+    queryKey: ['schools', filters.schoolGender, filters.schoolLevel, customSearchTerms.school],
     queryFn: async () => {
       let query = supabase
         .from('schools')
@@ -246,6 +264,11 @@ const RealEstateSearch = () => {
       if (filters.schoolLevel) {
         query = query.eq('primary_level', filters.schoolLevel);
       }
+
+      // If custom search term exists, filter by it
+      if (customSearchTerms.school) {
+        query = query.or(`name.ilike.%${customSearchTerms.school}%,district.ilike.%${customSearchTerms.school}%`);
+      }
       
       const { data, error } = await query.order('name', { ascending: true });
       if (error) throw error;
@@ -255,18 +278,24 @@ const RealEstateSearch = () => {
 
   const selectedSchoolData = allSchools.find(school => school.id === filters.selectedSchool);
 
-  // Fetch all universities without gender filter
+  // Fetch all universities with custom search
   const { data: allUniversities = [] } = useQuery({
-    queryKey: ['universities'],
+    queryKey: ['universities', customSearchTerms.university],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('universities')
         .select('*')
         .not('lat', 'is', null)
         .not('lon', 'is', null)
         .not('name_ar', 'is', null)
-        .not('name_en', 'is', null)
-        .order('name_ar', { ascending: true });
+        .not('name_en', 'is', null);
+
+      // If custom search term exists, filter by it
+      if (customSearchTerms.university) {
+        query = query.or(`name_ar.ilike.%${customSearchTerms.university}%,name_en.ilike.%${customSearchTerms.university}%`);
+      }
+      
+      const { data, error } = await query.order('name_ar', { ascending: true });
       
       if (error) throw error;
       return data || [];
@@ -336,6 +365,12 @@ const RealEstateSearch = () => {
       minMetroTime: 5,
       nearHospitals: false,
       nearMosques: false,
+    });
+    setCustomSearchTerms({
+      propertyType: '',
+      neighborhood: '',
+      school: '',
+      university: '',
     });
     setHasSearched(false);
   };
@@ -521,7 +556,10 @@ const RealEstateSearch = () => {
                             <Label className="text-sm font-medium">{t('propertyType')}</Label>
                             <Select
                               value={filters.propertyType}
-                              onValueChange={(value) => setFilters({ ...filters, propertyType: value })}
+                              onValueChange={(value) => {
+                                setFilters({ ...filters, propertyType: value });
+                                setCustomSearchTerms({ ...customSearchTerms, propertyType: '' });
+                              }}
                             >
                               <SelectTrigger className="bg-background">
                                 <SelectValue placeholder={t('selectPropertyType')} />
@@ -536,6 +574,22 @@ const RealEstateSearch = () => {
                                 <SelectItem value="عمائر">{t('buildings')}</SelectItem>
                               </SelectContent>
                             </Select>
+                            <div className="pt-2">
+                              <Input
+                                placeholder={t('searchLocation') + " - " + t('propertyType')}
+                                value={customSearchTerms.propertyType}
+                                onChange={(e) => {
+                                  setCustomSearchTerms({ ...customSearchTerms, propertyType: e.target.value });
+                                  if (e.target.value) {
+                                    setFilters({ ...filters, propertyType: '' });
+                                  }
+                                }}
+                                className="bg-background text-sm"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {t('typeToSearchDatabase')}
+                              </p>
+                            </div>
                           </div>
 
                           <div className="space-y-2">
@@ -553,13 +607,21 @@ const RealEstateSearch = () => {
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
-                                  <CommandInput placeholder={t('searchNeighborhood')} />
+                                  <CommandInput 
+                                    placeholder={t('searchNeighborhood')} 
+                                    onValueChange={(value) => {
+                                      setCustomSearchTerms({ ...customSearchTerms, neighborhood: value });
+                                    }}
+                                  />
                                   <CommandList>
-                                    <CommandEmpty>{t('noNeighborhoodFound')}</CommandEmpty>
+                                    <CommandEmpty>
+                                      {neighborhoods.length === 0 ? t('notFound') : t('noNeighborhoodFound')}
+                                    </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
                                           setFilters({ ...filters, neighborhood: '' });
+                                          setCustomSearchTerms({ ...customSearchTerms, neighborhood: '' });
                                           setOpenNeighborhoodCombobox(false);
                                         }}
                                       >
@@ -572,6 +634,7 @@ const RealEstateSearch = () => {
                                           value={neighborhood}
                                           onSelect={() => {
                                             setFilters({ ...filters, neighborhood });
+                                            setCustomSearchTerms({ ...customSearchTerms, neighborhood: '' });
                                             setOpenNeighborhoodCombobox(false);
                                           }}
                                         >
@@ -778,13 +841,21 @@ const RealEstateSearch = () => {
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
-                                  <CommandInput placeholder={t('searchSchool')} />
+                                  <CommandInput 
+                                    placeholder={t('searchSchool')} 
+                                    onValueChange={(value) => {
+                                      setCustomSearchTerms({ ...customSearchTerms, school: value });
+                                    }}
+                                  />
                                   <CommandList>
-                                    <CommandEmpty>{t('noSchoolFound')}</CommandEmpty>
+                                    <CommandEmpty>
+                                      {allSchools.length === 0 ? t('notFound') : t('noSchoolFound')}
+                                    </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
                                           setFilters({ ...filters, selectedSchool: '' });
+                                          setCustomSearchTerms({ ...customSearchTerms, school: '' });
                                           setOpenSchoolCombobox(false);
                                         }}
                                       >
@@ -797,6 +868,7 @@ const RealEstateSearch = () => {
                                           value={`${school.name} ${school.district || ''}`}
                                           onSelect={() => {
                                             setFilters({ ...filters, selectedSchool: school.id || '' });
+                                            setCustomSearchTerms({ ...customSearchTerms, school: '' });
                                             setOpenSchoolCombobox(false);
                                           }}
                                         >
@@ -824,13 +896,21 @@ const RealEstateSearch = () => {
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
-                                  <CommandInput placeholder={t('searchUniversity')} />
+                                  <CommandInput 
+                                    placeholder={t('searchUniversity')} 
+                                    onValueChange={(value) => {
+                                      setCustomSearchTerms({ ...customSearchTerms, university: value });
+                                    }}
+                                  />
                                   <CommandList>
-                                    <CommandEmpty>{t('noUniversityFound')}</CommandEmpty>
+                                    <CommandEmpty>
+                                      {allUniversities.length === 0 ? t('notFound') : t('noUniversityFound')}
+                                    </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
                                           setFilters({ ...filters, selectedUniversity: '' });
+                                          setCustomSearchTerms({ ...customSearchTerms, university: '' });
                                           setOpenUniversityCombobox(false);
                                         }}
                                       >
@@ -845,6 +925,7 @@ const RealEstateSearch = () => {
                                             value={uniName || ''}
                                             onSelect={() => {
                                               setFilters({ ...filters, selectedUniversity: uniName || '' });
+                                              setCustomSearchTerms({ ...customSearchTerms, university: '' });
                                               setOpenUniversityCombobox(false);
                                             }}
                                           >
