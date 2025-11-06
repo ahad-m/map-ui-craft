@@ -126,6 +126,7 @@ const RealEstateSearch = () => {
     minMetroTime: 5,
     nearHospitals: false,
     nearMosques: false,
+    customSearchTerm: '',
   });
 
   // Fetch unique neighborhoods from Supabase
@@ -172,6 +173,17 @@ const RealEstateSearch = () => {
       }
       if (searchQuery) {
         query = query.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
+      }
+      // Custom search term - searches across multiple fields
+      if (filters.customSearchTerm) {
+        const searchTerm = filters.customSearchTerm;
+        query = query.or(
+          `property_type.ilike.%${searchTerm}%,` +
+          `city.ilike.%${searchTerm}%,` +
+          `district.ilike.%${searchTerm}%,` +
+          `title.ilike.%${searchTerm}%,` +
+          `description.ilike.%${searchTerm}%`
+        );
       }
       if (filters.bedrooms) {
         const bedroomsValue = filters.bedrooms;
@@ -336,6 +348,7 @@ const RealEstateSearch = () => {
       minMetroTime: 5,
       nearHospitals: false,
       nearMosques: false,
+      customSearchTerm: '',
     });
     setHasSearched(false);
   };
@@ -507,6 +520,33 @@ const RealEstateSearch = () => {
                     </SheetHeader>
                     
                     <div className="space-y-8 mt-6 pb-4">
+                      {/* Custom Search Section */}
+                      <div className="space-y-4 p-4 rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+                        <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
+                          <div className="p-1.5 rounded-md bg-primary/20">
+                            <Search className="h-4 w-4 text-primary" />
+                          </div>
+                          {i18n.language === 'ar' ? 'بحث مخصص' : 'Custom Search'}
+                        </h3>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">
+                            {i18n.language === 'ar' ? 'ابحث عن أي شيء' : 'Search for anything'}
+                          </Label>
+                          <Input
+                            placeholder={i18n.language === 'ar' ? 'اكتب أي كلمة للبحث في جميع الحقول...' : 'Type anything to search across all fields...'}
+                            value={filters.customSearchTerm}
+                            onChange={(e) => setFilters({ ...filters, customSearchTerm: e.target.value })}
+                            className="bg-background border-primary/30 focus-visible:ring-primary focus-visible:border-primary"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            {i18n.language === 'ar' 
+                              ? 'سيتم البحث في: نوع العقار، المدينة، الحي، العنوان، الوصف'
+                              : 'Searches in: property type, city, district, title, description'}
+                          </p>
+                        </div>
+                      </div>
+
                       {/* Property Details Section */}
                       <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
                         <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
@@ -540,50 +580,68 @@ const RealEstateSearch = () => {
 
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('neighborhood')}</Label>
-                            <Popover open={openNeighborhoodCombobox} onOpenChange={setOpenNeighborhoodCombobox}>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className="w-full justify-between bg-background hover:bg-accent"
-                                >
-                                  {filters.neighborhood || t('selectNeighborhood')}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-[400px] p-0 z-[100]">
-                                <Command>
-                                  <CommandInput placeholder={t('searchNeighborhood')} />
-                                  <CommandList>
-                                    <CommandEmpty>{t('noNeighborhoodFound')}</CommandEmpty>
-                                    <CommandGroup>
-                                      <CommandItem
-                                        onSelect={() => {
-                                          setFilters({ ...filters, neighborhood: '' });
-                                          setOpenNeighborhoodCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", !filters.neighborhood ? "opacity-100" : "opacity-0")} />
-                                        {t('none')}
-                                      </CommandItem>
-                                      {neighborhoods.map((neighborhood) => (
+                            <div className="flex gap-2">
+                              <Popover open={openNeighborhoodCombobox} onOpenChange={setOpenNeighborhoodCombobox}>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className="flex-1 justify-between bg-background hover:bg-accent"
+                                  >
+                                    {filters.neighborhood || t('selectNeighborhood')}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[400px] p-0 z-[100]">
+                                  <Command>
+                                    <CommandInput placeholder={t('searchNeighborhood')} />
+                                    <CommandList>
+                                      <CommandEmpty>
+                                        <div className="p-4 text-center">
+                                          <p className="text-sm text-muted-foreground mb-2">
+                                            {t('noNeighborhoodFound')}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {i18n.language === 'ar' 
+                                              ? 'استخدم البحث المخصص أعلاه للبحث في كل الحقول'
+                                              : 'Use Custom Search above to search all fields'}
+                                          </p>
+                                        </div>
+                                      </CommandEmpty>
+                                      <CommandGroup>
                                         <CommandItem
-                                          key={neighborhood}
-                                          value={neighborhood}
                                           onSelect={() => {
-                                            setFilters({ ...filters, neighborhood });
+                                            setFilters({ ...filters, neighborhood: '' });
                                             setOpenNeighborhoodCombobox(false);
                                           }}
                                         >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.neighborhood === neighborhood ? "opacity-100" : "opacity-0")} />
-                                          {neighborhood}
+                                          <Check className={cn("mr-2 h-4 w-4", !filters.neighborhood ? "opacity-100" : "opacity-0")} />
+                                          {t('none')}
                                         </CommandItem>
-                                      ))}
-                                    </CommandGroup>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
+                                        {neighborhoods.map((neighborhood) => (
+                                          <CommandItem
+                                            key={neighborhood}
+                                            value={neighborhood}
+                                            onSelect={() => {
+                                              setFilters({ ...filters, neighborhood });
+                                              setOpenNeighborhoodCombobox(false);
+                                            }}
+                                          >
+                                            <Check className={cn("mr-2 h-4 w-4", filters.neighborhood === neighborhood ? "opacity-100" : "opacity-0")} />
+                                            {neighborhood}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {i18n.language === 'ar'
+                                ? 'لم تجد الحي؟ استخدم البحث المخصص أعلاه'
+                                : 'Can\'t find the neighborhood? Use Custom Search above'}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -780,7 +838,18 @@ const RealEstateSearch = () => {
                                 <Command>
                                   <CommandInput placeholder={t('searchSchool')} />
                                   <CommandList>
-                                    <CommandEmpty>{t('noSchoolFound')}</CommandEmpty>
+                                    <CommandEmpty>
+                                      <div className="p-4 text-center">
+                                        <p className="text-sm text-muted-foreground mb-2">
+                                          {t('noSchoolFound')}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {i18n.language === 'ar' 
+                                            ? 'استخدم البحث المخصص أعلاه للبحث في كل الحقول'
+                                            : 'Use Custom Search above to search all fields'}
+                                        </p>
+                                      </div>
+                                    </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
@@ -809,6 +878,11 @@ const RealEstateSearch = () => {
                                 </Command>
                               </PopoverContent>
                             </Popover>
+                            <p className="text-xs text-muted-foreground">
+                              {i18n.language === 'ar'
+                                ? 'لم تجد المدرسة؟ استخدم البحث المخصص أعلاه'
+                                : 'Can\'t find the school? Use Custom Search above'}
+                            </p>
                           </div>
 
                           <div className="space-y-2">
@@ -826,7 +900,18 @@ const RealEstateSearch = () => {
                                 <Command>
                                   <CommandInput placeholder={t('searchUniversity')} />
                                   <CommandList>
-                                    <CommandEmpty>{t('noUniversityFound')}</CommandEmpty>
+                                    <CommandEmpty>
+                                      <div className="p-4 text-center">
+                                        <p className="text-sm text-muted-foreground mb-2">
+                                          {t('noUniversityFound')}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {i18n.language === 'ar' 
+                                            ? 'استخدم البحث المخصص أعلاه للبحث في كل الحقول'
+                                            : 'Use Custom Search above to search all fields'}
+                                        </p>
+                                      </div>
+                                    </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
@@ -858,6 +943,11 @@ const RealEstateSearch = () => {
                                 </Command>
                               </PopoverContent>
                             </Popover>
+                            <p className="text-xs text-muted-foreground">
+                              {i18n.language === 'ar'
+                                ? 'لم تجد الجامعة؟ استخدم البحث المخصص أعلاه'
+                                : 'Can\'t find the university? Use Custom Search above'}
+                            </p>
                           </div>
                         </div>
                       </div>
