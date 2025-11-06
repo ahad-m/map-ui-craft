@@ -907,7 +907,7 @@ const RealEstateSearch = () => {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
-                                <Command>
+                                <Command shouldFilter={false}>
                                   <CommandInput 
                                     placeholder={t('bedrooms')} 
                                     onValueChange={(value) => {
@@ -916,9 +916,23 @@ const RealEstateSearch = () => {
                                   />
                                    <CommandList>
                                     <CommandEmpty>
-                                      {allBedroomOptions.length === 0 ? t('notFound') : t('selectBedrooms')}
+                                      {t('notFound')}
                                     </CommandEmpty>
                                     <CommandGroup>
+                                      {customSearchTerms.bedrooms && /^\d+$/.test(customSearchTerms.bedrooms) && (
+                                        <CommandItem
+                                          value={`custom-${customSearchTerms.bedrooms}`}
+                                          className="bg-primary/10 font-semibold"
+                                          onSelect={() => {
+                                            setFilters({ ...filters, bedrooms: customSearchTerms.bedrooms });
+                                            setCustomSearchTerms({ ...customSearchTerms, bedrooms: '' });
+                                            setOpenBedroomsCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.bedrooms === customSearchTerms.bedrooms ? "opacity-100" : "opacity-0")} />
+                                          ✓ {t('useCustomValue')}: {customSearchTerms.bedrooms}
+                                        </CommandItem>
+                                      )}
                                       <CommandItem
                                         onSelect={() => {
                                           setFilters({ ...filters, bedrooms: '' });
@@ -929,20 +943,7 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.bedrooms ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
-                                      {customSearchTerms.bedrooms && /^\d+$/.test(customSearchTerms.bedrooms) && (
-                                        <CommandItem
-                                          value={`custom-${customSearchTerms.bedrooms}`}
-                                          onSelect={() => {
-                                            setFilters({ ...filters, bedrooms: customSearchTerms.bedrooms });
-                                            setCustomSearchTerms({ ...customSearchTerms, bedrooms: '' });
-                                            setOpenBedroomsCombobox(false);
-                                          }}
-                                        >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.bedrooms === customSearchTerms.bedrooms ? "opacity-100" : "opacity-0")} />
-                                          {t('useCustomValue')}: {customSearchTerms.bedrooms}
-                                        </CommandItem>
-                                      )}
-                                      {allBedroomOptions.map((count) => (
+                                      {!customSearchTerms.bedrooms && allBedroomOptions.map((count) => (
                                         <CommandItem
                                           key={count}
                                           value={count}
@@ -1016,7 +1017,7 @@ const RealEstateSearch = () => {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
-                                <Command>
+                                <Command shouldFilter={false}>
                                   <CommandInput 
                                     placeholder={t('livingRooms')} 
                                     onValueChange={(value) => {
@@ -1025,9 +1026,23 @@ const RealEstateSearch = () => {
                                   />
                                   <CommandList>
                                     <CommandEmpty>
-                                      {allLivingRoomOptions.length === 0 ? t('notFound') : t('selectLivingRooms')}
+                                      {t('notFound')}
                                     </CommandEmpty>
                                     <CommandGroup>
+                                      {customSearchTerms.livingRooms && /^\d+$/.test(customSearchTerms.livingRooms) && (
+                                        <CommandItem
+                                          value={`custom-${customSearchTerms.livingRooms}`}
+                                          className="bg-primary/10 font-semibold"
+                                          onSelect={() => {
+                                            setFilters({ ...filters, livingRooms: customSearchTerms.livingRooms });
+                                            setCustomSearchTerms({ ...customSearchTerms, livingRooms: '' });
+                                            setOpenLivingRoomsCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.livingRooms === customSearchTerms.livingRooms ? "opacity-100" : "opacity-0")} />
+                                          ✓ {t('useCustomValue')}: {customSearchTerms.livingRooms}
+                                        </CommandItem>
+                                      )}
                                       <CommandItem
                                         onSelect={() => {
                                           setFilters({ ...filters, livingRooms: '' });
@@ -1038,20 +1053,7 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.livingRooms ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
-                                      {customSearchTerms.livingRooms && /^\d+$/.test(customSearchTerms.livingRooms) && (
-                                        <CommandItem
-                                          value={`custom-${customSearchTerms.livingRooms}`}
-                                          onSelect={() => {
-                                            setFilters({ ...filters, livingRooms: customSearchTerms.livingRooms });
-                                            setCustomSearchTerms({ ...customSearchTerms, livingRooms: '' });
-                                            setOpenLivingRoomsCombobox(false);
-                                          }}
-                                        >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.livingRooms === customSearchTerms.livingRooms ? "opacity-100" : "opacity-0")} />
-                                          {t('useCustomValue')}: {customSearchTerms.livingRooms}
-                                        </CommandItem>
-                                      )}
-                                      {allLivingRoomOptions.map((count) => (
+                                      {!customSearchTerms.livingRooms && allLivingRoomOptions.map((count) => (
                                         <CommandItem
                                           key={count}
                                           value={count}
@@ -1125,7 +1127,7 @@ const RealEstateSearch = () => {
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
-                                <Command>
+                                <Command shouldFilter={false}>
                                   <CommandInput 
                                     placeholder={t('bathrooms')} 
                                     onValueChange={(value) => {
@@ -1134,9 +1136,23 @@ const RealEstateSearch = () => {
                                   />
                                   <CommandList>
                                     <CommandEmpty>
-                                      {allBathroomOptions.length === 0 ? t('notFound') : t('selectBathrooms')}
+                                      {t('notFound')}
                                     </CommandEmpty>
                                     <CommandGroup>
+                                      {customSearchTerms.bathrooms && /^\d+$/.test(customSearchTerms.bathrooms) && (
+                                        <CommandItem
+                                          value={`custom-${customSearchTerms.bathrooms}`}
+                                          className="bg-primary/10 font-semibold"
+                                          onSelect={() => {
+                                            setFilters({ ...filters, bathrooms: customSearchTerms.bathrooms });
+                                            setCustomSearchTerms({ ...customSearchTerms, bathrooms: '' });
+                                            setOpenBathroomsCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.bathrooms === customSearchTerms.bathrooms ? "opacity-100" : "opacity-0")} />
+                                          ✓ {t('useCustomValue')}: {customSearchTerms.bathrooms}
+                                        </CommandItem>
+                                      )}
                                       <CommandItem
                                         onSelect={() => {
                                           setFilters({ ...filters, bathrooms: '' });
@@ -1147,20 +1163,7 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.bathrooms ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
-                                      {customSearchTerms.bathrooms && /^\d+$/.test(customSearchTerms.bathrooms) && (
-                                        <CommandItem
-                                          value={`custom-${customSearchTerms.bathrooms}`}
-                                          onSelect={() => {
-                                            setFilters({ ...filters, bathrooms: customSearchTerms.bathrooms });
-                                            setCustomSearchTerms({ ...customSearchTerms, bathrooms: '' });
-                                            setOpenBathroomsCombobox(false);
-                                          }}
-                                        >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.bathrooms === customSearchTerms.bathrooms ? "opacity-100" : "opacity-0")} />
-                                          {t('useCustomValue')}: {customSearchTerms.bathrooms}
-                                        </CommandItem>
-                                      )}
-                                      {allBathroomOptions.map((count) => (
+                                      {!customSearchTerms.bathrooms && allBathroomOptions.map((count) => (
                                         <CommandItem
                                           key={count}
                                           value={count}
