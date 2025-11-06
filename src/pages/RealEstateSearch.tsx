@@ -138,32 +138,40 @@ const RealEstateSearch = () => {
 
   const [openPropertyTypeCombobox, setOpenPropertyTypeCombobox] = useState(false);
 
-  // Fetch unique property types from Supabase with custom search
-  const { data: propertyTypes = [] } = useQuery({
+  // Predefined property types
+  const predefinedPropertyTypes = ['استوديو', 'شقق', 'فلل', 'تاون هاوس', 'دوبلكس', 'دور', 'عمائر'];
+
+  // Fetch additional property types from database with custom search
+  const { data: additionalPropertyTypes = [] } = useQuery({
     queryKey: ['propertyTypes', customSearchTerms.propertyType],
     queryFn: async () => {
+      // Only search database if user has typed something
+      if (!customSearchTerms.propertyType) {
+        return [];
+      }
+
       let query = supabase
         .from('properties')
         .select('property_type')
         .not('property_type', 'is', null)
-        .not('property_type', 'eq', '');
-      
-      // If custom search term exists, filter by it
-      if (customSearchTerms.propertyType) {
-        query = query.ilike('property_type', `%${customSearchTerms.propertyType}%`);
-      }
+        .not('property_type', 'eq', '')
+        .ilike('property_type', `%${customSearchTerms.propertyType}%`);
       
       const { data, error } = await query;
       
       if (error) throw error;
       
-      // Get unique property types, filter out empty/null values, and sort
+      // Get unique property types, filter out predefined ones and empty values
       const uniquePropertyTypes = [...new Set(
-        data?.map(p => p.property_type?.trim()).filter(n => n && n !== '') || []
+        data?.map(p => p.property_type?.trim())
+          .filter(n => n && n !== '' && !predefinedPropertyTypes.includes(n)) || []
       )];
       return uniquePropertyTypes.sort((a, b) => a.localeCompare(b, 'ar'));
     },
   });
+
+  // Combine predefined and additional property types
+  const allPropertyTypes = [...predefinedPropertyTypes, ...additionalPropertyTypes];
 
   // Fetch unique neighborhoods from Supabase with custom search
   const { data: neighborhoods = [] } = useQuery({
@@ -600,7 +608,7 @@ const RealEstateSearch = () => {
                                   />
                                   <CommandList>
                                     <CommandEmpty>
-                                      {propertyTypes.length === 0 ? t('notFound') : t('selectPropertyType')}
+                                      {allPropertyTypes.length === 0 ? t('notFound') : t('selectPropertyType')}
                                     </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
@@ -613,7 +621,7 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.propertyType ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
-                                      {propertyTypes.map((type) => (
+                                      {allPropertyTypes.map((type) => (
                                         <CommandItem
                                           key={type}
                                           value={type}
