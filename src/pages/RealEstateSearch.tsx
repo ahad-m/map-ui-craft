@@ -130,7 +130,6 @@ const RealEstateSearch = () => {
 
   // Custom search states for database-wide search
   const [customSearchTerms, setCustomSearchTerms] = useState({
-    propertyType: '',
     neighborhood: '',
     school: '',
     university: '',
@@ -180,10 +179,6 @@ const RealEstateSearch = () => {
 
       if (filters.propertyType) {
         query = query.eq('property_type', filters.propertyType);
-      }
-      // Custom property type search
-      if (customSearchTerms.propertyType && !filters.propertyType) {
-        query = query.ilike('property_type', `%${customSearchTerms.propertyType}%`);
       }
       if (filters.neighborhood) {
         query = query.eq('district', filters.neighborhood);
@@ -367,7 +362,6 @@ const RealEstateSearch = () => {
       nearMosques: false,
     });
     setCustomSearchTerms({
-      propertyType: '',
       neighborhood: '',
       school: '',
       university: '',
@@ -556,10 +550,7 @@ const RealEstateSearch = () => {
                             <Label className="text-sm font-medium">{t('propertyType')}</Label>
                             <Select
                               value={filters.propertyType}
-                              onValueChange={(value) => {
-                                setFilters({ ...filters, propertyType: value });
-                                setCustomSearchTerms({ ...customSearchTerms, propertyType: '' });
-                              }}
+                              onValueChange={(value) => setFilters({ ...filters, propertyType: value })}
                             >
                               <SelectTrigger className="bg-background">
                                 <SelectValue placeholder={t('selectPropertyType')} />
@@ -574,19 +565,6 @@ const RealEstateSearch = () => {
                                 <SelectItem value="عمائر">{t('buildings')}</SelectItem>
                               </SelectContent>
                             </Select>
-                            <div className="pt-2">
-                              <Input
-                                placeholder={t('propertyType')}
-                                value={customSearchTerms.propertyType}
-                                onChange={(e) => {
-                                  setCustomSearchTerms({ ...customSearchTerms, propertyType: e.target.value });
-                                  if (e.target.value) {
-                                    setFilters({ ...filters, propertyType: '' });
-                                  }
-                                }}
-                                className="bg-background text-sm"
-                              />
-                            </div>
                           </div>
 
                           <div className="space-y-2">
