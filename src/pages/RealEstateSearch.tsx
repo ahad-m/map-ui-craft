@@ -886,12 +886,12 @@ const RealEstateSearch = () => {
                                       <CommandItem
                                         value="other"
                                         onSelect={() => {
-                                          setFilters({ ...filters, bedrooms: 'other' });
+                                          setFilters({ ...filters, bedrooms: '' });
                                           setCustomSearchTerms({ ...customSearchTerms, bedrooms: '' });
                                           setOpenBedroomsCombobox(false);
                                         }}
                                       >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.bedrooms === 'other' ? "opacity-100" : "opacity-0")} />
+                                        <Check className={cn("mr-2 h-4 w-4", (!filters.bedrooms || !['1', '2', '3', '4', '5'].includes(filters.bedrooms)) ? "opacity-100" : "opacity-0")} />
                                         {t('other')}
                                       </CommandItem>
                                     </CommandGroup>
@@ -899,14 +899,15 @@ const RealEstateSearch = () => {
                                 </Command>
                               </PopoverContent>
                             </Popover>
-                            {(filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5', ''].includes(filters.bedrooms))) && (
+                            {filters.bedrooms !== '' && filters.bedrooms && !['1', '2', '3', '4', '5'].includes(filters.bedrooms) && (
                               <Input
                                 type="number"
                                 min="1"
                                 placeholder={t('customValue')}
-                                value={filters.bedrooms === 'other' ? '' : filters.bedrooms}
+                                value={filters.bedrooms}
                                 onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
                                 className="bg-background"
+                                autoFocus
                               />
                             )}
                           </div>
@@ -965,12 +966,12 @@ const RealEstateSearch = () => {
                                       <CommandItem
                                         value="other"
                                         onSelect={() => {
-                                          setFilters({ ...filters, livingRooms: 'other' });
+                                          setFilters({ ...filters, livingRooms: '' });
                                           setCustomSearchTerms({ ...customSearchTerms, livingRooms: '' });
                                           setOpenLivingRoomsCombobox(false);
                                         }}
                                       >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.livingRooms === 'other' ? "opacity-100" : "opacity-0")} />
+                                        <Check className={cn("mr-2 h-4 w-4", (!filters.livingRooms || !['1', '2', '3', '4', '5'].includes(filters.livingRooms)) ? "opacity-100" : "opacity-0")} />
                                         {t('other')}
                                       </CommandItem>
                                     </CommandGroup>
@@ -978,14 +979,15 @@ const RealEstateSearch = () => {
                                 </Command>
                               </PopoverContent>
                             </Popover>
-                            {(filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4', '5', ''].includes(filters.livingRooms))) && (
+                            {filters.livingRooms !== '' && filters.livingRooms && !['1', '2', '3', '4', '5'].includes(filters.livingRooms) && (
                               <Input
                                 type="number"
                                 min="1"
                                 placeholder={t('customValue')}
-                                value={filters.livingRooms === 'other' ? '' : filters.livingRooms}
+                                value={filters.livingRooms}
                                 onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
                                 className="bg-background"
+                                autoFocus
                               />
                             )}
                           </div>
@@ -1044,12 +1046,12 @@ const RealEstateSearch = () => {
                                       <CommandItem
                                         value="other"
                                         onSelect={() => {
-                                          setFilters({ ...filters, bathrooms: 'other' });
+                                          setFilters({ ...filters, bathrooms: '' });
                                           setCustomSearchTerms({ ...customSearchTerms, bathrooms: '' });
                                           setOpenBathroomsCombobox(false);
                                         }}
                                       >
-                                        <Check className={cn("mr-2 h-4 w-4", filters.bathrooms === 'other' ? "opacity-100" : "opacity-0")} />
+                                        <Check className={cn("mr-2 h-4 w-4", (!filters.bathrooms || !['1', '2', '3', '4', '5'].includes(filters.bathrooms)) ? "opacity-100" : "opacity-0")} />
                                         {t('other')}
                                       </CommandItem>
                                     </CommandGroup>
@@ -1057,14 +1059,15 @@ const RealEstateSearch = () => {
                                 </Command>
                               </PopoverContent>
                             </Popover>
-                            {(filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4', '5', ''].includes(filters.bathrooms))) && (
+                            {filters.bathrooms !== '' && filters.bathrooms && !['1', '2', '3', '4', '5'].includes(filters.bathrooms) && (
                               <Input
                                 type="number"
                                 min="1"
                                 placeholder={t('customValue')}
-                                value={filters.bathrooms === 'other' ? '' : filters.bathrooms}
+                                value={filters.bathrooms}
                                 onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
                                 className="bg-background"
+                                autoFocus
                               />
                             )}
                           </div>
