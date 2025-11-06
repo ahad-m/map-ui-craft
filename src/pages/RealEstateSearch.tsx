@@ -576,7 +576,7 @@ const RealEstateSearch = () => {
                             </Select>
                             <div className="pt-2">
                               <Input
-                                placeholder={t('searchLocation') + " - " + t('propertyType')}
+                                placeholder={t('propertyType')}
                                 value={customSearchTerms.propertyType}
                                 onChange={(e) => {
                                   setCustomSearchTerms({ ...customSearchTerms, propertyType: e.target.value });
@@ -586,9 +586,6 @@ const RealEstateSearch = () => {
                                 }}
                                 className="bg-background text-sm"
                               />
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {t('typeToSearchDatabase')}
-                              </p>
                             </div>
                           </div>
 
