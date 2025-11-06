@@ -779,24 +779,15 @@ const RealEstateSearch = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('areaSize')}</Label>
-                            <div className="flex gap-2 items-center">
-                              <Input
-                                type="number"
-                                placeholder={t('minArea')}
-                                value={filters.areaMin}
-                                onChange={(e) => setFilters({ ...filters, areaMin: Number(e.target.value) })}
-                                className="bg-background"
-                              />
-                              <span className="text-muted-foreground">-</span>
-                              <Input
-                                type="number"
-                                placeholder={t('maxArea')}
-                                value={filters.areaMax}
-                                onChange={(e) => setFilters({ ...filters, areaMax: Number(e.target.value) })}
-                                className="bg-background"
-                              />
-                            </div>
+                            <Label className="text-sm font-medium">{t('areaSize')} (م²)</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder={t('areaSize')}
+                              value={filters.areaMin}
+                              onChange={(e) => setFilters({ ...filters, areaMin: Number(e.target.value), areaMax: 0 })}
+                              className="bg-background"
+                            />
                           </div>
                         </div>
                       </div>
