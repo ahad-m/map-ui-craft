@@ -769,25 +769,51 @@ const RealEstateSearch = () => {
                         <div className="space-y-3">
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('maxPrice')} (SAR)</Label>
-                            <Input
-                              type="number"
-                              placeholder={t('maxPrice')}
-                              value={filters.maxPrice}
-                              onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
-                              className="bg-background"
-                            />
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                placeholder={t('maxPrice')}
+                                value={filters.maxPrice || ''}
+                                onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
+                                className="bg-background flex-1"
+                              />
+                              {filters.maxPrice > 0 && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => setFilters({ ...filters, maxPrice: 0 })}
+                                  className="shrink-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
 
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('areaSize')} (م²)</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              placeholder={t('areaSize')}
-                              value={filters.areaMin}
-                              onChange={(e) => setFilters({ ...filters, areaMin: Number(e.target.value), areaMax: 0 })}
-                              className="bg-background"
-                            />
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                min="0"
+                                placeholder={t('areaSize')}
+                                value={filters.areaMin || ''}
+                                onChange={(e) => setFilters({ ...filters, areaMin: Number(e.target.value), areaMax: 0 })}
+                                className="bg-background flex-1"
+                              />
+                              {filters.areaMin > 0 && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => setFilters({ ...filters, areaMin: 0, areaMax: 0 })}
+                                  className="shrink-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -805,40 +831,79 @@ const RealEstateSearch = () => {
                           {/* Bedrooms */}
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('bedrooms')}</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              placeholder={t('bedrooms')}
-                              value={filters.bedrooms}
-                              onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
-                              className="bg-background"
-                            />
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                min="0"
+                                placeholder={t('bedrooms')}
+                                value={filters.bedrooms || ''}
+                                onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
+                                className="bg-background flex-1"
+                              />
+                              {filters.bedrooms && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => setFilters({ ...filters, bedrooms: '' })}
+                                  className="shrink-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
 
                           {/* Living Rooms */}
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('livingRooms')}</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              placeholder={t('livingRooms')}
-                              value={filters.livingRooms}
-                              onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
-                              className="bg-background"
-                            />
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                min="0"
+                                placeholder={t('livingRooms')}
+                                value={filters.livingRooms || ''}
+                                onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
+                                className="bg-background flex-1"
+                              />
+                              {filters.livingRooms && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => setFilters({ ...filters, livingRooms: '' })}
+                                  className="shrink-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
 
                           {/* Bathrooms */}
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('bathrooms')}</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              placeholder={t('bathrooms')}
-                              value={filters.bathrooms}
-                              onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
-                              className="bg-background"
-                            />
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                min="0"
+                                placeholder={t('bathrooms')}
+                                value={filters.bathrooms || ''}
+                                onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
+                                className="bg-background flex-1"
+                              />
+                              {filters.bathrooms && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => setFilters({ ...filters, bathrooms: '' })}
+                                  className="shrink-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
