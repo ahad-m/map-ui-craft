@@ -52,12 +52,20 @@ const RealEstateSearch = () => {
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll للرسائل
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Set hasSearched when user types in search query
+  useEffect(() => {
+    if (searchQuery.trim() !== '') {
+      setHasSearched(true);
+    }
+  }, [searchQuery]);
 
   // تحديث العقارات عند البحث من الـ chatbot
   useEffect(() => {
@@ -67,6 +75,7 @@ const RealEstateSearch = () => {
       // تحديث العقارات من Chatbot
       setChatbotProperties(chatSearchResults);
       setShowChatbotResults(true);
+      setHasSearched(true);
       
       // إغلاق الـ chatbot
       setIsChatOpen(false);
@@ -198,7 +207,7 @@ const RealEstateSearch = () => {
         }
       }
 
-      const { data, error } = await query.limit(100);
+      const { data, error } = await query.limit(500);
       if (error) throw error;
 
       return (data || []).filter(property => {
@@ -328,6 +337,7 @@ const RealEstateSearch = () => {
       nearHospitals: false,
       nearMosques: false,
     });
+    setHasSearched(false);
   };
 
   return (
@@ -486,7 +496,7 @@ const RealEstateSearch = () => {
                       <span className="relative z-10">{t('advancedFilters')}</span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto bg-background/98 backdrop-blur-md">
+                  <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto bg-background/98 backdrop-blur-md">
                     <SheetHeader className="pb-6 border-b-2 border-primary/20">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-primary/10">
@@ -895,7 +905,13 @@ const RealEstateSearch = () => {
                           <X className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
                           {t('resetFilters')}
                         </Button>
-                        <Button className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg" onClick={() => setShowFilters(false)}>
+                        <Button 
+                          className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg" 
+                          onClick={() => {
+                            setShowFilters(false);
+                            setHasSearched(true);
+                          }}
+                        >
                           <Search className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
                           {t('applyFilters')}
                         </Button>
@@ -903,10 +919,6 @@ const RealEstateSearch = () => {
                     </div>
                   </SheetContent>
                 </Sheet>
-                <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
-                  <Search className={`h-5 w-5 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
-                  {t('search')}
-                </Button>
               </div>
             </div>
           </Card>
@@ -1023,7 +1035,7 @@ const RealEstateSearch = () => {
         )}
 
         {/* Results Count */}
-        {!selectedProperty && (
+        {!selectedProperty && hasSearched && (
           <div className="absolute bottom-24 left-4 right-4 z-10">
             <Card className="p-3 bg-card/95 backdrop-blur-sm shadow-elegant border-primary/10">
               <div className="text-center">
