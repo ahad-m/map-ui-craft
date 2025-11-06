@@ -943,23 +943,37 @@ const RealEstateSearch = () => {
                                           {count}
                                         </CommandItem>
                                       ))}
-                                      <CommandItem
-                                        value="other"
-                                        onSelect={() => {
-                                          setFilters({ ...filters, bedrooms: '' });
-                                          setCustomSearchTerms({ ...customSearchTerms, bedrooms: '' });
-                                          setOpenBedroomsCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", (!filters.bedrooms || !['1', '2', '3', '4', '5'].includes(filters.bedrooms)) ? "opacity-100" : "opacity-0")} />
-                                        {t('other')}
-                                      </CommandItem>
+                      <CommandItem
+                        value="other"
+                        onSelect={() => {
+                          setFilters({ ...filters, bedrooms: 'other' });
+                          setCustomSearchTerms({ ...customSearchTerms, bedrooms: '' });
+                          setOpenBedroomsCombobox(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", filters.bedrooms === 'other' || (filters.bedrooms && !['1', '2', '3', '4', '5', ''].includes(filters.bedrooms)) ? "opacity-100" : "opacity-0")} />
+                        {t('other')}
+                      </CommandItem>
                                     </CommandGroup>
                                   </CommandList>
                                 </Command>
                               </PopoverContent>
                             </Popover>
-                            {filters.bedrooms !== '' && filters.bedrooms && !['1', '2', '3', '4', '5'].includes(filters.bedrooms) && (
+                            {filters.bedrooms === 'other' && (
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-muted-foreground">{t('enterCustomNumber')}</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  placeholder={t('customValue')}
+                                  value=""
+                                  onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
+                                  className="bg-background"
+                                  autoFocus
+                                />
+                              </div>
+                            )}
+                            {filters.bedrooms && filters.bedrooms !== 'other' && !['1', '2', '3', '4', '5'].includes(filters.bedrooms) && (
                               <div className="space-y-2">
                                 <Label className="text-sm font-medium text-muted-foreground">{t('enterCustomNumber')}</Label>
                                 <Input
@@ -969,7 +983,6 @@ const RealEstateSearch = () => {
                                   value={filters.bedrooms}
                                   onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
                                   className="bg-background"
-                                  autoFocus
                                 />
                               </div>
                             )}
@@ -1026,23 +1039,37 @@ const RealEstateSearch = () => {
                                           {count}
                                         </CommandItem>
                                       ))}
-                                      <CommandItem
-                                        value="other"
-                                        onSelect={() => {
-                                          setFilters({ ...filters, livingRooms: '' });
-                                          setCustomSearchTerms({ ...customSearchTerms, livingRooms: '' });
-                                          setOpenLivingRoomsCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", (!filters.livingRooms || !['1', '2', '3', '4', '5'].includes(filters.livingRooms)) ? "opacity-100" : "opacity-0")} />
-                                        {t('other')}
-                                      </CommandItem>
+                      <CommandItem
+                        value="other"
+                        onSelect={() => {
+                          setFilters({ ...filters, livingRooms: 'other' });
+                          setCustomSearchTerms({ ...customSearchTerms, livingRooms: '' });
+                          setOpenLivingRoomsCombobox(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4', '5', ''].includes(filters.livingRooms)) ? "opacity-100" : "opacity-0")} />
+                        {t('other')}
+                      </CommandItem>
                                     </CommandGroup>
                                   </CommandList>
                                 </Command>
                               </PopoverContent>
                             </Popover>
-                            {filters.livingRooms !== '' && filters.livingRooms && !['1', '2', '3', '4', '5'].includes(filters.livingRooms) && (
+                            {filters.livingRooms === 'other' && (
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-muted-foreground">{t('enterCustomNumber')}</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  placeholder={t('customValue')}
+                                  value=""
+                                  onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
+                                  className="bg-background"
+                                  autoFocus
+                                />
+                              </div>
+                            )}
+                            {filters.livingRooms && filters.livingRooms !== 'other' && !['1', '2', '3', '4', '5'].includes(filters.livingRooms) && (
                               <div className="space-y-2">
                                 <Label className="text-sm font-medium text-muted-foreground">{t('enterCustomNumber')}</Label>
                                 <Input
@@ -1052,7 +1079,6 @@ const RealEstateSearch = () => {
                                   value={filters.livingRooms}
                                   onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
                                   className="bg-background"
-                                  autoFocus
                                 />
                               </div>
                             )}
@@ -1109,23 +1135,37 @@ const RealEstateSearch = () => {
                                           {count}
                                         </CommandItem>
                                       ))}
-                                      <CommandItem
-                                        value="other"
-                                        onSelect={() => {
-                                          setFilters({ ...filters, bathrooms: '' });
-                                          setCustomSearchTerms({ ...customSearchTerms, bathrooms: '' });
-                                          setOpenBathroomsCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", (!filters.bathrooms || !['1', '2', '3', '4', '5'].includes(filters.bathrooms)) ? "opacity-100" : "opacity-0")} />
-                                        {t('other')}
-                                      </CommandItem>
+                      <CommandItem
+                        value="other"
+                        onSelect={() => {
+                          setFilters({ ...filters, bathrooms: 'other' });
+                          setCustomSearchTerms({ ...customSearchTerms, bathrooms: '' });
+                          setOpenBathroomsCombobox(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4', '5', ''].includes(filters.bathrooms)) ? "opacity-100" : "opacity-0")} />
+                        {t('other')}
+                      </CommandItem>
                                     </CommandGroup>
                                   </CommandList>
                                 </Command>
                               </PopoverContent>
                             </Popover>
-                            {filters.bathrooms !== '' && filters.bathrooms && !['1', '2', '3', '4', '5'].includes(filters.bathrooms) && (
+                            {filters.bathrooms === 'other' && (
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-muted-foreground">{t('enterCustomNumber')}</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  placeholder={t('customValue')}
+                                  value=""
+                                  onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
+                                  className="bg-background"
+                                  autoFocus
+                                />
+                              </div>
+                            )}
+                            {filters.bathrooms && filters.bathrooms !== 'other' && !['1', '2', '3', '4', '5'].includes(filters.bathrooms) && (
                               <div className="space-y-2">
                                 <Label className="text-sm font-medium text-muted-foreground">{t('enterCustomNumber')}</Label>
                                 <Input
@@ -1135,7 +1175,6 @@ const RealEstateSearch = () => {
                                   value={filters.bathrooms}
                                   onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
                                   className="bg-background"
-                                  autoFocus
                                 />
                               </div>
                             )}
