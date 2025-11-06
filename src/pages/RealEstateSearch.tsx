@@ -745,13 +745,13 @@ const RealEstateSearch = () => {
                         </div>
                       </div>
 
-                      {/* Rooms Section */}
+                      {/* Room Details Section */}
                       <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
                         <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
                           <div className="p-1.5 rounded-md bg-primary/15">
                             <Bed className="h-4 w-4 text-primary" />
                           </div>
-                          {t('rooms')}
+                          {t('roomDetails')}
                         </h3>
                         
                         <div className="space-y-3">
