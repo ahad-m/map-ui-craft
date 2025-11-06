@@ -111,5 +111,6 @@
   "maxMetroDistance": "Maximum Distance from Metro",
   "typeToSearchDatabase": "Type to search database for custom values",
   "notFound": "Not Found",
-  "enterCustomNumber": "Enter Custom Number"
+  "enterCustomNumber": "Enter Custom Number",
+  "useCustomValue": "Use custom value"
 }

@@ -914,7 +914,7 @@ const RealEstateSearch = () => {
                                       setCustomSearchTerms({ ...customSearchTerms, bedrooms: value });
                                     }}
                                   />
-                                  <CommandList>
+                                   <CommandList>
                                     <CommandEmpty>
                                       {allBedroomOptions.length === 0 ? t('notFound') : t('selectBedrooms')}
                                     </CommandEmpty>
@@ -929,6 +929,19 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.bedrooms ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
+                                      {customSearchTerms.bedrooms && /^\d+$/.test(customSearchTerms.bedrooms) && (
+                                        <CommandItem
+                                          value={`custom-${customSearchTerms.bedrooms}`}
+                                          onSelect={() => {
+                                            setFilters({ ...filters, bedrooms: customSearchTerms.bedrooms });
+                                            setCustomSearchTerms({ ...customSearchTerms, bedrooms: '' });
+                                            setOpenBedroomsCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.bedrooms === customSearchTerms.bedrooms ? "opacity-100" : "opacity-0")} />
+                                          {t('useCustomValue')}: {customSearchTerms.bedrooms}
+                                        </CommandItem>
+                                      )}
                                       {allBedroomOptions.map((count) => (
                                         <CommandItem
                                           key={count}
@@ -1025,6 +1038,19 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.livingRooms ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
+                                      {customSearchTerms.livingRooms && /^\d+$/.test(customSearchTerms.livingRooms) && (
+                                        <CommandItem
+                                          value={`custom-${customSearchTerms.livingRooms}`}
+                                          onSelect={() => {
+                                            setFilters({ ...filters, livingRooms: customSearchTerms.livingRooms });
+                                            setCustomSearchTerms({ ...customSearchTerms, livingRooms: '' });
+                                            setOpenLivingRoomsCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.livingRooms === customSearchTerms.livingRooms ? "opacity-100" : "opacity-0")} />
+                                          {t('useCustomValue')}: {customSearchTerms.livingRooms}
+                                        </CommandItem>
+                                      )}
                                       {allLivingRoomOptions.map((count) => (
                                         <CommandItem
                                           key={count}
@@ -1039,17 +1065,17 @@ const RealEstateSearch = () => {
                                           {count}
                                         </CommandItem>
                                       ))}
-                      <CommandItem
-                        value="other"
-                        onSelect={() => {
-                          setFilters({ ...filters, livingRooms: 'other' });
-                          setCustomSearchTerms({ ...customSearchTerms, livingRooms: '' });
-                          setOpenLivingRoomsCombobox(false);
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4', '5', ''].includes(filters.livingRooms)) ? "opacity-100" : "opacity-0")} />
-                        {t('other')}
-                      </CommandItem>
+                                      <CommandItem
+                                        value="other"
+                                        onSelect={() => {
+                                          setFilters({ ...filters, livingRooms: 'other' });
+                                          setCustomSearchTerms({ ...customSearchTerms, livingRooms: '' });
+                                          setOpenLivingRoomsCombobox(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", filters.livingRooms === 'other' || (filters.livingRooms && !['1', '2', '3', '4', '5', ''].includes(filters.livingRooms)) ? "opacity-100" : "opacity-0")} />
+                                        {t('other')}
+                                      </CommandItem>
                                     </CommandGroup>
                                   </CommandList>
                                 </Command>
@@ -1121,6 +1147,19 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.bathrooms ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
+                                      {customSearchTerms.bathrooms && /^\d+$/.test(customSearchTerms.bathrooms) && (
+                                        <CommandItem
+                                          value={`custom-${customSearchTerms.bathrooms}`}
+                                          onSelect={() => {
+                                            setFilters({ ...filters, bathrooms: customSearchTerms.bathrooms });
+                                            setCustomSearchTerms({ ...customSearchTerms, bathrooms: '' });
+                                            setOpenBathroomsCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.bathrooms === customSearchTerms.bathrooms ? "opacity-100" : "opacity-0")} />
+                                          {t('useCustomValue')}: {customSearchTerms.bathrooms}
+                                        </CommandItem>
+                                      )}
                                       {allBathroomOptions.map((count) => (
                                         <CommandItem
                                           key={count}
@@ -1135,17 +1174,17 @@ const RealEstateSearch = () => {
                                           {count}
                                         </CommandItem>
                                       ))}
-                      <CommandItem
-                        value="other"
-                        onSelect={() => {
-                          setFilters({ ...filters, bathrooms: 'other' });
-                          setCustomSearchTerms({ ...customSearchTerms, bathrooms: '' });
-                          setOpenBathroomsCombobox(false);
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4', '5', ''].includes(filters.bathrooms)) ? "opacity-100" : "opacity-0")} />
-                        {t('other')}
-                      </CommandItem>
+                                      <CommandItem
+                                        value="other"
+                                        onSelect={() => {
+                                          setFilters({ ...filters, bathrooms: 'other' });
+                                          setCustomSearchTerms({ ...customSearchTerms, bathrooms: '' });
+                                          setOpenBathroomsCombobox(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", filters.bathrooms === 'other' || (filters.bathrooms && !['1', '2', '3', '4', '5', ''].includes(filters.bathrooms)) ? "opacity-100" : "opacity-0")} />
+                                        {t('other')}
+                                      </CommandItem>
                                     </CommandGroup>
                                   </CommandList>
                                 </Command>
