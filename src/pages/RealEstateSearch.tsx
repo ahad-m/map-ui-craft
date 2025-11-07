@@ -509,15 +509,6 @@ const RealEstateSearch = () => {
     setHasSearched(false);
   };
 
-  // Check if mandatory fields are filled
-  const areMandatoryFieldsFilled = () => {
-    return (
-      filters.neighborhood !== '' &&
-      filters.propertyType !== '' &&
-      (filters.minPrice > 0 || filters.maxPrice > 0) &&
-      (filters.areaMin > 0 || filters.areaMax > 0)
-    );
-  };
 
   return (
     <APIProvider apiKey={apiKey}>
@@ -701,7 +692,7 @@ const RealEstateSearch = () => {
                         
                         <div className="space-y-3">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('propertyType')} *</Label>
+                            <Label className="text-sm font-medium">{t('propertyType')}</Label>
                             <Popover open={openPropertyTypeCombobox} onOpenChange={setOpenPropertyTypeCombobox}>
                               <PopoverTrigger asChild>
                                 <Button
@@ -758,7 +749,7 @@ const RealEstateSearch = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('neighborhood')} *</Label>
+                            <Label className="text-sm font-medium">{t('neighborhood')}</Label>
                             <Popover open={openNeighborhoodCombobox} onOpenChange={setOpenNeighborhoodCombobox}>
                               <PopoverTrigger asChild>
                                 <Button
@@ -828,7 +819,7 @@ const RealEstateSearch = () => {
                         <div className="space-y-3">
                           {/* Price Range */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('price')} (SAR) *</Label>
+                            <Label className="text-sm font-medium">{t('price')} (SAR)</Label>
                             <div className="grid grid-cols-2 gap-2">
                               <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">{t('min')}</Label>
@@ -883,7 +874,7 @@ const RealEstateSearch = () => {
 
                           {/* Area Range */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('areaSize')} (م²) *</Label>
+                            <Label className="text-sm font-medium">{t('areaSize')} (م²)</Label>
                             <div className="grid grid-cols-2 gap-2">
                               <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">{t('min')}</Label>
@@ -1321,18 +1312,9 @@ const RealEstateSearch = () => {
                         <Button 
                           className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg" 
                           onClick={() => {
-                            if (!areMandatoryFieldsFilled()) {
-                              toast({
-                                title: t('mandatoryFieldsRequired'),
-                                description: t('mandatoryFieldsMessage'),
-                                variant: 'destructive',
-                              });
-                              return;
-                            }
                             setShowFilters(false);
                             setHasSearched(true);
                           }}
-                          disabled={!areMandatoryFieldsFilled()}
                         >
                           <Search className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
                           {t('applyFilters')}
