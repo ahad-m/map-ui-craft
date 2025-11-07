@@ -114,9 +114,10 @@ const RealEstateSearch = () => {
     propertyType: '',
     city: 'الرياض',
     neighborhood: '',
-    maxPrice: 50000000,
+    minPrice: 0,
+    maxPrice: 0,
     areaMin: 0,
-    areaMax: 2000,
+    areaMax: 0,
     bedrooms: '',
     livingRooms: '',
     bathrooms: '',
@@ -264,8 +265,32 @@ const RealEstateSearch = () => {
       return (data || []).filter(property => {
         const price = parseFloat(property.price_num?.replace(/,/g, '') || '0');
         const area = parseFloat(property.area_m2?.replace(/,/g, '') || '0');
-        const priceMatch = price > 0 && price <= filters.maxPrice;
-        const areaMatch = area >= filters.areaMin && area <= filters.areaMax;
+        
+        // Price matching logic: exact if only one value, range if both values
+        let priceMatch = true;
+        if (filters.minPrice > 0 && filters.maxPrice > 0) {
+          // Both filled: range match
+          priceMatch = price >= filters.minPrice && price <= filters.maxPrice;
+        } else if (filters.minPrice > 0) {
+          // Only min filled: exact match
+          priceMatch = price === filters.minPrice;
+        } else if (filters.maxPrice > 0) {
+          // Only max filled: exact match
+          priceMatch = price === filters.maxPrice;
+        }
+        
+        // Area matching logic: exact if only one value, range if both values
+        let areaMatch = true;
+        if (filters.areaMin > 0 && filters.areaMax > 0) {
+          // Both filled: range match
+          areaMatch = area >= filters.areaMin && area <= filters.areaMax;
+        } else if (filters.areaMin > 0) {
+          // Only min filled: exact match
+          areaMatch = area === filters.areaMin;
+        } else if (filters.areaMax > 0) {
+          // Only max filled: exact match
+          areaMatch = area === filters.areaMax;
+        }
         
         let metroMatch = true;
         if (filters.nearMetro && property.time_to_metro_min) {
@@ -457,9 +482,10 @@ const RealEstateSearch = () => {
       propertyType: '',
       city: 'الرياض',
       neighborhood: '',
-      maxPrice: 50000000,
+      minPrice: 0,
+      maxPrice: 0,
       areaMin: 0,
-      areaMax: 2000,
+      areaMax: 0,
       bedrooms: '',
       livingRooms: '',
       bathrooms: '',
@@ -481,6 +507,16 @@ const RealEstateSearch = () => {
       schoolLevel: '',
     });
     setHasSearched(false);
+  };
+
+  // Check if mandatory fields are filled
+  const areMandatoryFieldsFilled = () => {
+    return (
+      filters.neighborhood !== '' &&
+      filters.propertyType !== '' &&
+      (filters.minPrice > 0 || filters.maxPrice > 0) &&
+      (filters.areaMin > 0 || filters.areaMax > 0)
+    );
   };
 
   return (
@@ -665,7 +701,7 @@ const RealEstateSearch = () => {
                         
                         <div className="space-y-3">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('propertyType')}</Label>
+                            <Label className="text-sm font-medium">{t('propertyType')} *</Label>
                             <Popover open={openPropertyTypeCombobox} onOpenChange={setOpenPropertyTypeCombobox}>
                               <PopoverTrigger asChild>
                                 <Button
@@ -722,7 +758,7 @@ const RealEstateSearch = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('neighborhood')}</Label>
+                            <Label className="text-sm font-medium">{t('neighborhood')} *</Label>
                             <Popover open={openNeighborhoodCombobox} onOpenChange={setOpenNeighborhoodCombobox}>
                               <PopoverTrigger asChild>
                                 <Button
@@ -790,52 +826,113 @@ const RealEstateSearch = () => {
                         </h3>
                         
                         <div className="space-y-3">
+                          {/* Price Range */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('maxPrice')} (SAR)</Label>
-                            <div className="flex gap-2">
-                              <Input
-                                type="number"
-                                placeholder={t('maxPrice')}
-                                value={filters.maxPrice || ''}
-                                onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
-                                className="bg-background flex-1"
-                              />
-                              {filters.maxPrice > 0 && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => setFilters({ ...filters, maxPrice: 0 })}
-                                  className="shrink-0"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              )}
+                            <Label className="text-sm font-medium">{t('price')} (SAR) *</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">{t('min')}</Label>
+                                <div className="flex gap-1">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    placeholder={t('min')}
+                                    value={filters.minPrice || ''}
+                                    onChange={(e) => setFilters({ ...filters, minPrice: Number(e.target.value) })}
+                                    className="bg-background"
+                                  />
+                                  {filters.minPrice > 0 && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => setFilters({ ...filters, minPrice: 0 })}
+                                      className="shrink-0"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">{t('max')}</Label>
+                                <div className="flex gap-1">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    placeholder={t('max')}
+                                    value={filters.maxPrice || ''}
+                                    onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
+                                    className="bg-background"
+                                  />
+                                  {filters.maxPrice > 0 && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => setFilters({ ...filters, maxPrice: 0 })}
+                                      className="shrink-0"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
 
+                          {/* Area Range */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('areaSize')} (م²)</Label>
-                            <div className="flex gap-2">
-                              <Input
-                                type="number"
-                                min="0"
-                                placeholder={t('areaSize')}
-                                value={filters.areaMin || ''}
-                                onChange={(e) => setFilters({ ...filters, areaMin: Number(e.target.value), areaMax: 0 })}
-                                className="bg-background flex-1"
-                              />
-                              {filters.areaMin > 0 && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => setFilters({ ...filters, areaMin: 0, areaMax: 0 })}
-                                  className="shrink-0"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              )}
+                            <Label className="text-sm font-medium">{t('areaSize')} (م²) *</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">{t('min')}</Label>
+                                <div className="flex gap-1">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    placeholder={t('min')}
+                                    value={filters.areaMin || ''}
+                                    onChange={(e) => setFilters({ ...filters, areaMin: Number(e.target.value) })}
+                                    className="bg-background"
+                                  />
+                                  {filters.areaMin > 0 && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => setFilters({ ...filters, areaMin: 0 })}
+                                      className="shrink-0"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">{t('max')}</Label>
+                                <div className="flex gap-1">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    placeholder={t('max')}
+                                    value={filters.areaMax || ''}
+                                    onChange={(e) => setFilters({ ...filters, areaMax: Number(e.target.value) })}
+                                    className="bg-background"
+                                  />
+                                  {filters.areaMax > 0 && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => setFilters({ ...filters, areaMax: 0 })}
+                                      className="shrink-0"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1224,9 +1321,18 @@ const RealEstateSearch = () => {
                         <Button 
                           className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg" 
                           onClick={() => {
+                            if (!areMandatoryFieldsFilled()) {
+                              toast({
+                                title: t('mandatoryFieldsRequired'),
+                                description: t('mandatoryFieldsMessage'),
+                                variant: 'destructive',
+                              });
+                              return;
+                            }
                             setShowFilters(false);
                             setHasSearched(true);
                           }}
+                          disabled={!areMandatoryFieldsFilled()}
                         >
                           <Search className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
                           {t('applyFilters')}
