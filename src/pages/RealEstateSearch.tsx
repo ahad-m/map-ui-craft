@@ -73,6 +73,8 @@ const RealEstateSearch = () => {
       // تحديث العقارات المعروضة على الخريطة
       // ملاحظة: قد تحتاج تعديل اسم الدالة حسب الكود الموجود
       // تحديث العقارات من Chatbot
+      console.log('🎯 Chatbot Properties:', chatSearchResults);
+      console.log('🎯 Chatbot Properties Length:', chatSearchResults.length);
       setChatbotProperties(chatSearchResults);
       setShowChatbotResults(true);
       setHasSearched(true);
@@ -476,8 +478,8 @@ const RealEstateSearch = () => {
             disableDefaultUI={false}
           >
             {displayedProperties.map((property) => {
-              const lat = parseFloat(property.final_lat);
-              const lon = parseFloat(property.final_lon);
+              const lat = parseFloat(property.lat);
+              const lon = parseFloat(property.lon);
               if (isNaN(lat) || isNaN(lon)) return null;
               
               return (
