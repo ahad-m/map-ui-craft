@@ -493,6 +493,10 @@ const RealEstateSearch = () => {
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
+            // --- 💡 هذا هو التعديل الذي قمنا بإضافته ---
+            onCenterChanged={(e) => setMapCenter(e.detail.center)}
+            onZoomChanged={(e) => setMapZoom(e.detail.zoom)}
+            // --- 💡 نهاية التعديل ---
           >
             {displayedProperties.map((property) => {
               const lat = parseFloat(property.lat);
@@ -1004,11 +1008,11 @@ const RealEstateSearch = () => {
                                   className="w-full justify-between bg-background hover:bg-accent"
                                 >
                                   {filters.schoolLevel === 'nursery' ? t('nursery') :
-                                   filters.schoolLevel === 'kindergarten' ? t('kindergarten') :
-                                   filters.schoolLevel === 'elementary' ? t('elementary') :
-                                   filters.schoolLevel === 'middle' ? t('middle') :
-                                   filters.schoolLevel === 'high' ? t('high') :
-                                   filters.schoolLevel || t('schoolLevel')}
+                                    filters.schoolLevel === 'kindergarten' ? t('kindergarten') :
+                                    filters.schoolLevel === 'elementary' ? t('elementary') :
+                                    filters.schoolLevel === 'middle' ? t('middle') :
+                                    filters.schoolLevel === 'high' ? t('high') :
+                                    filters.schoolLevel || t('schoolLevel')}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
@@ -1047,11 +1051,11 @@ const RealEstateSearch = () => {
                                         >
                                           <Check className={cn("mr-2 h-4 w-4", filters.schoolLevel === level ? "opacity-100" : "opacity-0")} />
                                           {level === 'nursery' ? t('nursery') :
-                                           level === 'kindergarten' ? t('kindergarten') :
-                                           level === 'elementary' ? t('elementary') :
-                                           level === 'middle' ? t('middle') :
-                                           level === 'high' ? t('high') :
-                                           level}
+                                            level === 'kindergarten' ? t('kindergarten') :
+                                            level === 'elementary' ? t('elementary') :
+                                            level === 'middle' ? t('middle') :
+                                            level === 'high' ? t('high') :
+                                            level}
                                         </CommandItem>
                                       ))}
                                     </CommandGroup>
@@ -1329,7 +1333,7 @@ const RealEstateSearch = () => {
           </SheetContent>
         </Sheet>
 
-                {/* Clear Chatbot Results Button */}
+              {/* Clear Chatbot Results Button */}
         {showChatbotResults && (
           <div className="absolute bottom-24 right-4 z-10">
             <Button
