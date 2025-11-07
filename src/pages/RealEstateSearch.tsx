@@ -80,7 +80,7 @@ const RealEstateSearch = () => {
       setHasSearched(true);
       
       // إغلاق الـ chatbot
-      setIsChatOpen(false);
+      // setIsChatOpen(false); // تم تعطيل الإغلاق التلقائي
     }
   }, [chatSearchResults]);
 
@@ -423,8 +423,8 @@ const RealEstateSearch = () => {
       setMapCenter({ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon });
       setMapZoom(15);
     } else if (properties.length > 0) {
-      const lats = displayedProperties.map(p => parseFloat(p.final_lat)).filter(lat => !isNaN(lat));
-      const lngs = displayedProperties.map(p => parseFloat(p.final_lon)).filter(lng => !isNaN(lng));
+      const lats = displayedProperties.map(p => parseFloat(p.lat)).filter(lat => !isNaN(lat));
+      const lngs = displayedProperties.map(p => parseFloat(p.lon)).filter(lng => !isNaN(lng));
       
       if (lats.length > 0 && lngs.length > 0) {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
@@ -433,7 +433,24 @@ const RealEstateSearch = () => {
         setMapZoom(12);
       }
     }
-  }, [properties, selectedSchoolData, selectedUniversityData]);
+  }, [properties, displayedProperties, selectedSchoolData, selectedUniversityData]);
+
+  // توجيه الخريطة عند البحث من الشات
+  useEffect(() => {
+    console.log('🗺️ Map useEffect triggered:', { showChatbotResults, chatbotPropertiesLength: chatbotProperties.length });
+    if (showChatbotResults && chatbotProperties.length > 0) {
+      const lats = chatbotProperties.map(p => parseFloat(p.lat)).filter(lat => !isNaN(lat));
+      const lngs = chatbotProperties.map(p => parseFloat(p.lon)).filter(lng => !isNaN(lng));
+      
+      if (lats.length > 0 && lngs.length > 0) {
+        const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+        const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+        console.log('🗺️ Moving map to:', { lat: avgLat, lng: avgLng, zoom: 13 });
+        setMapCenter({ lat: avgLat, lng: avgLng });
+        setMapZoom(13);
+      }
+    }
+  }, [showChatbotResults, chatbotProperties]);
 
   const resetFilters = () => {
     setFilters({
@@ -471,8 +488,8 @@ const RealEstateSearch = () => {
       <div className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0">
           <Map
-            defaultCenter={mapCenter}
-            defaultZoom={mapZoom}
+            center={mapCenter}
+            zoom={mapZoom}
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
@@ -1314,7 +1331,7 @@ const RealEstateSearch = () => {
 
                 {/* Clear Chatbot Results Button */}
         {showChatbotResults && (
-          <div className="absolute top-24 left-4 z-10">
+          <div className="absolute bottom-24 right-4 z-10">
             <Button
               onClick={() => {
                 setShowChatbotResults(false);
