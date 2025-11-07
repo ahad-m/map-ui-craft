@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -420,9 +420,54 @@ const RealEstateSearch = () => {
     (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity
   );
 
+  // حساب المسافة بين نقطتين (Haversince formula)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // نصف قطر الأرض بالكيلومتر
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // المسافة بالكيلومتر
+  };
 
   // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
-  const displayedProperties = showChatbotResults ? chatbotProperties : properties;
+  const baseProperties = showChatbotResults ? chatbotProperties : properties;
+
+  // ترتيب العقارات بناءً على القرب من المدرسة أو الجامعة المختارة
+  const displayedProperties = useMemo(() => {
+    const propsToSort = [...baseProperties];
+    
+    if (selectedSchoolData) {
+      propsToSort.sort((a, b) => {
+        const distA = calculateDistance(
+          selectedSchoolData.lat, selectedSchoolData.lon,
+          parseFloat(a.final_lat), parseFloat(a.final_lon)
+        );
+        const distB = calculateDistance(
+          selectedSchoolData.lat, selectedSchoolData.lon,
+          parseFloat(b.final_lat), parseFloat(b.final_lon)
+        );
+        return distA - distB;
+      });
+    } else if (selectedUniversityData) {
+      propsToSort.sort((a, b) => {
+        const distA = calculateDistance(
+          selectedUniversityData.lat, selectedUniversityData.lon,
+          parseFloat(a.final_lat), parseFloat(a.final_lon)
+        );
+        const distB = calculateDistance(
+          selectedUniversityData.lat, selectedUniversityData.lon,
+          parseFloat(b.final_lat), parseFloat(b.final_lon)
+        );
+        return distA - distB;
+      });
+    }
+    
+    return propsToSort;
+  }, [baseProperties, selectedSchoolData, selectedUniversityData]);
+
   const displayedFavorites = displayedProperties.filter(p => favorites.includes(p.id));
 
   const handlePropertyClick = (property: any) => {
