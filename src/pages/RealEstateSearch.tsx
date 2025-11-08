@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
 import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -545,7 +545,7 @@ const RealEstateSearch = () => {
     }
   };
 
-  // Update map center
+  // Update map center for school/university selection
   useEffect(() => {
     if (selectedSchoolData) {
       setMapCenter({ lat: selectedSchoolData.lat, lng: selectedSchoolData.lon });
@@ -553,18 +553,8 @@ const RealEstateSearch = () => {
     } else if (selectedUniversityData) {
       setMapCenter({ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon });
       setMapZoom(15);
-    } else if (properties.length > 0) {
-      const lats = properties.map(p => Number(p.lat)).filter(lat => !isNaN(lat));
-      const lngs = properties.map(p => Number(p.lon)).filter(lng => !isNaN(lng));
-      
-      if (lats.length > 0 && lngs.length > 0) {
-        const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-        const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-        setMapCenter({ lat: avgLat, lng: avgLng });
-        setMapZoom(12);
-      }
     }
-  }, [properties, selectedSchoolData, selectedUniversityData]);
+  }, [selectedSchoolData, selectedUniversityData]);
 
   // توجيه الخريطة عند البحث من الشات
   useEffect(() => {
@@ -615,6 +605,42 @@ const RealEstateSearch = () => {
     setHasSearched(false);
   };
 
+  // Component to handle map bounds
+  const MapBoundsHandler = ({ properties, selectedSchool, selectedUniversity }: any) => {
+    const map = useMap();
+    
+    useEffect(() => {
+      if (!map) return;
+      
+      if (selectedSchool || selectedUniversity) return; // Let individual selections handle zoom
+      
+      if (properties.length > 0) {
+        const bounds = new google.maps.LatLngBounds();
+        let hasValidCoords = false;
+        
+        properties.forEach((property: any) => {
+          const lat = Number(property.lat);
+          const lon = Number(property.lon);
+          if (!isNaN(lat) && !isNaN(lon)) {
+            bounds.extend({ lat, lng: lon });
+            hasValidCoords = true;
+          }
+        });
+        
+        if (hasValidCoords) {
+          map.fitBounds(bounds, {
+            top: 150,
+            bottom: 150,
+            left: 150,
+            right: 150,
+          });
+        }
+      }
+    }, [map, properties, selectedSchool, selectedUniversity]);
+    
+    return null;
+  };
+
 
   return (
     <APIProvider apiKey={apiKey}>
@@ -626,11 +652,14 @@ const RealEstateSearch = () => {
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
-            // --- 💡 هذا هو التعديل الذي قمنا بإضافته ---
             onCenterChanged={(e) => setMapCenter(e.detail.center)}
             onZoomChanged={(e) => setMapZoom(e.detail.zoom)}
-            // --- 💡 نهاية التعديل ---
           >
+            <MapBoundsHandler 
+              properties={displayedProperties}
+              selectedSchool={selectedSchoolData}
+              selectedUniversity={selectedUniversityData}
+            />
             {displayedProperties.map((property) => {
               const lat = Number(property.lat);
               const lon = Number(property.lon);
