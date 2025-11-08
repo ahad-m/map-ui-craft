@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -41,7 +41,6 @@ const RealEstateSearch = () => {
   const [mapZoom, setMapZoom] = useState(12);
   const [showPropertyDialog, setShowPropertyDialog] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
-  const [autoFitEnabled, setAutoFitEnabled] = useState(true);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const {
     messages,
@@ -604,59 +603,22 @@ const RealEstateSearch = () => {
       schoolLevel: '',
     });
     setHasSearched(false);
-    setAutoFitEnabled(true); // Re-enable auto-fit when filters reset
   };
 
-  // Component to handle map bounds
-  const MapBoundsHandler = ({ properties, selectedSchool, selectedUniversity }: any) => {
-    const map = useMap();
-    const lastBoundsRef = useRef<string>('');
-    const hasFittedRef = useRef(false);
+  // Auto-center map on filtered properties once
+  useEffect(() => {
+    if (selectedSchoolData || selectedUniversityData || displayedProperties.length === 0) return;
     
-    useEffect(() => {
-      if (!map || !autoFitEnabled) return;
-      
-      if (selectedSchool || selectedUniversity) {
-        hasFittedRef.current = false;
-        return; // Let individual selections handle zoom
-      }
-      
-      if (properties.length > 0 && !hasFittedRef.current) {
-        const bounds = new google.maps.LatLngBounds();
-        let hasValidCoords = false;
-        
-        properties.forEach((property: any) => {
-          const lat = Number(property.lat);
-          const lon = Number(property.lon);
-          if (!isNaN(lat) && !isNaN(lon)) {
-            bounds.extend({ lat, lng: lon });
-            hasValidCoords = true;
-          }
-        });
-        
-        if (hasValidCoords) {
-          // Create a unique key for these bounds to prevent repeated calls
-          const boundsKey = `${bounds.getNorthEast().lat()},${bounds.getNorthEast().lng()},${bounds.getSouthWest().lat()},${bounds.getSouthWest().lng()}`;
-          
-          // Only call fitBounds if the bounds have actually changed
-          if (boundsKey !== lastBoundsRef.current) {
-            lastBoundsRef.current = boundsKey;
-            hasFittedRef.current = true;
-            map.fitBounds(bounds, {
-              top: 150,
-              bottom: 150,
-              left: 150,
-              right: 150,
-            });
-            // Allow manual control after auto-fit
-            setTimeout(() => setAutoFitEnabled(false), 500);
-          }
-        }
-      }
-    }, [map, properties, selectedSchool, selectedUniversity, autoFitEnabled]);
+    const lats = displayedProperties.map(p => Number(p.lat)).filter(lat => !isNaN(lat));
+    const lngs = displayedProperties.map(p => Number(p.lon)).filter(lng => !isNaN(lng));
     
-    return null;
-  };
+    if (lats.length > 0 && lngs.length > 0) {
+      const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+      const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+      setMapCenter({ lat: avgLat, lng: avgLng });
+      setMapZoom(12);
+    }
+  }, [displayedProperties.length, selectedSchoolData, selectedUniversityData]);
 
 
   return (
@@ -670,11 +632,6 @@ const RealEstateSearch = () => {
             gestureHandling="greedy"
             disableDefaultUI={false}
           >
-            <MapBoundsHandler 
-              properties={displayedProperties}
-              selectedSchool={selectedSchoolData}
-              selectedUniversity={selectedUniversityData}
-            />
             {displayedProperties.map((property) => {
               const lat = Number(property.lat);
               const lon = Number(property.lon);
