@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bed, Bath, Maximize, MapPin, Heart, ExternalLink, Home } from 'lucide-react';
+import { Bed, Bath, Maximize, MapPin, Heart, ExternalLink, Home, School, GraduationCap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface PropertyDetailsDialogProps {
@@ -10,6 +10,8 @@ interface PropertyDetailsDialogProps {
   onClose: () => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  selectedSchool?: { name: string; lat: number; lon: number } | null;
+  selectedUniversity?: { name: string; lat: number; lon: number } | null;
 }
 
 export const PropertyDetailsDialog = ({
@@ -18,10 +20,34 @@ export const PropertyDetailsDialog = ({
   onClose,
   isFavorite,
   onToggleFavorite,
+  selectedSchool,
+  selectedUniversity,
 }: PropertyDetailsDialogProps) => {
   const { t } = useTranslation();
 
   if (!property) return null;
+
+  // Calculate distance using Haversine formula
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Calculate school distance if available
+  const schoolDistance = selectedSchool && property.final_lat && property.final_lon
+    ? calculateDistance(selectedSchool.lat, selectedSchool.lon, Number(property.final_lat), Number(property.final_lon))
+    : null;
+
+  // Calculate university distance if available
+  const universityDistance = selectedUniversity && property.final_lat && property.final_lon
+    ? calculateDistance(selectedUniversity.lat, selectedUniversity.lon, Number(property.final_lat), Number(property.final_lon))
+    : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -109,17 +135,44 @@ export const PropertyDetailsDialog = ({
             )}
           </div>
 
-          {/* Metro Time */}
-          {property.time_to_metro_min && (
-            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-blue-600" />
-                <span className="text-blue-600 font-medium">
-                  {Math.round(parseFloat(property.time_to_metro_min))} {t('minToMetro')}
-                </span>
+          {/* Proximity Information */}
+          <div className="space-y-3">
+            {/* Metro Time */}
+            {property.time_to_metro_min && (
+              <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-blue-600" />
+                  <span className="text-blue-600 font-medium">
+                    {Math.round(parseFloat(property.time_to_metro_min))} {t('minToMetro')}
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* School Distance */}
+            {schoolDistance !== null && selectedSchool && (
+              <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <div className="flex items-center gap-2">
+                  <School className="h-5 w-5 text-blue-600" />
+                  <span className="text-blue-600 font-medium">
+                    {schoolDistance.toFixed(1)} {t('km')} {t('toSchool')}: {selectedSchool.name}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* University Distance */}
+            {universityDistance !== null && selectedUniversity && (
+              <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-purple-600" />
+                  <span className="text-purple-600 font-medium">
+                    {universityDistance.toFixed(1)} {t('km')} {t('toUniversity')}: {selectedUniversity.name}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Description */}
           {property.description && (

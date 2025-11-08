@@ -1455,6 +1455,16 @@ const RealEstateSearch = () => {
           }}
           isFavorite={selectedProperty ? isFavorite(selectedProperty.id) : false}
           onToggleFavorite={() => selectedProperty && handleToggleFavorite(selectedProperty.id)}
+          selectedSchool={selectedSchoolData ? {
+            name: selectedSchoolData.name,
+            lat: selectedSchoolData.lat,
+            lon: selectedSchoolData.lon
+          } : null}
+          selectedUniversity={selectedUniversityData ? {
+            name: i18n.language === 'ar' ? selectedUniversityData.name_ar : selectedUniversityData.name_en,
+            lat: selectedUniversityData.lat,
+            lon: selectedUniversityData.lon
+          } : null}
         />
 
         {/* Favorites Sheet */}
