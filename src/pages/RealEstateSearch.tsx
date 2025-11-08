@@ -589,6 +589,27 @@ const RealEstateSearch = () => {
     }
   }, [showChatbotResults, chatbotProperties]);
 
+  // توجيه الخريطة عند تغيير نتائج البحث العادية
+  useEffect(() => {
+    if (!mapRef.current || displayedProperties.length === 0 || !hasSearched) return;
+    
+    const lats = displayedProperties.map(p => Number(p.final_lat)).filter(lat => !isNaN(lat));
+    const lngs = displayedProperties.map(p => Number(p.final_lon)).filter(lng => !isNaN(lng));
+    
+    if (lats.length > 0 && lngs.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      displayedProperties.forEach(property => {
+        const lat = Number(property.final_lat);
+        const lng = Number(property.final_lon);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          bounds.extend({ lat, lng });
+        }
+      });
+      
+      mapRef.current.fitBounds(bounds);
+    }
+  }, [displayedProperties, hasSearched]);
+
   const resetFilters = () => {
     setFilters({
       propertyType: '',
