@@ -608,6 +608,7 @@ const RealEstateSearch = () => {
   // Component to handle map bounds
   const MapBoundsHandler = ({ properties, selectedSchool, selectedUniversity }: any) => {
     const map = useMap();
+    const lastBoundsRef = useRef<string>('');
     
     useEffect(() => {
       if (!map) return;
@@ -628,12 +629,19 @@ const RealEstateSearch = () => {
         });
         
         if (hasValidCoords) {
-          map.fitBounds(bounds, {
-            top: 150,
-            bottom: 150,
-            left: 150,
-            right: 150,
-          });
+          // Create a unique key for these bounds to prevent repeated calls
+          const boundsKey = `${bounds.getNorthEast().lat()},${bounds.getNorthEast().lng()},${bounds.getSouthWest().lat()},${bounds.getSouthWest().lng()}`;
+          
+          // Only call fitBounds if the bounds have actually changed
+          if (boundsKey !== lastBoundsRef.current) {
+            lastBoundsRef.current = boundsKey;
+            map.fitBounds(bounds, {
+              top: 150,
+              bottom: 150,
+              left: 150,
+              right: 150,
+            });
+          }
         }
       }
     }, [map, properties, selectedSchool, selectedUniversity]);
