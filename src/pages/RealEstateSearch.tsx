@@ -546,8 +546,8 @@ const RealEstateSearch = () => {
       setMapCenter({ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon });
       setMapZoom(15);
     } else if (properties.length > 0) {
-      const lats = displayedProperties.map(p => parseFloat(p.lat)).filter(lat => !isNaN(lat));
-      const lngs = displayedProperties.map(p => parseFloat(p.lon)).filter(lng => !isNaN(lng));
+      const lats = properties.map(p => parseFloat(p.lat)).filter(lat => !isNaN(lat));
+      const lngs = properties.map(p => parseFloat(p.lon)).filter(lng => !isNaN(lng));
       
       if (lats.length > 0 && lngs.length > 0) {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
@@ -556,7 +556,7 @@ const RealEstateSearch = () => {
         setMapZoom(12);
       }
     }
-  }, [properties, displayedProperties, selectedSchoolData, selectedUniversityData]);
+  }, [properties, selectedSchoolData, selectedUniversityData]);
 
   // توجيه الخريطة عند البحث من الشات
   useEffect(() => {
