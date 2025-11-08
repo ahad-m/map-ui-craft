@@ -644,8 +644,8 @@ const RealEstateSearch = () => {
                 >
                   <div className="relative">
                     <Pin
-                      background={transactionType === 'sale' ? '#16a34a' : '#0ea5e9'}
-                      borderColor={transactionType === 'sale' ? '#15803d' : '#0284c7'}
+                      background={transactionType === 'sale' ? '#15803d' : '#22c55e'}
+                      borderColor={transactionType === 'sale' ? '#14532d' : '#16a34a'}
                       glyphColor={'#ffffff'}
                     />
                     {isFavorite(property.id) && (
@@ -667,7 +667,7 @@ const RealEstateSearch = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
-                      filters.selectedSchool === school.id ? 'bg-green-600 ring-4 ring-green-300' : 'bg-green-500'
+                      filters.selectedSchool === school.id ? 'bg-green-400 ring-4 ring-green-200' : 'bg-green-300'
                     }`}>
                       <School className="h-5 w-5 text-white" />
                     </div>
@@ -692,7 +692,7 @@ const RealEstateSearch = () => {
                   <TooltipTrigger asChild>
                     <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
                       filters.selectedUniversity === (i18n.language === 'ar' ? university.name_ar : university.name_en) 
-                        ? 'bg-emerald-600 ring-4 ring-emerald-300' : 'bg-emerald-500'
+                        ? 'bg-green-700 ring-4 ring-green-400' : 'bg-green-600'
                     }`}>
                       <GraduationCap className="h-5 w-5 text-white" />
                     </div>
