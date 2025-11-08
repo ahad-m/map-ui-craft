@@ -390,7 +390,56 @@ const RealEstateSearch = () => {
     },
   });
 
-  const selectedSchoolData = allSchools.find(school => school.id === filters.selectedSchool);
+  // حساب المسافة بين نقطتين (Haversine formula)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // نصف قطر الأرض بالكيلومتر
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // المسافة بالكيلومتر
+  };
+
+  // حساب موقع مركز العقارات المفلترة
+  const propertiesCenterLocation = useMemo(() => {
+    if (properties.length === 0) return null;
+    
+    const validProperties = properties.filter(p => 
+      p.final_lat && p.final_lon && 
+      !isNaN(parseFloat(p.final_lat)) && !isNaN(parseFloat(p.final_lon))
+    );
+    
+    if (validProperties.length === 0) return null;
+    
+    // حساب متوسط الإحداثيات
+    const sumLat = validProperties.reduce((sum, p) => sum + parseFloat(p.final_lat), 0);
+    const sumLon = validProperties.reduce((sum, p) => sum + parseFloat(p.final_lon), 0);
+    
+    return {
+      lat: sumLat / validProperties.length,
+      lon: sumLon / validProperties.length
+    };
+  }, [properties]);
+
+  // تصفية المدارس لإظهار القريبة فقط (ضمن 5 كم)
+  const nearbySchools = useMemo(() => {
+    if (!propertiesCenterLocation || allSchools.length === 0) return allSchools;
+    
+    const RADIUS_KM = 5;
+    return allSchools.filter(school => {
+      const distance = calculateDistance(
+        propertiesCenterLocation.lat,
+        propertiesCenterLocation.lon,
+        school.lat,
+        school.lon
+      );
+      return distance <= RADIUS_KM;
+    });
+  }, [allSchools, propertiesCenterLocation]);
+
+  const selectedSchoolData = nearbySchools.find(school => school.id === filters.selectedSchool);
 
   // Fetch all universities with custom search
   const { data: allUniversities = [] } = useQuery({
@@ -416,21 +465,25 @@ const RealEstateSearch = () => {
     },
   });
 
-  const selectedUniversityData = allUniversities.find(uni => 
+  // تصفية الجامعات لإظهار القريبة فقط (ضمن 5 كم)
+  const nearbyUniversities = useMemo(() => {
+    if (!propertiesCenterLocation || allUniversities.length === 0) return allUniversities;
+    
+    const RADIUS_KM = 5;
+    return allUniversities.filter(uni => {
+      const distance = calculateDistance(
+        propertiesCenterLocation.lat,
+        propertiesCenterLocation.lon,
+        uni.lat,
+        uni.lon
+      );
+      return distance <= RADIUS_KM;
+    });
+  }, [allUniversities, propertiesCenterLocation]);
+
+  const selectedUniversityData = nearbyUniversities.find(uni => 
     (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity
   );
-
-  // حساب المسافة بين نقطتين (Haversince formula)
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // نصف قطر الأرض بالكيلومتر
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c; // المسافة بالكيلومتر
-  };
 
   // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
   const baseProperties = showChatbotResults ? chatbotProperties : properties;
@@ -1202,7 +1255,7 @@ const RealEstateSearch = () => {
                               <PopoverTrigger asChild>
                                 <Button variant="outline" role="combobox" className="w-full justify-between bg-background hover:bg-accent">
                                   {filters.selectedSchool
-                                    ? allSchools.find((s) => s.id === filters.selectedSchool)?.name || t('selectSchool')
+                                    ? nearbySchools.find((s) => s.id === filters.selectedSchool)?.name || t('selectSchool')
                                     : t('selectSchool')}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
@@ -1215,9 +1268,9 @@ const RealEstateSearch = () => {
                                       setCustomSearchTerms({ ...customSearchTerms, school: value });
                                     }}
                                   />
-                                  <CommandList>
+                                   <CommandList>
                                     <CommandEmpty>
-                                      {allSchools.length === 0 ? t('notFound') : t('noSchoolFound')}
+                                      {nearbySchools.length === 0 ? t('noNearbySchools') || 'No nearby schools found' : t('noSchoolFound')}
                                     </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
@@ -1230,7 +1283,7 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.selectedSchool ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
-                                      {allSchools.map((school) => (
+                                      {nearbySchools.map((school) => (
                                         <CommandItem
                                           key={school.id}
                                           value={`${school.name} ${school.district || ''}`}
@@ -1270,9 +1323,9 @@ const RealEstateSearch = () => {
                                       setCustomSearchTerms({ ...customSearchTerms, university: value });
                                     }}
                                   />
-                                  <CommandList>
+                                   <CommandList>
                                     <CommandEmpty>
-                                      {allUniversities.length === 0 ? t('notFound') : t('noUniversityFound')}
+                                      {nearbyUniversities.length === 0 ? t('noNearbyUniversities') || 'No nearby universities found' : t('noUniversityFound')}
                                     </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
@@ -1285,7 +1338,7 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.selectedUniversity ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
-                                      {allUniversities.map((uni, index) => {
+                                      {nearbyUniversities.map((uni, index) => {
                                         const uniName = i18n.language === 'ar' ? uni.name_ar : uni.name_en;
                                         return (
                                           <CommandItem
