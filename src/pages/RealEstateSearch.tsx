@@ -263,8 +263,13 @@ const RealEstateSearch = () => {
       if (error) throw error;
 
       return (data || []).filter(property => {
-        const price = parseFloat(property.price_num?.replace(/,/g, '') || '0');
-        const area = parseFloat(property.area_m2?.replace(/,/g, '') || '0');
+        // Handle numeric types (can be number or string depending on data)
+        const price = typeof property.price_num === 'string' 
+          ? parseFloat(property.price_num.replace(/,/g, '')) 
+          : Number(property.price_num) || 0;
+        const area = typeof property.area_m2 === 'string'
+          ? parseFloat(property.area_m2.replace(/,/g, ''))
+          : Number(property.area_m2) || 0;
         
         // Price matching logic: exact if only one value, range if both values
         let priceMatch = true;
@@ -294,7 +299,9 @@ const RealEstateSearch = () => {
         
         let metroMatch = true;
         if (filters.nearMetro && property.time_to_metro_min) {
-          const metroTime = parseFloat(property.time_to_metro_min);
+          const metroTime = typeof property.time_to_metro_min === 'string'
+            ? parseFloat(property.time_to_metro_min)
+            : Number(property.time_to_metro_min);
           metroMatch = !isNaN(metroTime) && metroTime <= filters.minMetroTime;
         }
         
@@ -408,14 +415,14 @@ const RealEstateSearch = () => {
     
     const validProperties = properties.filter(p => 
       p.final_lat && p.final_lon && 
-      !isNaN(parseFloat(p.final_lat)) && !isNaN(parseFloat(p.final_lon))
+      !isNaN(Number(p.final_lat)) && !isNaN(Number(p.final_lon))
     );
     
     if (validProperties.length === 0) return null;
     
     // حساب متوسط الإحداثيات
-    const sumLat = validProperties.reduce((sum, p) => sum + parseFloat(p.final_lat), 0);
-    const sumLon = validProperties.reduce((sum, p) => sum + parseFloat(p.final_lon), 0);
+    const sumLat = validProperties.reduce((sum, p) => sum + Number(p.final_lat), 0);
+    const sumLon = validProperties.reduce((sum, p) => sum + Number(p.final_lon), 0);
     
     return {
       lat: sumLat / validProperties.length,
@@ -496,11 +503,11 @@ const RealEstateSearch = () => {
       propsToSort.sort((a, b) => {
         const distA = calculateDistance(
           selectedSchoolData.lat, selectedSchoolData.lon,
-          parseFloat(a.final_lat), parseFloat(a.final_lon)
+          Number(a.final_lat), Number(a.final_lon)
         );
         const distB = calculateDistance(
           selectedSchoolData.lat, selectedSchoolData.lon,
-          parseFloat(b.final_lat), parseFloat(b.final_lon)
+          Number(b.final_lat), Number(b.final_lon)
         );
         return distA - distB;
       });
@@ -508,11 +515,11 @@ const RealEstateSearch = () => {
       propsToSort.sort((a, b) => {
         const distA = calculateDistance(
           selectedUniversityData.lat, selectedUniversityData.lon,
-          parseFloat(a.final_lat), parseFloat(a.final_lon)
+          Number(a.final_lat), Number(a.final_lon)
         );
         const distB = calculateDistance(
           selectedUniversityData.lat, selectedUniversityData.lon,
-          parseFloat(b.final_lat), parseFloat(b.final_lon)
+          Number(b.final_lat), Number(b.final_lon)
         );
         return distA - distB;
       });
@@ -546,8 +553,8 @@ const RealEstateSearch = () => {
       setMapCenter({ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon });
       setMapZoom(15);
     } else if (properties.length > 0) {
-      const lats = properties.map(p => parseFloat(p.lat)).filter(lat => !isNaN(lat));
-      const lngs = properties.map(p => parseFloat(p.lon)).filter(lng => !isNaN(lng));
+      const lats = properties.map(p => Number(p.lat)).filter(lat => !isNaN(lat));
+      const lngs = properties.map(p => Number(p.lon)).filter(lng => !isNaN(lng));
       
       if (lats.length > 0 && lngs.length > 0) {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
@@ -562,8 +569,8 @@ const RealEstateSearch = () => {
   useEffect(() => {
     console.log('🗺️ Map useEffect triggered:', { showChatbotResults, chatbotPropertiesLength: chatbotProperties.length });
     if (showChatbotResults && chatbotProperties.length > 0) {
-      const lats = chatbotProperties.map(p => parseFloat(p.lat)).filter(lat => !isNaN(lat));
-      const lngs = chatbotProperties.map(p => parseFloat(p.lon)).filter(lng => !isNaN(lng));
+      const lats = chatbotProperties.map(p => Number(p.lat)).filter(lat => !isNaN(lat));
+      const lngs = chatbotProperties.map(p => Number(p.lon)).filter(lng => !isNaN(lng));
       
       if (lats.length > 0 && lngs.length > 0) {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
@@ -624,8 +631,8 @@ const RealEstateSearch = () => {
             // --- 💡 نهاية التعديل ---
           >
             {displayedProperties.map((property) => {
-              const lat = parseFloat(property.lat);
-              const lon = parseFloat(property.lon);
+              const lat = Number(property.lat);
+              const lon = Number(property.lon);
               if (isNaN(lat) || isNaN(lon)) return null;
               
               return (
