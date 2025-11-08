@@ -168,6 +168,7 @@ class LLMParser:
                 function_call={"name": "extract_property_criteria"},
                 temperature=settings.LLM_TEMPERATURE,
                 max_tokens=settings.LLM_MAX_TOKENS
+                timeout=30.0
             )
             
             # استخراج النتيجة
