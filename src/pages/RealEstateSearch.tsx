@@ -680,7 +680,7 @@ const RealEstateSearch = () => {
                   setFilters({ ...filters, selectedUniversity: uniName });
                 }}
               >
-                <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
+                <div className={`p-2.5 rounded-lg shadow-lg cursor-pointer transition-transform hover:scale-110 ${
                   filters.selectedUniversity === (i18n.language === 'ar' ? university.name_ar : university.name_en) 
                     ? 'bg-purple-600 ring-4 ring-purple-300' : 'bg-purple-500'
                 }`}>
