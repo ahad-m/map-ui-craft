@@ -655,27 +655,39 @@ const RealEstateSearch = () => {
               );
             })}
 
-            {selectedSchoolData && (
+            {nearbySchools.map((school) => (
               <AdvancedMarker
-                key={`school-${selectedSchoolData.id}`}
-                position={{ lat: selectedSchoolData.lat, lng: selectedSchoolData.lon }}
+                key={`school-${school.id}`}
+                position={{ lat: school.lat, lng: school.lon }}
+                onClick={() => {
+                  setFilters({ ...filters, selectedSchool: school.id });
+                }}
               >
-                <div className="bg-blue-500 p-2 rounded-full shadow-lg">
+                <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
+                  filters.selectedSchool === school.id ? 'bg-blue-600 ring-4 ring-blue-300' : 'bg-blue-500'
+                }`}>
                   <School className="h-5 w-5 text-white" />
                 </div>
               </AdvancedMarker>
-            )}
+            ))}
 
-            {selectedUniversityData && (
+            {nearbyUniversities.map((university) => (
               <AdvancedMarker
-                key={`university-${selectedUniversityData.name_ar}`}
-                position={{ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon }}
+                key={`university-${university.name_ar}`}
+                position={{ lat: university.lat, lng: university.lon }}
+                onClick={() => {
+                  const uniName = i18n.language === 'ar' ? university.name_ar : university.name_en;
+                  setFilters({ ...filters, selectedUniversity: uniName });
+                }}
               >
-                <div className="bg-purple-500 p-2 rounded-full shadow-lg">
+                <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
+                  filters.selectedUniversity === (i18n.language === 'ar' ? university.name_ar : university.name_en) 
+                    ? 'bg-purple-600 ring-4 ring-purple-300' : 'bg-purple-500'
+                }`}>
                   <GraduationCap className="h-5 w-5 text-white" />
                 </div>
               </AdvancedMarker>
-            )}
+            ))}
           </Map>
         </div>
 
