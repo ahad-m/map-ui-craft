@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
@@ -663,11 +664,18 @@ const RealEstateSearch = () => {
                   setFilters({ ...filters, selectedSchool: school.id });
                 }}
               >
-                <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
-                  filters.selectedSchool === school.id ? 'bg-blue-600 ring-4 ring-blue-300' : 'bg-blue-500'
-                }`}>
-                  <School className="h-5 w-5 text-white" />
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
+                      filters.selectedSchool === school.id ? 'bg-blue-600 ring-4 ring-blue-300' : 'bg-blue-500'
+                    }`}>
+                      <School className="h-5 w-5 text-white" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="font-medium">{school.name}</p>
+                  </TooltipContent>
+                </Tooltip>
               </AdvancedMarker>
             ))}
 
@@ -680,12 +688,19 @@ const RealEstateSearch = () => {
                   setFilters({ ...filters, selectedUniversity: uniName });
                 }}
               >
-                <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
-                  filters.selectedUniversity === (i18n.language === 'ar' ? university.name_ar : university.name_en) 
-                    ? 'bg-purple-600 ring-4 ring-purple-300' : 'bg-purple-500'
-                }`}>
-                  <GraduationCap className="h-5 w-5 text-white" />
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={`p-2 rounded-lg shadow-lg cursor-pointer transition-transform hover:scale-110 ${
+                      filters.selectedUniversity === (i18n.language === 'ar' ? university.name_ar : university.name_en) 
+                        ? 'bg-purple-600 ring-4 ring-purple-300' : 'bg-purple-500'
+                    }`}>
+                      <GraduationCap className="h-5 w-5 text-white" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="font-medium">{i18n.language === 'ar' ? university.name_ar : university.name_en}</p>
+                  </TooltipContent>
+                </Tooltip>
               </AdvancedMarker>
             ))}
           </Map>
