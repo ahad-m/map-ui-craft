@@ -655,7 +655,7 @@ const RealEstateSearch = () => {
               );
             })}
 
-            {nearbySchools.map((school) => (
+            {hasSearched && nearbySchools.map((school) => (
               <AdvancedMarker
                 key={`school-${school.id}`}
                 position={{ lat: school.lat, lng: school.lon }}
@@ -671,7 +671,7 @@ const RealEstateSearch = () => {
               </AdvancedMarker>
             ))}
 
-            {nearbyUniversities.map((university) => (
+            {hasSearched && nearbyUniversities.map((university) => (
               <AdvancedMarker
                 key={`university-${university.name_ar}`}
                 position={{ lat: university.lat, lng: university.lon }}
