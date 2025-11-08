@@ -41,6 +41,7 @@ const RealEstateSearch = () => {
   const [mapZoom, setMapZoom] = useState(12);
   const [showPropertyDialog, setShowPropertyDialog] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [autoFitEnabled, setAutoFitEnabled] = useState(true);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const {
     messages,
@@ -603,19 +604,24 @@ const RealEstateSearch = () => {
       schoolLevel: '',
     });
     setHasSearched(false);
+    setAutoFitEnabled(true); // Re-enable auto-fit when filters reset
   };
 
   // Component to handle map bounds
   const MapBoundsHandler = ({ properties, selectedSchool, selectedUniversity }: any) => {
     const map = useMap();
     const lastBoundsRef = useRef<string>('');
+    const hasFittedRef = useRef(false);
     
     useEffect(() => {
-      if (!map) return;
+      if (!map || !autoFitEnabled) return;
       
-      if (selectedSchool || selectedUniversity) return; // Let individual selections handle zoom
+      if (selectedSchool || selectedUniversity) {
+        hasFittedRef.current = false;
+        return; // Let individual selections handle zoom
+      }
       
-      if (properties.length > 0) {
+      if (properties.length > 0 && !hasFittedRef.current) {
         const bounds = new google.maps.LatLngBounds();
         let hasValidCoords = false;
         
@@ -635,16 +641,19 @@ const RealEstateSearch = () => {
           // Only call fitBounds if the bounds have actually changed
           if (boundsKey !== lastBoundsRef.current) {
             lastBoundsRef.current = boundsKey;
+            hasFittedRef.current = true;
             map.fitBounds(bounds, {
               top: 150,
               bottom: 150,
               left: 150,
               right: 150,
             });
+            // Allow manual control after auto-fit
+            setTimeout(() => setAutoFitEnabled(false), 500);
           }
         }
       }
-    }, [map, properties, selectedSchool, selectedUniversity]);
+    }, [map, properties, selectedSchool, selectedUniversity, autoFitEnabled]);
     
     return null;
   };
