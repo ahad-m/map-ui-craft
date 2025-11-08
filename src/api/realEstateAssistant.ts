@@ -75,9 +75,7 @@ export interface SearchResponse {
 }
 
 // إعدادات API
-
 const API_BASE_URL = "https://riyal-estate-56q6.onrender.com";
-
 /**
  * الحصول على رسالة الترحيب من المساعد
  */
