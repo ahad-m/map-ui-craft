@@ -128,7 +128,7 @@ const RealEstateSearch = () => {
     selectedSchool: '',
     selectedUniversity: '',
     nearMetro: false,
-    minMetroTime: 5,
+    minMetroTime: 1,
     nearHospitals: false,
     nearMosques: false,
   });
@@ -627,7 +627,7 @@ const RealEstateSearch = () => {
       selectedSchool: '',
       selectedUniversity: '',
       nearMetro: false,
-      minMetroTime: 5,
+      minMetroTime: 1,
       nearHospitals: false,
       nearMosques: false,
     });
@@ -1460,9 +1460,9 @@ const RealEstateSearch = () => {
                               <Slider
                                 value={[filters.minMetroTime]}
                                 onValueChange={(value) => setFilters({ ...filters, minMetroTime: value[0] })}
-                                min={5}
+                                min={1}
                                 max={30}
-                                step={5}
+                                step={1}
                                 className="w-full"
                               />
                             </div>
