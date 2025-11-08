@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
 import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +41,7 @@ const RealEstateSearch = () => {
   const [mapZoom, setMapZoom] = useState(12);
   const [showPropertyDialog, setShowPropertyDialog] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const mapRef = useRef<google.maps.Map | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const {
     messages,
@@ -547,17 +548,20 @@ const RealEstateSearch = () => {
 
   // Update map center for school/university selection
   useEffect(() => {
+    if (!mapRef.current) return;
+    
     if (selectedSchoolData) {
-      setMapCenter({ lat: selectedSchoolData.lat, lng: selectedSchoolData.lon });
-      setMapZoom(15);
+      mapRef.current.setCenter({ lat: selectedSchoolData.lat, lng: selectedSchoolData.lon });
+      mapRef.current.setZoom(15);
     } else if (selectedUniversityData) {
-      setMapCenter({ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon });
-      setMapZoom(15);
+      mapRef.current.setCenter({ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon });
+      mapRef.current.setZoom(15);
     }
   }, [selectedSchoolData, selectedUniversityData]);
 
   // توجيه الخريطة عند البحث من الشات
   useEffect(() => {
+    if (!mapRef.current) return;
     console.log('🗺️ Map useEffect triggered:', { showChatbotResults, chatbotPropertiesLength: chatbotProperties.length });
     if (showChatbotResults && chatbotProperties.length > 0) {
       const lats = chatbotProperties.map(p => Number(p.lat)).filter(lat => !isNaN(lat));
@@ -567,8 +571,8 @@ const RealEstateSearch = () => {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
         const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
         console.log('🗺️ Moving map to:', { lat: avgLat, lng: avgLng, zoom: 13 });
-        setMapCenter({ lat: avgLat, lng: avgLng });
-        setMapZoom(13);
+        mapRef.current.setCenter({ lat: avgLat, lng: avgLng });
+        mapRef.current.setZoom(13);
       }
     }
   }, [showChatbotResults, chatbotProperties]);
@@ -605,18 +609,30 @@ const RealEstateSearch = () => {
     setHasSearched(false);
   };
 
+  // Component to save map reference
+  const MapRefHandler = () => {
+    const map = useMap();
+    useEffect(() => {
+      if (map) {
+        mapRef.current = map;
+      }
+    }, [map]);
+    return null;
+  };
+
 
   return (
     <APIProvider apiKey={apiKey}>
       <div className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0">
           <Map
-            center={mapCenter}
-            zoom={mapZoom}
+            defaultCenter={mapCenter}
+            defaultZoom={mapZoom}
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
           >
+            <MapRefHandler />
             {displayedProperties.map((property) => {
               const lat = Number(property.lat);
               const lon = Number(property.lon);
