@@ -39,15 +39,23 @@ export const PropertyDetailsDialog = ({
     return R * c;
   };
 
-  // Calculate school distance if available
+  // Calculate estimated travel time (assuming average city speed of 30 km/h)
+  const calculateTravelTime = (distanceKm: number): number => {
+    const avgSpeed = 30; // km/h in city traffic
+    return Math.round((distanceKm / avgSpeed) * 60); // Convert to minutes
+  };
+
+  // Calculate school distance and travel time if available
   const schoolDistance = selectedSchool && property.final_lat && property.final_lon
     ? calculateDistance(selectedSchool.lat, selectedSchool.lon, Number(property.final_lat), Number(property.final_lon))
     : null;
+  const schoolTravelTime = schoolDistance !== null ? calculateTravelTime(schoolDistance) : null;
 
-  // Calculate university distance if available
+  // Calculate university distance and travel time if available
   const universityDistance = selectedUniversity && property.final_lat && property.final_lon
     ? calculateDistance(selectedUniversity.lat, selectedUniversity.lon, Number(property.final_lat), Number(property.final_lon))
     : null;
+  const universityTravelTime = universityDistance !== null ? calculateTravelTime(universityDistance) : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -150,24 +158,24 @@ export const PropertyDetailsDialog = ({
             )}
 
             {/* School Distance */}
-            {schoolDistance !== null && selectedSchool && (
+            {schoolDistance !== null && schoolTravelTime !== null && selectedSchool && (
               <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
                 <div className="flex items-center gap-2">
                   <School className="h-5 w-5 text-blue-600" />
                   <span className="text-blue-600 font-medium">
-                    {schoolDistance.toFixed(1)} {t('km')} {t('toSchool')}: {selectedSchool.name}
+                    {schoolDistance.toFixed(1)} {t('km')} (~{schoolTravelTime} min) {t('toSchool')}: {selectedSchool.name}
                   </span>
                 </div>
               </div>
             )}
 
             {/* University Distance */}
-            {universityDistance !== null && selectedUniversity && (
+            {universityDistance !== null && universityTravelTime !== null && selectedUniversity && (
               <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-5 w-5 text-purple-600" />
                   <span className="text-purple-600 font-medium">
-                    {universityDistance.toFixed(1)} {t('km')} {t('toUniversity')}: {selectedUniversity.name}
+                    {universityDistance.toFixed(1)} {t('km')} (~{universityTravelTime} min) {t('toUniversity')}: {selectedUniversity.name}
                   </span>
                 </div>
               </div>
