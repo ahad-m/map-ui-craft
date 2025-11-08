@@ -667,7 +667,7 @@ const RealEstateSearch = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
-                      filters.selectedSchool === school.id ? 'bg-blue-600 ring-4 ring-blue-300' : 'bg-blue-500'
+                      filters.selectedSchool === school.id ? 'bg-green-600 ring-4 ring-green-300' : 'bg-green-500'
                     }`}>
                       <School className="h-5 w-5 text-white" />
                     </div>
@@ -690,9 +690,9 @@ const RealEstateSearch = () => {
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className={`p-2 rounded-lg shadow-lg cursor-pointer transition-transform hover:scale-110 ${
+                    <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
                       filters.selectedUniversity === (i18n.language === 'ar' ? university.name_ar : university.name_en) 
-                        ? 'bg-purple-600 ring-4 ring-purple-300' : 'bg-purple-500'
+                        ? 'bg-emerald-600 ring-4 ring-emerald-300' : 'bg-emerald-500'
                     }`}>
                       <GraduationCap className="h-5 w-5 text-white" />
                     </div>
