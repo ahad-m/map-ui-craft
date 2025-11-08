@@ -157,25 +157,25 @@ export const PropertyDetailsDialog = ({
               </div>
             )}
 
-            {/* School Distance */}
-            {schoolDistance !== null && schoolTravelTime !== null && selectedSchool && (
+            {/* School Travel Time */}
+            {schoolTravelTime !== null && selectedSchool && (
               <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
                 <div className="flex items-center gap-2">
                   <School className="h-5 w-5 text-blue-600" />
                   <span className="text-blue-600 font-medium">
-                    {schoolDistance.toFixed(1)} {t('km')} (~{schoolTravelTime} min) {t('toSchool')}: {selectedSchool.name}
+                    {schoolTravelTime} {t('minToSchool')}: {selectedSchool.name}
                   </span>
                 </div>
               </div>
             )}
 
-            {/* University Distance */}
-            {universityDistance !== null && universityTravelTime !== null && selectedUniversity && (
+            {/* University Travel Time */}
+            {universityTravelTime !== null && selectedUniversity && (
               <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-5 w-5 text-purple-600" />
                   <span className="text-purple-600 font-medium">
-                    {universityDistance.toFixed(1)} {t('km')} (~{universityTravelTime} min) {t('toUniversity')}: {selectedUniversity.name}
+                    {universityTravelTime} {t('minToUniversity')}: {selectedUniversity.name}
                   </span>
                 </div>
               </div>
