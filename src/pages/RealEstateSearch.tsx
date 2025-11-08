@@ -440,7 +440,7 @@ const RealEstateSearch = () => {
 
   // تصفية المدارس لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر)
   const nearbySchools = useMemo(() => {
-    if (!propertiesCenterLocation || allSchools.length === 0) return allSchools;
+    if (!propertiesCenterLocation || allSchools.length === 0) return [];
     
     const MAX_TRAVEL_TIME_MIN = 30; // حد أقصى 30 دقيقة
     return allSchools.filter(school => {
@@ -483,7 +483,7 @@ const RealEstateSearch = () => {
 
   // تصفية الجامعات لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر)
   const nearbyUniversities = useMemo(() => {
-    if (!propertiesCenterLocation || allUniversities.length === 0) return allUniversities;
+    if (!propertiesCenterLocation || allUniversities.length === 0) return [];
     
     const MAX_TRAVEL_TIME_MIN = 30; // حد أقصى 30 دقيقة
     return allUniversities.filter(uni => {
