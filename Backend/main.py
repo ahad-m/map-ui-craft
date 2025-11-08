@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import logging
-from llm_parser_hf import hf_parser
+
 
 
 from config import settings
