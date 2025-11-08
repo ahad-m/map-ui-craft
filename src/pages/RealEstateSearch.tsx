@@ -605,21 +605,6 @@ const RealEstateSearch = () => {
     setHasSearched(false);
   };
 
-  // Auto-center map on filtered properties once
-  useEffect(() => {
-    if (selectedSchoolData || selectedUniversityData || displayedProperties.length === 0) return;
-    
-    const lats = displayedProperties.map(p => Number(p.lat)).filter(lat => !isNaN(lat));
-    const lngs = displayedProperties.map(p => Number(p.lon)).filter(lng => !isNaN(lng));
-    
-    if (lats.length > 0 && lngs.length > 0) {
-      const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-      const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-      setMapCenter({ lat: avgLat, lng: avgLng });
-      setMapZoom(12);
-    }
-  }, [displayedProperties.length, selectedSchoolData, selectedUniversityData]);
-
 
   return (
     <APIProvider apiKey={apiKey}>
