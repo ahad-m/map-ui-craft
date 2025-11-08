@@ -411,6 +411,12 @@ const RealEstateSearch = () => {
     return R * c; // المسافة بالكيلومتر
   };
 
+  // حساب وقت السفر (بافتراض سرعة متوسطة 30 كم/ساعة في المدينة)
+  const calculateTravelTime = (distanceKm: number): number => {
+    const avgSpeed = 30; // km/h in city traffic
+    return Math.round((distanceKm / avgSpeed) * 60); // تحويل إلى دقائق
+  };
+
   // حساب موقع مركز العقارات المفلترة
   const propertiesCenterLocation = useMemo(() => {
     if (properties.length === 0) return null;
@@ -432,11 +438,11 @@ const RealEstateSearch = () => {
     };
   }, [properties]);
 
-  // تصفية المدارس لإظهار القريبة فقط (ضمن 5 كم)
+  // تصفية المدارس لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر)
   const nearbySchools = useMemo(() => {
     if (!propertiesCenterLocation || allSchools.length === 0) return allSchools;
     
-    const RADIUS_KM = 5;
+    const MAX_TRAVEL_TIME_MIN = 30; // حد أقصى 30 دقيقة
     return allSchools.filter(school => {
       const distance = calculateDistance(
         propertiesCenterLocation.lat,
@@ -444,7 +450,8 @@ const RealEstateSearch = () => {
         school.lat,
         school.lon
       );
-      return distance <= RADIUS_KM;
+      const travelTime = calculateTravelTime(distance);
+      return travelTime <= MAX_TRAVEL_TIME_MIN;
     });
   }, [allSchools, propertiesCenterLocation]);
 
@@ -474,11 +481,11 @@ const RealEstateSearch = () => {
     },
   });
 
-  // تصفية الجامعات لإظهار القريبة فقط (ضمن 5 كم)
+  // تصفية الجامعات لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر)
   const nearbyUniversities = useMemo(() => {
     if (!propertiesCenterLocation || allUniversities.length === 0) return allUniversities;
     
-    const RADIUS_KM = 5;
+    const MAX_TRAVEL_TIME_MIN = 30; // حد أقصى 30 دقيقة
     return allUniversities.filter(uni => {
       const distance = calculateDistance(
         propertiesCenterLocation.lat,
@@ -486,7 +493,8 @@ const RealEstateSearch = () => {
         uni.lat,
         uni.lon
       );
-      return distance <= RADIUS_KM;
+      const travelTime = calculateTravelTime(distance);
+      return travelTime <= MAX_TRAVEL_TIME_MIN;
     });
   }, [allUniversities, propertiesCenterLocation]);
 
@@ -497,7 +505,7 @@ const RealEstateSearch = () => {
   // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
   const baseProperties = showChatbotResults ? chatbotProperties : properties;
 
-  // ترتيب العقارات بناءً على القرب من المدرسة أو الجامعة المختارة
+  // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
     const propsToSort = [...baseProperties];
     
@@ -511,7 +519,9 @@ const RealEstateSearch = () => {
           selectedSchoolData.lat, selectedSchoolData.lon,
           Number(b.final_lat), Number(b.final_lon)
         );
-        return distA - distB;
+        const timeA = calculateTravelTime(distA);
+        const timeB = calculateTravelTime(distB);
+        return timeA - timeB;
       });
     } else if (selectedUniversityData) {
       propsToSort.sort((a, b) => {
@@ -523,7 +533,9 @@ const RealEstateSearch = () => {
           selectedUniversityData.lat, selectedUniversityData.lon,
           Number(b.final_lat), Number(b.final_lon)
         );
-        return distA - distB;
+        const timeA = calculateTravelTime(distA);
+        const timeB = calculateTravelTime(distB);
+        return timeA - timeB;
       });
     }
     
