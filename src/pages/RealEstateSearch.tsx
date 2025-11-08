@@ -652,8 +652,6 @@ const RealEstateSearch = () => {
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
-            onCenterChanged={(e) => setMapCenter(e.detail.center)}
-            onZoomChanged={(e) => setMapZoom(e.detail.zoom)}
           >
             <MapBoundsHandler 
               properties={displayedProperties}
