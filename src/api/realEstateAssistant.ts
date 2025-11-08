@@ -39,7 +39,7 @@ export interface RangeFilter {
 
 export interface SearchRequest {
   criteria: PropertyCriteria;
-  mode: 'exact' | 'similar';
+  mode: "exact" | "similar";
 }
 
 export interface Property {
@@ -75,7 +75,8 @@ export interface SearchResponse {
 }
 
 // إعدادات API
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+const API_BASE_URL = "https://riyal-estate-56q6.onrender.com";
 
 /**
  * الحصول على رسالة الترحيب من المساعد
@@ -83,9 +84,9 @@ const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 export async function getWelcomeMessage(): Promise<AssistantMessage> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/chat/welcome`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -95,12 +96,12 @@ export async function getWelcomeMessage(): Promise<AssistantMessage> {
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching welcome message:', error);
-    
+    console.error("Error fetching welcome message:", error);
+
     // رسالة افتراضية في حالة الخطأ
     return {
       success: true,
-      message: 'مرحباً فيك! 🏡\n\nأنا مساعدك العقاري الذكي.\nاطلب اللي تبي وأنا بجيبه لك! 😊',
+      message: "مرحباً فيك! 🏡\n\nأنا مساعدك العقاري الذكي.\nاطلب اللي تبي وأنا بجيبه لك! 😊",
     };
   }
 }
@@ -111,9 +112,9 @@ export async function getWelcomeMessage(): Promise<AssistantMessage> {
 export async function sendUserQuery(message: string): Promise<AssistantMessage> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/chat/query`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ message }),
     });
@@ -124,7 +125,7 @@ export async function sendUserQuery(message: string): Promise<AssistantMessage> 
 
     return await response.json();
   } catch (error) {
-    console.error('Error sending user query:', error);
+    console.error("Error sending user query:", error);
     throw error;
   }
 }
@@ -134,13 +135,13 @@ export async function sendUserQuery(message: string): Promise<AssistantMessage> 
  */
 export async function searchProperties(
   criteria: PropertyCriteria,
-  mode: 'exact' | 'similar' = 'similar'
+  mode: "exact" | "similar" = "similar",
 ): Promise<SearchResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/search`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ criteria, mode }),
     });
@@ -151,7 +152,7 @@ export async function searchProperties(
 
     return await response.json();
   } catch (error) {
-    console.error('Error searching properties:', error);
+    console.error("Error searching properties:", error);
     throw error;
   }
 }
@@ -162,12 +163,12 @@ export async function searchProperties(
 export async function checkBackendHealth(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}/health`, {
-      method: 'GET',
+      method: "GET",
     });
 
     return response.ok;
   } catch (error) {
-    console.error('Backend health check failed:', error);
+    console.error("Backend health check failed:", error);
     return false;
   }
 }
