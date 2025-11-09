@@ -600,6 +600,7 @@ const RealEstateSearch = () => {
     
     const bounds = new google.maps.LatLngBounds();
     displayedProperties.forEach(property => {
+      // !! التوحيد: استخدم final_lat و final_lon دائماً
       const lat = Number(property.final_lat);
       const lng = Number(property.final_lon);
       
@@ -678,14 +679,16 @@ const RealEstateSearch = () => {
               // ================================================
               // !! تعديل رقم 1: فلترة الدبابيس (Markers) !!
               // ================================================
+              // !! التوحيد: استخدم final_lat و final_lon دائماً
               const lat = Number(property.final_lat);
               const lon = Number(property.final_lon);
+              // !! الفلترة: تأكد أنها ليست 0,0
               if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return null;
               
               return (
                 <AdvancedMarker
                   key={property.id}
-                  position={{ lat, lng: lon }}
+                  position={{ lat, lng: lon }} // <-- الآن هذا الموضع صحيح
                   onClick={() => handlePropertyClick(property)}
                 >
                   <div className="relative">
