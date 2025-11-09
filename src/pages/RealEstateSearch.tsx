@@ -221,7 +221,7 @@ const RealEstateSearch = () => {
         .from('properties')
         .select('*')
         .eq('purpose', transactionType === 'sale' ? 'للبيع' : 'للايجار')
-        .not('final_lat', 'is', null)
+        .not('final_lat', 'is', null) // <-- الفلترة تتم بالـ final_lat في الباك إند
         .not('final_lon', 'is', null);
 
       if (filters.propertyType) {
@@ -421,17 +421,18 @@ const RealEstateSearch = () => {
   const propertiesCenterLocation = useMemo(() => {
     if (properties.length === 0) return null;
     
+    // !! التوحيد: اقرأ من 'lat' و 'lon' (لأن الباك إند يوحدها)
     const validProperties = properties.filter(p => 
-      p.final_lat && p.final_lon && 
-      !isNaN(Number(p.final_lat)) && !isNaN(Number(p.final_lon)) &&
-      Number(p.final_lat) !== 0 && Number(p.final_lon) !== 0 // <-- إضافة فلتر الصفر
+      p.lat && p.lon && 
+      !isNaN(Number(p.lat)) && !isNaN(Number(p.lon)) &&
+      Number(p.lat) !== 0 && Number(p.lon) !== 0
     );
     
     if (validProperties.length === 0) return null;
     
     // حساب متوسط الإحداثيات
-    const sumLat = validProperties.reduce((sum, p) => sum + Number(p.final_lat), 0);
-    const sumLon = validProperties.reduce((sum, p) => sum + Number(p.final_lon), 0);
+    const sumLat = validProperties.reduce((sum, p) => sum + Number(p.lat), 0);
+    const sumLon = validProperties.reduce((sum, p) => sum + Number(p.lon), 0);
     
     return {
       lat: sumLat / validProperties.length,
@@ -510,15 +511,16 @@ const RealEstateSearch = () => {
   const displayedProperties = useMemo(() => {
     const propsToSort = [...baseProperties];
     
+    // !! التوحيد: استخدم 'lat' و 'lon'
     if (selectedSchoolData) {
       propsToSort.sort((a, b) => {
         const distA = calculateDistance(
           selectedSchoolData.lat, selectedSchoolData.lon,
-          Number(a.final_lat), Number(a.final_lon)
+          Number(a.lat), Number(a.lon)
         );
         const distB = calculateDistance(
           selectedSchoolData.lat, selectedSchoolData.lon,
-          Number(b.final_lat), Number(b.final_lon)
+          Number(b.lat), Number(b.lon)
         );
         const timeA = calculateTravelTime(distA);
         const timeB = calculateTravelTime(distB);
@@ -528,11 +530,11 @@ const RealEstateSearch = () => {
       propsToSort.sort((a, b) => {
         const distA = calculateDistance(
           selectedUniversityData.lat, selectedUniversityData.lon,
-          Number(a.final_lat), Number(a.final_lon)
+          Number(a.lat), Number(a.lon)
         );
         const distB = calculateDistance(
           selectedUniversityData.lat, selectedUniversityData.lon,
-          Number(b.final_lat), Number(b.final_lon)
+          Number(b.lat), Number(b.lon)
         );
         const timeA = calculateTravelTime(distA);
         const timeB = calculateTravelTime(distB);
@@ -579,10 +581,10 @@ const RealEstateSearch = () => {
     if (showChatbotResults && chatbotProperties.length > 0) {
       
       // ================================================
-      // !! تعديل رقم 2: فلترة إحداثيات الشات بوت !!
+      // !! تعديل رقم 2: فلترة إحداثيات الشات بوت (استخدم lat/lon) !!
       // ================================================
-      const lats = chatbotProperties.map(p => Number(p.final_lat)).filter(lat => !isNaN(lat) && lat !== 0);
-      const lngs = chatbotProperties.map(p => Number(p.final_lon)).filter(lng => !isNaN(lng) && lng !== 0);
+      const lats = chatbotProperties.map(p => Number(p.lat)).filter(lat => !isNaN(lat) && lat !== 0);
+      const lngs = chatbotProperties.map(p => Number(p.lon)).filter(lng => !isNaN(lng) && lng !== 0);
       
       if (lats.length > 0 && lngs.length > 0) {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
@@ -600,12 +602,12 @@ const RealEstateSearch = () => {
     
     const bounds = new google.maps.LatLngBounds();
     displayedProperties.forEach(property => {
-      // !! التوحيد: استخدم final_lat و final_lon دائماً
-      const lat = Number(property.final_lat);
-      const lng = Number(property.final_lon);
+      // !! التوحيد: استخدم 'lat' و 'lon'
+      const lat = Number(property.lat);
+      const lng = Number(property.lon);
       
       // ================================================
-      // !! تعديل رقم 3: فلترة إحداثيات الزووم !!
+      // !! تعديل رقم 3: فلترة إحداثيات الزووم (استخدم lat/lon) !!
       // ================================================
       if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
         bounds.extend({ lat, lng });
@@ -677,11 +679,11 @@ const RealEstateSearch = () => {
             {displayedProperties.map((property) => {
               
               // ================================================
-              // !! تعديل رقم 1: فلترة الدبابيس (Markers) !!
+              // !! تعديل رقم 1: فلترة الدبابيس (Markers) (استخدم lat/lon) !!
               // ================================================
-              // !! التوحيد: استخدم final_lat و final_lon دائماً
-              const lat = Number(property.final_lat);
-              const lon = Number(property.final_lon);
+              // !! التوحيد: استخدم 'lat' و 'lon'
+              const lat = Number(property.lat);
+              const lon = Number(property.lon);
               // !! الفلترة: تأكد أنها ليست 0,0
               if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return null;
               
