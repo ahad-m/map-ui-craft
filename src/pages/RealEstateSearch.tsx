@@ -423,7 +423,8 @@ const RealEstateSearch = () => {
     
     const validProperties = properties.filter(p => 
       p.final_lat && p.final_lon && 
-      !isNaN(Number(p.final_lat)) && !isNaN(Number(p.final_lon))
+      !isNaN(Number(p.final_lat)) && !isNaN(Number(p.final_lon)) &&
+      Number(p.final_lat) !== 0 && Number(p.final_lon) !== 0 // <-- إضافة فلتر الصفر
     );
     
     if (validProperties.length === 0) return null;
@@ -576,8 +577,12 @@ const RealEstateSearch = () => {
     if (!mapRef.current) return;
     console.log('🗺️ Map useEffect triggered:', { showChatbotResults, chatbotPropertiesLength: chatbotProperties.length });
     if (showChatbotResults && chatbotProperties.length > 0) {
-      const lats = chatbotProperties.map(p => Number(p.lat)).filter(lat => !isNaN(lat));
-      const lngs = chatbotProperties.map(p => Number(p.lon)).filter(lng => !isNaN(lng));
+      
+      // ================================================
+      // !! تعديل رقم 2: فلترة إحداثيات الشات بوت !!
+      // ================================================
+      const lats = chatbotProperties.map(p => Number(p.final_lat)).filter(lat => !isNaN(lat) && lat !== 0);
+      const lngs = chatbotProperties.map(p => Number(p.final_lon)).filter(lng => !isNaN(lng) && lng !== 0);
       
       if (lats.length > 0 && lngs.length > 0) {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
@@ -593,19 +598,21 @@ const RealEstateSearch = () => {
   useEffect(() => {
     if (!mapRef.current || displayedProperties.length === 0 || !hasSearched) return;
     
-    const lats = displayedProperties.map(p => Number(p.final_lat)).filter(lat => !isNaN(lat));
-    const lngs = displayedProperties.map(p => Number(p.final_lon)).filter(lng => !isNaN(lng));
-    
-    if (lats.length > 0 && lngs.length > 0) {
-      const bounds = new google.maps.LatLngBounds();
-      displayedProperties.forEach(property => {
-        const lat = Number(property.final_lat);
-        const lng = Number(property.final_lon);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          bounds.extend({ lat, lng });
-        }
-      });
+    const bounds = new google.maps.LatLngBounds();
+    displayedProperties.forEach(property => {
+      const lat = Number(property.final_lat);
+      const lng = Number(property.final_lon);
       
+      // ================================================
+      // !! تعديل رقم 3: فلترة إحداثيات الزووم !!
+      // ================================================
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        bounds.extend({ lat, lng });
+      }
+    });
+    
+    // إضافة تحصين للتأكد أن الحدود ليست فارغة
+    if (!bounds.isEmpty()) {
       mapRef.current.fitBounds(bounds);
     }
   }, [displayedProperties, hasSearched]);
@@ -667,9 +674,13 @@ const RealEstateSearch = () => {
           >
             <MapRefHandler />
             {displayedProperties.map((property) => {
-              const lat = Number(property.lat);
-              const lon = Number(property.lon);
-              if (isNaN(lat) || isNaN(lon)) return null;
+              
+              // ================================================
+              // !! تعديل رقم 1: فلترة الدبابيس (Markers) !!
+              // ================================================
+              const lat = Number(property.final_lat);
+              const lon = Number(property.final_lon);
+              if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return null;
               
               return (
                 <AdvancedMarker
