@@ -14,82 +14,124 @@ export type Database = {
   }
   public: {
     Tables: {
+      mosques: {
+        Row: {
+          district: string | null
+          id: number
+          lat: number | null
+          lon: number | null
+          name: string | null
+        }
+        Insert: {
+          district?: string | null
+          id: number
+          lat?: number | null
+          lon?: number | null
+          name?: string | null
+        }
+        Update: {
+          district?: string | null
+          id?: number
+          lat?: number | null
+          lon?: number | null
+          name?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       properties: {
         Row: {
-          area_m2: string | null
+          area_m2: number | null
           baths: number | null
           city: string | null
           description: string | null
           district: string | null
-          embedding: string | null
-          embedding_updated_at: string | null
-          final_lat: string | null
-          final_lon: string | null
+          final_lat: number | null
+          final_lon: number | null
           halls: number | null
           id: string
           image_url: string | null
-          lat: string | null
-          lon: string | null
+          lat: number | null
+          lon: number | null
           price_currency: string | null
-          price_num: string | null
+          price_num: number | null
           price_period: string | null
           property_type: string | null
           purpose: string | null
           rooms: number | null
           search_text: string | null
-          time_to_metro_min: string | null
+          time_to_metro_min: number | null
           title: string | null
           url: string | null
         }
         Insert: {
-          area_m2?: string | null
+          area_m2?: number | null
           baths?: number | null
           city?: string | null
           description?: string | null
           district?: string | null
-          embedding?: string | null
-          embedding_updated_at?: string | null
-          final_lat?: string | null
-          final_lon?: string | null
+          final_lat?: number | null
+          final_lon?: number | null
           halls?: number | null
           id: string
           image_url?: string | null
-          lat?: string | null
-          lon?: string | null
+          lat?: number | null
+          lon?: number | null
           price_currency?: string | null
-          price_num?: string | null
+          price_num?: number | null
           price_period?: string | null
           property_type?: string | null
           purpose?: string | null
           rooms?: number | null
           search_text?: string | null
-          time_to_metro_min?: string | null
+          time_to_metro_min?: number | null
           title?: string | null
           url?: string | null
         }
         Update: {
-          area_m2?: string | null
+          area_m2?: number | null
           baths?: number | null
           city?: string | null
           description?: string | null
           district?: string | null
-          embedding?: string | null
-          embedding_updated_at?: string | null
-          final_lat?: string | null
-          final_lon?: string | null
+          final_lat?: number | null
+          final_lon?: number | null
           halls?: number | null
           id?: string
           image_url?: string | null
-          lat?: string | null
-          lon?: string | null
+          lat?: number | null
+          lon?: number | null
           price_currency?: string | null
-          price_num?: string | null
+          price_num?: number | null
           price_period?: string | null
           property_type?: string | null
           purpose?: string | null
           rooms?: number | null
           search_text?: string | null
-          time_to_metro_min?: string | null
+          time_to_metro_min?: number | null
           title?: string | null
           url?: string | null
         }
@@ -175,77 +217,77 @@ export type Database = {
       }
       properties_backup2: {
         Row: {
-          area_m2: string | null
+          area_m2: number | null
           baths: string | null
           city: string | null
           description: string | null
           district: string | null
-          final_lat: string | null
-          final_lon: string | null
+          final_lat: number | null
+          final_lon: number | null
           halls: string | null
           id: string | null
           image_url: string | null
-          lat: string | null
-          lon: string | null
+          lat: number | null
+          lon: number | null
           price_currency: string | null
-          price_num: string | null
+          price_num: number | null
           price_period: string | null
           price_text: string | null
           property_type: string | null
           ptype_source: string | null
           purpose: string | null
           rooms: string | null
-          time_to_metro_min: string | null
+          time_to_metro_min: number | null
           title: string | null
           url: string | null
         }
         Insert: {
-          area_m2?: string | null
+          area_m2?: number | null
           baths?: string | null
           city?: string | null
           description?: string | null
           district?: string | null
-          final_lat?: string | null
-          final_lon?: string | null
+          final_lat?: number | null
+          final_lon?: number | null
           halls?: string | null
           id?: string | null
           image_url?: string | null
-          lat?: string | null
-          lon?: string | null
+          lat?: number | null
+          lon?: number | null
           price_currency?: string | null
-          price_num?: string | null
+          price_num?: number | null
           price_period?: string | null
           price_text?: string | null
           property_type?: string | null
           ptype_source?: string | null
           purpose?: string | null
           rooms?: string | null
-          time_to_metro_min?: string | null
+          time_to_metro_min?: number | null
           title?: string | null
           url?: string | null
         }
         Update: {
-          area_m2?: string | null
+          area_m2?: number | null
           baths?: string | null
           city?: string | null
           description?: string | null
           district?: string | null
-          final_lat?: string | null
-          final_lon?: string | null
+          final_lat?: number | null
+          final_lon?: number | null
           halls?: string | null
           id?: string | null
           image_url?: string | null
-          lat?: string | null
-          lon?: string | null
+          lat?: number | null
+          lon?: number | null
           price_currency?: string | null
-          price_num?: string | null
+          price_num?: number | null
           price_period?: string | null
           price_text?: string | null
           property_type?: string | null
           ptype_source?: string | null
           purpose?: string | null
           rooms?: string | null
-          time_to_metro_min?: string | null
+          time_to_metro_min?: number | null
           title?: string | null
           url?: string | null
         }
@@ -264,7 +306,15 @@ export type Database = {
           embedding?: string
           property_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_property_id"
+            columns: ["property_id"]
+            isOneToOne: true
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schools: {
         Row: {
@@ -344,6 +394,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_favorites: {
+        Row: {
+          created_at: string | null
+          id: string
+          property_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          property_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          property_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          id: string
+          preference_key: string
+          preference_value: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          preference_key: string
+          preference_value: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          preference_key?: string
+          preference_value?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       geography_columns: {
@@ -385,75 +483,6 @@ export type Database = {
           f_table_schema?: unknown
           srid?: number | null
           type?: string | null
-        }
-        Relationships: []
-      }
-      properties_v: {
-        Row: {
-          area_m2: number | null
-          baths: number | null
-          city: string | null
-          description: string | null
-          district: string | null
-          geom: unknown
-          halls: number | null
-          id: string | null
-          image_url: string | null
-          lat: number | null
-          lon: number | null
-          price_currency: string | null
-          price_num: number | null
-          price_period: string | null
-          property_type: string | null
-          purpose: string | null
-          rooms: number | null
-          time_to_metro_min: number | null
-          title: string | null
-          url: string | null
-        }
-        Insert: {
-          area_m2?: never
-          baths?: number | null
-          city?: string | null
-          description?: string | null
-          district?: string | null
-          geom?: never
-          halls?: number | null
-          id?: string | null
-          image_url?: string | null
-          lat?: never
-          lon?: never
-          price_currency?: string | null
-          price_num?: never
-          price_period?: string | null
-          property_type?: string | null
-          purpose?: string | null
-          rooms?: number | null
-          time_to_metro_min?: never
-          title?: string | null
-          url?: string | null
-        }
-        Update: {
-          area_m2?: never
-          baths?: number | null
-          city?: string | null
-          description?: string | null
-          district?: string | null
-          geom?: never
-          halls?: number | null
-          id?: string | null
-          image_url?: string | null
-          lat?: never
-          lon?: never
-          price_currency?: string | null
-          price_num?: never
-          price_period?: string | null
-          property_type?: string | null
-          purpose?: string | null
-          rooms?: number | null
-          time_to_metro_min?: never
-          title?: string | null
-          url?: string | null
         }
         Relationships: []
       }
@@ -587,6 +616,10 @@ export type Database = {
             Returns: string
           }
       disablelongtransactions: { Args: never; Returns: string }
+      drive_minutes_from_km: {
+        Args: { avg_speed_kmh?: number; distance_km: number }
+        Returns: number
+      }
       dropgeometrycolumn:
         | {
             Args: {
@@ -718,7 +751,49 @@ export type Database = {
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
       gettransactionid: { Args: never; Returns: unknown }
+      haversine_km: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      match_properties: {
+        Args: { request_json: Json }
+        Returns: {
+          area_m2: number
+          baths: number
+          city: string
+          description: string
+          district: string
+          final_lat: number
+          final_lon: number
+          halls: number
+          id: string
+          image_url: string
+          lat: number
+          lon: number
+          price_currency: string
+          price_num: number
+          price_period: string
+          property_type: string
+          purpose: string
+          rooms: number
+          score: number
+          time_to_metro_min: number
+          title: string
+          url: string
+        }[]
+      }
+      match_properties_bge_m3: {
+        Args: {
+          match_count: number
+          match_threshold: number
+          query_embedding: string
+        }
+        Returns: {
+          id: string
+          similarity_score: number
+        }[]
+      }
       populate_geometry_columns:
         | { Args: { use_typmod?: boolean }; Returns: string }
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
@@ -759,6 +834,108 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      search_exact_properties: {
+        Args: {
+          p_district?: string
+          p_gender?: string
+          p_max_area?: number
+          p_max_distance_to_school?: number
+          p_max_metro_time?: number
+          p_max_price?: number
+          p_max_rooms?: number
+          p_min_area?: number
+          p_min_price?: number
+          p_min_rooms?: number
+          p_property_type?: string
+        }
+        Returns: {
+          area_m2: string
+          baths: number
+          district: string
+          id: string
+          image_url: string
+          lat: string
+          lon: string
+          nearby_schools: Json
+          nearby_universities: Json
+          price_num: string
+          rooms: number
+          time_to_metro_min: string
+          title: string
+          url: string
+        }[]
+      }
+      search_properties: {
+        Args: {
+          p_area_max?: number
+          p_area_min?: number
+          p_baths_max?: number
+          p_baths_min?: number
+          p_district?: string
+          p_halls_max?: number
+          p_halls_min?: number
+          p_limit?: number
+          p_metro_time_max?: number
+          p_price_max?: number
+          p_price_min?: number
+          p_property_type?: string
+          p_purpose?: string
+          p_rooms_max?: number
+          p_rooms_min?: number
+        }
+        Returns: {
+          area_m2: number
+          baths: number
+          city: string
+          description: string
+          district: string
+          halls: number
+          id: string
+          image_url: string
+          lat: number
+          lon: number
+          price_currency: string
+          price_num: number
+          price_period: string
+          property_type: string
+          purpose: string
+          rooms: number
+          sql_score: number
+          time_to_metro_min: number
+          title: string
+          url: string
+        }[]
+      }
+      search_similar_properties: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          p_district?: string
+          p_max_price?: number
+          p_min_price?: number
+          p_property_type?: string
+          query_embedding: string
+        }
+        Returns: {
+          area_m2: string
+          baths: number
+          district: string
+          id: string
+          image_url: string
+          lat: string
+          lon: string
+          nearby_schools: Json
+          nearby_universities: Json
+          price_num: string
+          rooms: number
+          similarity: number
+          time_to_metro_min: string
+          title: string
+          url: string
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown

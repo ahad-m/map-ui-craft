@@ -266,12 +266,14 @@ const RealEstateSearch = () => {
 
       return (data || []).filter(property => {
         // Handle numeric types (can be number or string depending on data)
-        const price = typeof property.price_num === 'string' 
-          ? parseFloat(property.price_num.replace(/,/g, '')) 
-          : Number(property.price_num) || 0;
-        const area = typeof property.area_m2 === 'string'
-          ? parseFloat(property.area_m2.replace(/,/g, ''))
-          : Number(property.area_m2) || 0;
+        const priceValue = property.price_num as any;
+        const price = typeof priceValue === 'string' 
+          ? parseFloat(priceValue.replace(/,/g, '')) 
+          : Number(priceValue) || 0;
+        const areaValue = property.area_m2 as any;
+        const area = typeof areaValue === 'string'
+          ? parseFloat(areaValue.replace(/,/g, ''))
+          : Number(areaValue) || 0;
         
         // Price matching logic: exact if only one value, range if both values
         let priceMatch = true;

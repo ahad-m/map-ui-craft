@@ -432,7 +432,7 @@ const MapContent = () => {
             <Button
               variant="ghost"
               className="flex flex-col items-center gap-1 h-auto py-2 px-4"
-              onClick={() => navigate('/search')}
+              onClick={() => navigate('/auth')}
             >
               <img 
                 src={riyalEstateLogo} 
