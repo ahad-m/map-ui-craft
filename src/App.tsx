@@ -8,7 +8,6 @@ import Auth from "./pages/Auth";
 import RealEstateSearch from "./pages/RealEstateSearch";
 import AdminTables from "./pages/AdminTables";
 import NotFound from "./pages/NotFound";
-import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -21,11 +20,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/search" element={
-            <ProtectedRoute>
-              <RealEstateSearch />
-            </ProtectedRoute>
-          } />
+          <Route path="/search" element={<RealEstateSearch />} />
           <Route path="/admin/tables" element={<AdminTables />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
