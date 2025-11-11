@@ -1494,30 +1494,18 @@ const RealEstateSearch = () => {
                           {t('proximityFilters')}
                         </h3>
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                              <Checkbox
-                                id="metro"
-                                checked={filters.nearMetro}
-                                onCheckedChange={(checked) => setFilters({ ...filters, nearMetro: checked as boolean, minMetroTime: checked ? filters.minMetroTime : 1 })}
-                              />
-                              <label htmlFor="metro" className="text-sm cursor-pointer font-medium">
-                                {t('nearMetro')}
-                              </label>
-                            </div>
-                            {filters.nearMetro && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setFilters({ ...filters, nearMetro: false, minMetroTime: 1 })}
-                                className="h-7 text-xs"
-                              >
-                                {t('clear')}
-                              </Button>
-                            )}
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="metro"
+                              checked={filters.nearMetro}
+                              onCheckedChange={(checked) => setFilters({ ...filters, nearMetro: checked as boolean })}
+                            />
+                            <label htmlFor="metro" className="text-sm cursor-pointer">
+                              {t('nearMetro')} ({filters.minMetroTime} {t('minutes')} minimum)
+                            </label>
                           </div>
                           {filters.nearMetro && (
-                            <div className="ml-6 rtl:mr-6 rtl:ml-0 space-y-2 p-3 bg-muted/50 rounded-lg border">
+                            <div className="ml-6 space-y-2 p-3 bg-background/50 rounded-lg">
                               <Label className="text-xs font-medium">
                                 {t('maxMetroDistance')}: {filters.minMetroTime} {t('minutes')}
                               </Label>
