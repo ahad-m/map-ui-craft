@@ -69,6 +69,46 @@ const RealEstateSearch = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
+  // Filter states - MUST be before early return
+  const [filters, setFilters] = useState({
+    propertyType: '',
+    city: 'الرياض',
+    neighborhood: '',
+    minPrice: 0,
+    maxPrice: 0,
+    areaMin: 0,
+    areaMax: 0,
+    bedrooms: '',
+    livingRooms: '',
+    bathrooms: '',
+    schoolGender: '',
+    schoolLevel: '',
+    selectedSchool: '',
+    selectedUniversity: '',
+    nearMetro: false,
+    minMetroTime: 1,
+    nearHospitals: false,
+    nearMosques: false,
+  });
+
+  // Custom search states for database-wide search
+  const [customSearchTerms, setCustomSearchTerms] = useState({
+    propertyType: '',
+    neighborhood: '',
+    school: '',
+    university: '',
+    schoolGender: '',
+    schoolLevel: '',
+  });
+
+  const [openPropertyTypeCombobox, setOpenPropertyTypeCombobox] = useState(false);
+  const [openSchoolGenderCombobox, setOpenSchoolGenderCombobox] = useState(false);
+  const [openSchoolLevelCombobox, setOpenSchoolLevelCombobox] = useState(false);
+
+  // State للعقارات من Chatbot
+  const [chatbotProperties, setChatbotProperties] = useState<any[]>([]);
+  const [showChatbotResults, setShowChatbotResults] = useState(false);
+
   // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
@@ -92,15 +132,6 @@ const RealEstateSearch = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  // Don't render until auth is checked
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   // Auto-scroll للرسائل
   useEffect(() => {
@@ -155,42 +186,6 @@ const RealEstateSearch = () => {
     const newLang = i18n.language === 'en' ? 'ar' : 'en';
     i18n.changeLanguage(newLang);
   };
-
-  // Filter states
-  const [filters, setFilters] = useState({
-    propertyType: '',
-    city: 'الرياض',
-    neighborhood: '',
-    minPrice: 0,
-    maxPrice: 0,
-    areaMin: 0,
-    areaMax: 0,
-    bedrooms: '',
-    livingRooms: '',
-    bathrooms: '',
-    schoolGender: '',
-    schoolLevel: '',
-    selectedSchool: '',
-    selectedUniversity: '',
-    nearMetro: false,
-    minMetroTime: 1,
-    nearHospitals: false,
-    nearMosques: false,
-  });
-
-  // Custom search states for database-wide search
-  const [customSearchTerms, setCustomSearchTerms] = useState({
-    propertyType: '',
-    neighborhood: '',
-    school: '',
-    university: '',
-    schoolGender: '',
-    schoolLevel: '',
-  });
-
-  const [openPropertyTypeCombobox, setOpenPropertyTypeCombobox] = useState(false);
-  const [openSchoolGenderCombobox, setOpenSchoolGenderCombobox] = useState(false);
-  const [openSchoolLevelCombobox, setOpenSchoolLevelCombobox] = useState(false);
 
   // Predefined property types
   const predefinedPropertyTypes = ['استوديو', 'شقق', 'فلل', 'تاون هاوس', 'دوبلكس', 'دور', 'عمائر'];
@@ -255,10 +250,6 @@ const RealEstateSearch = () => {
   });
 
   // Fetch properties from Supabase
-    // State للعقارات من Chatbot
-  const [chatbotProperties, setChatbotProperties] = useState<any[]>([]);
-  const [showChatbotResults, setShowChatbotResults] = useState(false);
-
   const { data: properties = [], isLoading } = useQuery({
     queryKey: ['properties', transactionType, filters, searchQuery, customSearchTerms],
     queryFn: async () => {
@@ -666,6 +657,15 @@ const RealEstateSearch = () => {
       mapRef.current.fitBounds(bounds);
     }
   }, [displayedProperties, hasSearched]);
+
+  // Don't render until auth is checked - MUST be after all hooks
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const resetFilters = () => {
     setFilters({
