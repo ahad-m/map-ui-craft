@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
+import { supabase } from '@/integrations/supabase/client';
 
 const MapContent = () => {
   const { t, i18n } = useTranslation();
@@ -28,6 +29,17 @@ const MapContent = () => {
   const places = useMapsLibrary('places');
   const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
   const placesService = useRef<google.maps.places.PlacesService | null>(null);
+
+  // Clear session when landing on home page
+  useEffect(() => {
+    const clearSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase.auth.signOut();
+      }
+    };
+    clearSession();
+  }, []);
 
   useEffect(() => {
     if (!places) return;

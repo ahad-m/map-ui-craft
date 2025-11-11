@@ -840,7 +840,16 @@ const RealEstateSearch = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => navigate('/')}
+                  onClick={async () => {
+                    try {
+                      await supabase.auth.signOut();
+                      navigate('/', { replace: true });
+                      toast({ title: t('loggedOut') || 'Logged out successfully' });
+                    } catch (error) {
+                      console.error('Logout error:', error);
+                      navigate('/', { replace: true });
+                    }
+                  }}
                   className="hover:bg-primary/10"
                 >
                   <ArrowLeft className="h-5 w-5" />
