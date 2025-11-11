@@ -353,11 +353,16 @@ const RealEstateSearch = () => {
         }
         
         let metroMatch = true;
-        if (filters.nearMetro && property.time_to_metro_min) {
-          const metroTime = typeof property.time_to_metro_min === 'string'
-            ? parseFloat(property.time_to_metro_min)
-            : Number(property.time_to_metro_min);
-          metroMatch = !isNaN(metroTime) && metroTime <= filters.minMetroTime;
+        if (filters.nearMetro) {
+          // When metro filter is enabled, only show properties with metro data within the time range
+          if (!property.time_to_metro_min) {
+            metroMatch = false;
+          } else {
+            const metroTime = typeof property.time_to_metro_min === 'string'
+              ? parseFloat(property.time_to_metro_min)
+              : Number(property.time_to_metro_min);
+            metroMatch = !isNaN(metroTime) && metroTime <= filters.minMetroTime;
+          }
         }
         
         return priceMatch && areaMatch && metroMatch;
@@ -1523,13 +1528,13 @@ const RealEstateSearch = () => {
                               onCheckedChange={(checked) => setFilters({ ...filters, nearMetro: checked as boolean })}
                             />
                             <label htmlFor="metro" className="text-sm cursor-pointer">
-                              {t('nearMetro')} ({filters.minMetroTime} {t('minutes')} minimum)
+                              {t('nearMetro')}
                             </label>
                           </div>
                           {filters.nearMetro && (
                             <div className="ml-6 space-y-2 p-3 bg-background/50 rounded-lg">
                               <Label className="text-xs font-medium">
-                                {t('maxMetroDistance')}: {filters.minMetroTime} {t('minutes')}
+                                {t('maxWalkingTime')}: {filters.minMetroTime} {t('minutes')}
                               </Label>
                               <Slider
                                 value={[filters.minMetroTime]}
