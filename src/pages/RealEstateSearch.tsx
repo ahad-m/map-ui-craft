@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2, LogOut, Train } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -132,20 +132,6 @@ const RealEstateSearch = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  // Fetch metro stations
-  const { data: metroStations = [] } = useQuery({
-    queryKey: ['metroStations'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('metro_stations')
-        .select('*')
-        .order('line_name');
-      
-      if (error) throw error;
-      return data || [];
-    },
-  });
 
   // Auto-scroll للرسائل
   useEffect(() => {
@@ -383,7 +369,6 @@ const RealEstateSearch = () => {
       });
     },
   });
-
 
   // Predefined school gender options
   const predefinedSchoolGenders = ['Boys', 'Girls'];
@@ -824,90 +809,6 @@ const RealEstateSearch = () => {
                 </Tooltip>
               </AdvancedMarker>
             ))}
-
-            {/* Metro Stations Markers */}
-            {filters.nearMetro && metroStations.map((station: any) => {
-              // Calculate approximate travel time based on distance (assuming 30 km/h average)
-              const stationLat = station.latitude;
-              const stationLng = station.longitude;
-              
-              // Get closest property to estimate travel time
-              let minTravelTime = 30; // default max
-              displayedProperties.forEach((property: any) => {
-                const propLat = property.final_lat || property.lat;
-                const propLng = property.final_lon || property.lon;
-                
-                if (propLat && propLng) {
-                  // Calculate distance using Haversine formula
-                  const R = 6371; // Earth's radius in km
-                  const dLat = (propLat - stationLat) * Math.PI / 180;
-                  const dLon = (propLng - stationLng) * Math.PI / 180;
-                  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                           Math.cos(stationLat * Math.PI / 180) * Math.cos(propLat * Math.PI / 180) *
-                           Math.sin(dLon/2) * Math.sin(dLon/2);
-                  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                  const distance = R * c;
-                  
-                  // Convert distance to time (30 km/h = 0.5 km/min)
-                  const travelTime = distance / 0.5;
-                  minTravelTime = Math.min(minTravelTime, travelTime);
-                }
-              });
-              
-              // Determine color based on travel time ranges
-              let stationColor;
-              let stationOpacity;
-              if (minTravelTime <= filters.minMetroTime) {
-                // Within selected range - use green shades based on time
-                if (minTravelTime <= 5) {
-                  stationColor = '#00CC66'; // Bright green - very close
-                } else if (minTravelTime <= 10) {
-                  stationColor = '#66DD88'; // Medium green
-                } else if (minTravelTime <= 15) {
-                  stationColor = '#FFCC00'; // Yellow - moderate
-                } else {
-                  stationColor = '#FF9900'; // Orange - farther
-                }
-                stationOpacity = 1;
-              } else {
-                // Outside selected range - dimmed gray
-                stationColor = '#999999';
-                stationOpacity = 0.4;
-              }
-              
-              return (
-                <AdvancedMarker
-                  key={`metro-${station.id}`}
-                  position={{ lat: station.latitude, lng: station.longitude }}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div 
-                        className="p-2 rounded-full shadow-lg cursor-pointer transition-all hover:scale-125"
-                        style={{ 
-                          backgroundColor: stationColor,
-                          border: `3px solid ${stationColor}`,
-                          boxShadow: `0 0 15px ${stationColor}80`,
-                          opacity: stationOpacity,
-                          animation: stationOpacity === 1 ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
-                        }}
-                      >
-                        <Train className="h-4 w-4 text-white" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <div className="text-center">
-                        <p className="font-bold">{i18n.language === 'ar' ? station.station_name_ar : station.station_name}</p>
-                        <p className="text-xs text-muted-foreground">{station.line_name}</p>
-                        <p className="text-xs font-medium mt-1">
-                          ~{Math.round(minTravelTime)} {t('minutes')} {t('minToMetro').replace('min to metro', '')}
-                        </p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </AdvancedMarker>
-              );
-            })}
           </Map>
         </div>
 

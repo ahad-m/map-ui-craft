@@ -14,39 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      metro_stations: {
-        Row: {
-          created_at: string
-          id: string
-          latitude: number
-          line_color: string
-          line_name: string
-          longitude: number
-          station_name: string
-          station_name_ar: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          latitude: number
-          line_color: string
-          line_name: string
-          longitude: number
-          station_name: string
-          station_name_ar?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          latitude?: number
-          line_color?: string
-          line_name?: string
-          longitude?: number
-          station_name?: string
-          station_name_ar?: string | null
-        }
-        Relationships: []
-      }
       mosques: {
         Row: {
           district: string | null
@@ -444,6 +411,33 @@ export type Database = {
           created_at?: string | null
           id?: string
           property_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          id: string
+          preference_key: string
+          preference_value: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          preference_key: string
+          preference_value: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          preference_key?: string
+          preference_value?: Json
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
