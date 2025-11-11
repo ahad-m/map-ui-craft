@@ -11,9 +11,6 @@ import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
 
-const emailSchema = z.string().email('Invalid email address');
-const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
-
 const Auth = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -48,14 +45,27 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Validate inputs
-      emailSchema.parse(email);
-      passwordSchema.parse(password);
+      // Validate and trim inputs
+      const trimmedEmail = email.trim().toLowerCase();
+      const trimmedPassword = password.trim();
+
+      // Basic validation
+      if (!trimmedEmail || !trimmedEmail.includes('@')) {
+        toast.error('Please enter a valid email address');
+        setLoading(false);
+        return;
+      }
+
+      if (trimmedPassword.length < 6) {
+        toast.error('Password must be at least 6 characters');
+        setLoading(false);
+        return;
+      }
 
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: trimmedEmail,
+          password: trimmedPassword,
         });
 
         if (error) {
@@ -75,12 +85,12 @@ const Auth = () => {
         }
 
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: trimmedEmail,
+          password: trimmedPassword,
           options: {
             emailRedirectTo: `${window.location.origin}/search`,
             data: {
-              full_name: fullName,
+              full_name: fullName.trim(),
             }
           }
         });
@@ -97,12 +107,8 @@ const Auth = () => {
         toast.success('Account created! Please check your email for verification.');
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error('An error occurred. Please try again.');
-      }
-    } finally {
+      console.error('Auth error:', error);
+      toast.error('An error occurred. Please try again.');
       setLoading(false);
     }
   };
