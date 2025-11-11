@@ -24,6 +24,17 @@ import { PropertyDetailsDialog } from '@/components/PropertyDetailsDialog';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useRealEstateAssistant } from '@/hooks/useRealEstateAssistant';
 
+// Component to save map reference - MUST be defined outside to avoid React hook errors
+const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.Map | null> }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (map) {
+      mapRef.current = map;
+    }
+  }, [map, mapRef]);
+  return null;
+};
+
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -688,18 +699,6 @@ const RealEstateSearch = () => {
     setHasSearched(false);
   };
 
-  // Component to save map reference
-  const MapRefHandler = () => {
-    const map = useMap();
-    useEffect(() => {
-      if (map) {
-        mapRef.current = map;
-      }
-    }, [map]);
-    return null;
-  };
-
-
   return (
     <APIProvider apiKey={apiKey}>
       <div className="relative h-screen w-full overflow-hidden">
@@ -711,7 +710,7 @@ const RealEstateSearch = () => {
             gestureHandling="greedy"
             disableDefaultUI={false}
           >
-            <MapRefHandler />
+            <MapRefHandler mapRef={mapRef} />
             {displayedProperties.map((property) => {
               
               // ================================================
