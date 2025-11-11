@@ -123,12 +123,19 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/10 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/10 p-4 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-10 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
+      </div>
+
       <Button
         variant="ghost"
         size="icon"
         onClick={() => navigate('/')}
-        className="absolute top-4 left-4"
+        className="absolute top-4 left-4 z-10 hover-lift"
       >
         <ArrowLeft className="h-5 w-5" />
       </Button>
@@ -139,24 +146,29 @@ const Auth = () => {
           const newLang = i18n.language === 'en' ? 'ar' : 'en';
           i18n.changeLanguage(newLang);
         }}
-        className="absolute top-4 right-4 gap-2"
+        className="absolute top-4 right-4 gap-2 z-10 hover-lift"
       >
         <Languages className="h-4 w-4" />
         {i18n.language === 'en' ? 'ع' : 'EN'}
       </Button>
-      <Card className="w-full max-w-md shadow-xl">
+      <Card className="w-full max-w-md shadow-elevated glass-effect animate-slide-up relative z-10">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <img 
-              src={riyalEstateLogo} 
-              alt="Riyal Estate" 
-              className="h-20 w-20 rounded-full object-cover shadow-lg"
-            />
+            <div className="relative animate-float">
+              <img 
+                src={riyalEstateLogo} 
+                alt="Riyal Estate" 
+                className="h-20 w-20 rounded-full object-cover shadow-lg ring-4 ring-primary/20"
+              />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full animate-pulse-glow flex items-center justify-center">
+                <span className="text-white text-xs font-bold">✓</span>
+              </div>
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             {isLogin ? t('welcomeBack') : t('createAccount')}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-base">
             {isLogin 
               ? t('signInDescription')
               : t('signUpDescription')
@@ -212,16 +224,17 @@ const Auth = () => {
           <CardFooter className="flex flex-col space-y-4">
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full bg-gradient-to-r from-primary to-accent hover:shadow-glow transition-all duration-300 hover-lift relative overflow-hidden group" 
               disabled={loading}
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isLogin ? t('signingIn') : t('creatingAccount')}
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin relative z-10" />
+                  <span className="relative z-10">{isLogin ? t('signingIn') : t('creatingAccount')}</span>
                 </>
               ) : (
-                isLogin ? t('signIn') : t('signUp')
+                <span className="relative z-10">{isLogin ? t('signIn') : t('signUp')}</span>
               )}
             </Button>
             <Button

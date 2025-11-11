@@ -745,17 +745,24 @@ const RealEstateSearch = () => {
               return (
                 <AdvancedMarker
                   key={property.id}
-                  position={{ lat, lng: lon }} // <-- الآن هذا الموضع صحيح
+                  position={{ lat, lng: lon }}
                   onClick={() => handlePropertyClick(property)}
                 >
-                  <div className="relative">
-                    <Pin
-                      background={transactionType === 'sale' ? '#15803d' : '#22c55e'}
-                      borderColor={transactionType === 'sale' ? '#14532d' : '#16a34a'}
-                      glyphColor={'#ffffff'}
-                    />
+                  <div className="relative group cursor-pointer">
+                    <div className="transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-2">
+                      <Pin
+                        background={transactionType === 'sale' ? '#15803d' : '#22c55e'}
+                        borderColor={transactionType === 'sale' ? '#14532d' : '#16a34a'}
+                        glyphColor={'#ffffff'}
+                      />
+                    </div>
+                    {/* Animated pulse ring on hover */}
+                    <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '1.5s' }} />
+                    {/* Favorite heart badge */}
                     {isFavorite(property.id) && (
-                      <Heart className="absolute -top-2 -right-2 h-4 w-4 fill-red-500 text-red-500" />
+                      <div className="absolute -top-2 -right-2 animate-pulse-glow">
+                        <Heart className="h-4 w-4 fill-red-500 text-red-500 drop-shadow-lg" />
+                      </div>
                     )}
                   </div>
                 </AdvancedMarker>
@@ -772,10 +779,16 @@ const RealEstateSearch = () => {
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
-                      filters.selectedSchool === school.id ? 'bg-green-400 ring-4 ring-green-200' : 'bg-green-300'
+                    <div className={`relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2 ${
+                      filters.selectedSchool === school.id ? 'animate-pulse-glow' : ''
                     }`}>
-                      <School className="h-5 w-5 text-white" />
+                      <div className={`p-2 rounded-full shadow-elevated ${
+                        filters.selectedSchool === school.id ? 'bg-green-400 ring-4 ring-green-200' : 'bg-green-300'
+                      }`}>
+                        <School className="h-5 w-5 text-white" />
+                      </div>
+                      {/* Hover pulse effect */}
+                      <div className="absolute inset-0 rounded-full bg-green-400/30 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '1.5s' }} />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -796,11 +809,18 @@ const RealEstateSearch = () => {
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className={`p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 ${
+                    <div className={`relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2 ${
                       filters.selectedUniversity === (i18n.language === 'ar' ? university.name_ar : university.name_en) 
-                        ? 'bg-green-700 ring-4 ring-green-400' : 'bg-green-600'
+                        ? 'animate-pulse-glow' : ''
                     }`}>
-                      <GraduationCap className="h-5 w-5 text-white" />
+                      <div className={`p-2 rounded-full shadow-elevated ${
+                        filters.selectedUniversity === (i18n.language === 'ar' ? university.name_ar : university.name_en) 
+                          ? 'bg-green-700 ring-4 ring-green-400' : 'bg-green-600'
+                      }`}>
+                        <GraduationCap className="h-5 w-5 text-white" />
+                      </div>
+                      {/* Hover pulse effect */}
+                      <div className="absolute inset-0 rounded-full bg-green-600/30 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '1.5s' }} />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -873,10 +893,10 @@ const RealEstateSearch = () => {
               <div className="flex gap-2">
                 <Button
                   variant={transactionType === 'sale' ? 'default' : 'outline'}
-                  className={`flex-1 transition-all ${
+                  className={`flex-1 transition-all duration-300 hover-lift ${
                     transactionType === 'sale' 
-                      ? 'bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg' 
-                      : 'hover:border-primary/50'
+                      ? 'bg-gradient-to-r from-primary to-accent shadow-glow scale-105' 
+                      : 'hover:border-primary/50 hover:shadow-elegant'
                   }`}
                   onClick={() => setTransactionType('sale')}
                 >
@@ -884,10 +904,10 @@ const RealEstateSearch = () => {
                 </Button>
                 <Button
                   variant={transactionType === 'rent' ? 'default' : 'outline'}
-                  className={`flex-1 transition-all ${
+                  className={`flex-1 transition-all duration-300 hover-lift ${
                     transactionType === 'rent' 
-                      ? 'bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg' 
-                      : 'hover:border-primary/50'
+                      ? 'bg-gradient-to-r from-primary to-accent shadow-glow scale-105' 
+                      : 'hover:border-primary/50 hover:shadow-elegant'
                   }`}
                   onClick={() => setTransactionType('rent')}
                 >
@@ -897,12 +917,12 @@ const RealEstateSearch = () => {
 
               <div className="flex gap-2">
                 <div className="flex-1 relative group">
-                  <MapPin className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-colors ${i18n.language === 'ar' ? 'right-3' : 'left-3'}`} />
+                  <MapPin className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-all duration-300 group-hover:scale-110 ${i18n.language === 'ar' ? 'right-3' : 'left-3'}`} />
                   <Input
                     placeholder={t('searchLocation')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className={`bg-background border-border focus-visible:ring-primary focus-visible:border-primary transition-all ${i18n.language === 'ar' ? 'pr-10' : 'pl-10'}`}
+                    className={`bg-background/80 backdrop-blur-sm border-border focus-visible:ring-primary focus-visible:border-primary focus-visible:shadow-glow transition-all duration-300 ${i18n.language === 'ar' ? 'pr-10' : 'pl-10'}`}
                   />
                 </div>
                 <Sheet open={showFilters} onOpenChange={setShowFilters}>
@@ -1612,10 +1632,11 @@ const RealEstateSearch = () => {
                   <p className="text-muted-foreground">{t('noFavorites')}</p>
                 </div>
               ) : (
-                displayedFavorites.map(property => (
+                displayedFavorites.map((property, index) => (
                   <Card
                     key={property.id}
-                    className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
+                    className="p-4 cursor-pointer hover-lift glass-effect animate-slide-up"
+                    style={{ animationDelay: `${index * 0.1}s` }}
                     onClick={() => {
                       setSelectedProperty(property);
                       setShowPropertyDialog(true);
@@ -1694,39 +1715,45 @@ const RealEstateSearch = () => {
           </div>
         )}
 
-        {/* Results Count */}
+        {/* Results Count - Enhanced */}
         {!selectedProperty && hasSearched && (
-          <div className="absolute bottom-24 left-4 right-4 z-10">
-            <Card className="p-3 bg-card/95 backdrop-blur-sm shadow-elegant border-primary/10">
-              <div className="text-center">
-                <p className="text-sm font-medium">
-                  {isLoading ? t('loading') : `${displayedProperties.length} ${t('propertiesFound')}`}
-                </p>
+          <div className="absolute bottom-24 left-4 right-4 z-10 animate-slide-up">
+            <Card className="glass-effect shadow-elegant border-primary/20">
+              <div className="p-3">
+                <div className="text-center">
+                  <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    {isLoading ? t('loading') : `${displayedProperties.length} ${t('propertiesFound')}`}
+                  </p>
+                </div>
               </div>
             </Card>
           </div>
         )}
 
-        {/* Chatbot Floating Button */}
-        <div className="fixed bottom-6 left-6 z-50">
-          <Button
-            onClick={() => setIsChatOpen(!isChatOpen)}
-            className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 relative"
-          >
-            <Bot className="h-6 w-6 text-white" />
-            {isBackendOnline && (
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></span>
-            )}
-          </Button>
+        {/* Chatbot Floating Button - Enhanced */}
+        <div className="fixed bottom-6 left-6 z-50 animate-float">
+          <div className="relative">
+            <Button
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              className="h-14 w-14 rounded-full shadow-elevated bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover-lift relative group overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+              <Bot className="h-6 w-6 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
+              {isBackendOnline && (
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white animate-pulse-glow" />
+              )}
+            </Button>
+          </div>
         </div>
 
-        {/* Chatbot Panel */}
+        {/* Chatbot Panel - Enhanced */}
         {isChatOpen && (
-          <div className="fixed bottom-24 left-6 w-96 h-[500px] bg-white rounded-lg shadow-2xl z-50 flex flex-col">
+          <div className="fixed bottom-24 left-6 w-96 h-[500px] glass-effect rounded-2xl shadow-elevated z-50 flex flex-col animate-slide-up overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-2xl flex items-center justify-between relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+              <div className="flex items-center gap-2 relative z-10">
+                <Bot className="h-5 w-5 animate-float" />
                 <span className="font-semibold">المساعد العقاري الذكي</span>
               </div>
               <div className="flex items-center gap-2">
