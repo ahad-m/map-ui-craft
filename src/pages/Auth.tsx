@@ -8,11 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Languages } from 'lucide-react';
 import { z } from 'zod';
 
 const Auth = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -125,6 +125,18 @@ const Auth = () => {
         className="absolute top-4 left-4"
       >
         <ArrowLeft className="h-5 w-5" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          const newLang = i18n.language === 'en' ? 'ar' : 'en';
+          i18n.changeLanguage(newLang);
+        }}
+        className="absolute top-4 right-4 gap-2"
+      >
+        <Languages className="h-4 w-4" />
+        {i18n.language === 'en' ? 'ع' : 'EN'}
       </Button>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-4 text-center">
