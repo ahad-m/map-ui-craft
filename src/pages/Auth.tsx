@@ -57,13 +57,13 @@ const Auth = () => {
 
       // Basic validation
       if (!trimmedEmail || !trimmedEmail.includes('@')) {
-        toast.error('Please enter a valid email address');
+        toast.error(t('validEmailRequired'));
         setLoading(false);
         return;
       }
 
       if (trimmedPassword.length < 6) {
-        toast.error('Password must be at least 6 characters');
+        toast.error(t('passwordTooShort'));
         setLoading(false);
         return;
       }
@@ -76,7 +76,7 @@ const Auth = () => {
 
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
-            toast.error('Invalid email or password');
+            toast.error(t('invalidCredentials'));
           } else {
             toast.error(error.message);
           }
@@ -84,10 +84,10 @@ const Auth = () => {
           return;
         }
 
-        toast.success('Logged in successfully!');
+        toast.success(t('loggedIn'));
       } else {
         if (!fullName.trim()) {
-          toast.error('Please enter your full name');
+          toast.error(t('fullNameRequired'));
           setLoading(false);
           return;
         }
@@ -105,7 +105,7 @@ const Auth = () => {
 
         if (error) {
           if (error.message.includes('User already registered')) {
-            toast.error('This email is already registered. Please login instead.');
+            toast.error(t('emailAlreadyRegistered'));
           } else {
             toast.error(error.message);
           }
@@ -113,11 +113,11 @@ const Auth = () => {
           return;
         }
 
-        toast.success('Account created! Please check your email for verification.');
+        toast.success(t('accountCreated'));
       }
     } catch (error) {
       console.error('Auth error:', error);
-      toast.error('An error occurred. Please try again.');
+      toast.error(t('authError'));
       setLoading(false);
     }
   };
@@ -154,12 +154,12 @@ const Auth = () => {
             />
           </div>
           <CardTitle className="text-2xl font-bold">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
+            {isLogin ? t('welcomeBack') : t('createAccount')}
           </CardTitle>
           <CardDescription>
             {isLogin 
-              ? 'Sign in to access your saved properties and preferences' 
-              : 'Sign up to save your favorite properties and preferences'
+              ? t('signInDescription')
+              : t('signUpDescription')
             }
           </CardDescription>
         </CardHeader>
@@ -167,11 +167,11 @@ const Auth = () => {
           <CardContent className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName">{t('fullName')}</Label>
                 <Input
                   id="fullName"
                   type="text"
-                  placeholder="Enter your full name"
+                  placeholder={t('enterFullName')}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required={!isLogin}
@@ -180,11 +180,11 @@ const Auth = () => {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('email')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t('enterEmail')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -192,11 +192,11 @@ const Auth = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('password')}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder={t('enterPassword')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -204,7 +204,7 @@ const Auth = () => {
               />
               {!isLogin && (
                 <p className="text-xs text-muted-foreground">
-                  Password must be at least 6 characters
+                  {t('passwordMinLength')}
                 </p>
               )}
             </div>
@@ -218,10 +218,10 @@ const Auth = () => {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isLogin ? 'Signing in...' : 'Creating account...'}
+                  {isLogin ? t('signingIn') : t('creatingAccount')}
                 </>
               ) : (
-                isLogin ? 'Sign In' : 'Sign Up'
+                isLogin ? t('signIn') : t('signUp')
               )}
             </Button>
             <Button
@@ -237,8 +237,8 @@ const Auth = () => {
               disabled={loading}
             >
               {isLogin 
-                ? "Don't have an account? Sign Up" 
-                : 'Already have an account? Sign In'
+                ? t('noAccount')
+                : t('haveAccount')
               }
             </Button>
           </CardFooter>
