@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2 } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -185,6 +185,21 @@ const RealEstateSearch = () => {
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'ar' : 'en';
     i18n.changeLanguage(newLang);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/auth', { replace: true });
+      toast({ title: t('loggedOut') || 'Logged out successfully' });
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to log out',
+        variant: 'destructive' 
+      });
+    }
   };
 
   // Predefined property types
@@ -838,6 +853,14 @@ const RealEstateSearch = () => {
                   >
                     <Languages className="h-4 w-4" />
                     {i18n.language === 'en' ? 'ع' : 'EN'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+                  >
+                    <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
