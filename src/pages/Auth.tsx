@@ -74,6 +74,7 @@ const Auth = () => {
           } else {
             toast.error(error.message);
           }
+          setLoading(false);
           return;
         }
 
@@ -81,6 +82,7 @@ const Auth = () => {
       } else {
         if (!fullName.trim()) {
           toast.error('Please enter your full name');
+          setLoading(false);
           return;
         }
 
@@ -101,6 +103,7 @@ const Auth = () => {
           } else {
             toast.error(error.message);
           }
+          setLoading(false);
           return;
         }
 
