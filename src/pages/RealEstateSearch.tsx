@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2, LogOut } from 'lucide-react';
+import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2, LogOut, Train } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -367,6 +367,19 @@ const RealEstateSearch = () => {
         
         return priceMatch && areaMatch && metroMatch;
       });
+    },
+  });
+
+  // Fetch metro stations from Supabase
+  const { data: metroStations = [] } = useQuery({
+    queryKey: ['metroStations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('metro_stations')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
     },
   });
 
@@ -805,6 +818,35 @@ const RealEstateSearch = () => {
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="font-medium">{i18n.language === 'ar' ? university.name_ar : university.name_en}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </AdvancedMarker>
+            ))}
+
+            {/* Metro Stations Markers */}
+            {filters.nearMetro && metroStations.map((station: any) => (
+              <AdvancedMarker
+                key={`metro-${station.id}`}
+                position={{ lat: station.latitude, lng: station.longitude }}
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div 
+                      className="p-2 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110 animate-pulse"
+                      style={{ 
+                        backgroundColor: station.line_color,
+                        border: `3px solid ${station.line_color}`,
+                        boxShadow: `0 0 15px ${station.line_color}80`
+                      }}
+                    >
+                      <Train className="h-4 w-4 text-white" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-center">
+                      <p className="font-bold">{i18n.language === 'ar' ? station.station_name_ar : station.station_name}</p>
+                      <p className="text-xs text-muted-foreground">{station.line_name}</p>
+                    </div>
                   </TooltipContent>
                 </Tooltip>
               </AdvancedMarker>
