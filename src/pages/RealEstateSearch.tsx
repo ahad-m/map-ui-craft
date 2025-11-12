@@ -21,7 +21,7 @@ import {
   Send,
   Loader2,
   LogOut,
-  RotateCw, // <-- !! إضافة: زر الريستارت !!
+  RotateCw, // <-- !! تعديل: إضافة أيقونة الريستارت !!
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 import riyalEstateLogo from "@/assets/riyal-estate-logo.jpg";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useFavorites } from "@/hooks/useFavorites";
-import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant"; // <-- تأكد أن المسار صحيح
+import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
 
 // Component to save map reference - MUST be defined outside to avoid React hook errors
 const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.Map | null> }) => {
@@ -517,7 +517,7 @@ const RealEstateSearch = () => {
     const sourceProps = showChatbotResults ? chatSearchResults : properties; // <-- تعديل: استخدم chatSearchResults
     if (sourceProps.length === 0) return null;
 
-    // !! التوحيد: اقرأ من 'lat' و 'lon' (لأن الباك إند يوحده)
+    // !! التوحيد: اقرأ من 'lat' و 'lon' (لأن الباك إند يوحدها)
     const validProperties = sourceProps.filter(
       (p) =>
         p.lat && p.lon && !isNaN(Number(p.lat)) && !isNaN(Number(p.lon)) && Number(p.lat) !== 0 && Number(p.lon) !== 0,
