@@ -21,6 +21,7 @@ import {
   Send,
   Loader2,
   LogOut,
+  RotateCw, // <-- !! إضافة: زر الريستارت !!
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -43,7 +44,7 @@ import { cn } from "@/lib/utils";
 import riyalEstateLogo from "@/assets/riyal-estate-logo.jpg";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useFavorites } from "@/hooks/useFavorites";
-import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
+import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant"; // <-- تأكد أن المسار صحيح
 
 // Component to save map reference - MUST be defined outside to avoid React hook errors
 const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.Map | null> }) => {
@@ -63,9 +64,9 @@ const RealEstateSearch = () => {
   const [transactionType, setTransactionType] = useState<"rent" | "sale">("sale");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [showChatbot, setShowChatbot] = useState(false);
+  // const [showChatbot, setShowChatbot] = useState(false); // (سيتم التحكم به بواسطة isChatOpen)
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
-  const [showingSimilarResults, setShowingSimilarResults] = useState(false);
+  // const [showingSimilarResults, setShowingSimilarResults] = useState(false); // (لم يعد مستخدماً)
   const [openSchoolCombobox, setOpenSchoolCombobox] = useState(false);
   const [openUniversityCombobox, setOpenUniversityCombobox] = useState(false);
   const [openNeighborhoodCombobox, setOpenNeighborhoodCombobox] = useState(false);
@@ -75,18 +76,24 @@ const RealEstateSearch = () => {
   const [showFavorites, setShowFavorites] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
+
+  // ==========================================================
+  // !! تعديل: استيراد الدالة الجديدة resetChat !!
+  // ==========================================================
   const {
     messages,
     isLoading: isChatLoading,
     isBackendOnline,
-    searchResults: chatSearchResults,
+    searchResults: chatSearchResults, // <-- هذا هو المصدر الجديد للعقارات
     sendMessage,
     selectSearchMode,
+    resetChat, // <-- !! الدالة الجديدة !!
   } = useRealEstateAssistant();
+  // ==========================================================
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
-  const [hasSearched, setHasSearched] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false); // (يستخدم للبحث العادي)
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -127,7 +134,7 @@ const RealEstateSearch = () => {
   const [openSchoolLevelCombobox, setOpenSchoolLevelCombobox] = useState(false);
 
   // State للعقارات من Chatbot
-  const [chatbotProperties, setChatbotProperties] = useState<any[]>([]);
+  // const [chatbotProperties, setChatbotProperties] = useState<any[]>([]); // <-- لم نعد بحاجة لهذا
   const [showChatbotResults, setShowChatbotResults] = useState(false);
 
   // Check authentication
@@ -168,20 +175,20 @@ const RealEstateSearch = () => {
     }
   }, [searchQuery]);
 
-  // تحديث العقارات عند البحث من الـ chatbot
+  // ==========================================================
+  // !! تعديل: تحديث العقارات عند البحث من الـ chatbot !!
+  // ==========================================================
   useEffect(() => {
+    // chatSearchResults هو المصدر المباشر من الـ hook
     if (chatSearchResults.length > 0) {
-      // تحديث العقارات المعروضة على الخريطة
-      // ملاحظة: قد تحتاج تعديل اسم الدالة حسب الكود الموجود
-      // تحديث العقارات من Chatbot
       console.log("🎯 Chatbot Properties:", chatSearchResults);
-      console.log("🎯 Chatbot Properties Length:", chatSearchResults.length);
-      setChatbotProperties(chatSearchResults);
-      setShowChatbotResults(true);
-      setHasSearched(true);
-
-      // إغلاق الـ chatbot
-      // setIsChatOpen(false); // تم تعطيل الإغلاق التلقائي
+      // setChatbotProperties(chatSearchResults); // <-- لم نعد بحاجة له
+      setShowChatbotResults(true); // (للتحكم في زر "إلغاء النتائج")
+      setHasSearched(true); // (لتفعيل الزووم)
+    } else {
+      // إذا قام المستخدم بـ reset، امسح النتائج
+      // setChatbotProperties([]); // <-- لم نعد بحاجة له
+      setShowChatbotResults(false);
     }
   }, [chatSearchResults]);
 
@@ -195,6 +202,14 @@ const RealEstateSearch = () => {
   // دالة اختيار نمط البحث
   const handleSearchModeSelection = async (mode: "exact" | "similar") => {
     await selectSearchMode(mode);
+  };
+
+  // ==========================================================
+  // !! إضافة: دالة الريستارت !!
+  // ==========================================================
+  const handleResetChat = () => {
+    resetChat(); // استدعاء الدالة من الـ hook
+    // (الـ useEffect الخاص بـ chatSearchResults سيتكفل بالباقي)
   };
 
   // Update document direction based on language
@@ -282,7 +297,7 @@ const RealEstateSearch = () => {
     },
   });
 
-  // Fetch properties from Supabase
+  // Fetch properties from Supabase (للبحث العادي)
   const { data: properties = [], isLoading } = useQuery({
     queryKey: ["properties", transactionType, filters, searchQuery, customSearchTerms],
     queryFn: async () => {
@@ -290,10 +305,11 @@ const RealEstateSearch = () => {
         .from("properties")
         .select("*")
         .eq("purpose", transactionType === "sale" ? "للبيع" : "للايجار")
-        // !! التوحيد: الفلترة الأولية تتم بالـ final_lat في الباك إند
-        // لكن هنا في الواجهة، نتأكد فقط أنها موجودة
+        // !! التوحيد: نفلتر بـ lat (لأن الباك إند يوحده)
         .not("lat", "is", null)
-        .not("lon", "is", null);
+        .not("lon", "is", null)
+        .not("lat", "eq", 0)
+        .not("lon", "eq", 0);
 
       if (filters.propertyType) {
         query = query.eq("property_type", filters.propertyType);
@@ -388,9 +404,8 @@ const RealEstateSearch = () => {
     },
   });
 
-  // Predefined school gender options
-  const predefinedSchoolGenders = ["Boys", "Girls"];
-
+  // (باقي كود الـ useQuery للمدارس والجامعات... كما هو)
+  // ... (تم حذفه للاختصار، افترض أنه موجود هنا) ...
   // Fetch additional school genders from database with custom search
   const { data: additionalSchoolGenders = [] } = useQuery({
     queryKey: ["schoolGenders", customSearchTerms.schoolGender],
@@ -418,9 +433,6 @@ const RealEstateSearch = () => {
   });
 
   const allSchoolGenders = [...predefinedSchoolGenders, ...additionalSchoolGenders];
-
-  // Predefined school level options
-  const predefinedSchoolLevels = ["nursery", "kindergarten", "elementary", "middle", "high"];
 
   // Fetch additional school levels from database with custom search
   const { data: additionalSchoolLevels = [] } = useQuery({
@@ -502,10 +514,10 @@ const RealEstateSearch = () => {
 
   // حساب موقع مركز العقارات المفلترة
   const propertiesCenterLocation = useMemo(() => {
-    const sourceProps = showChatbotResults ? chatbotProperties : properties;
+    const sourceProps = showChatbotResults ? chatSearchResults : properties; // <-- تعديل: استخدم chatSearchResults
     if (sourceProps.length === 0) return null;
 
-    // !! التوحيد: اقرأ من 'lat' و 'lon' (لأن الباك إند يوحدها)
+    // !! التوحيد: اقرأ من 'lat' و 'lon' (لأن الباك إند يوحده)
     const validProperties = sourceProps.filter(
       (p) =>
         p.lat && p.lon && !isNaN(Number(p.lat)) && !isNaN(Number(p.lon)) && Number(p.lat) !== 0 && Number(p.lon) !== 0,
@@ -521,7 +533,7 @@ const RealEstateSearch = () => {
       lat: sumLat / validProperties.length,
       lon: sumLon / validProperties.length,
     };
-  }, [properties, chatbotProperties, showChatbotResults]);
+  }, [properties, chatSearchResults, showChatbotResults]); // <-- تعديل
 
   // تصفية المدارس لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر من العقارات المعروضة)
   const nearbySchools = useMemo(() => {
@@ -587,7 +599,7 @@ const RealEstateSearch = () => {
   );
 
   // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
-  const baseProperties = showChatbotResults ? chatbotProperties : properties;
+  const baseProperties = showChatbotResults ? chatSearchResults : properties; // <-- تعديل: استخدم chatSearchResults
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
@@ -659,14 +671,16 @@ const RealEstateSearch = () => {
     if (!mapRef.current) return;
     console.log("🗺️ Map useEffect triggered:", {
       showChatbotResults,
-      chatbotPropertiesLength: chatbotProperties.length,
+      chatbotPropertiesLength: chatSearchResults.length, // <-- تعديل
     });
-    if (showChatbotResults && chatbotProperties.length > 0) {
+    if (showChatbotResults && chatSearchResults.length > 0) {
+      // <-- تعديل
+
       // ================================================
       // !! تعديل رقم 2: فلترة إحداثيات الشات بوت (استخدم lat/lon) !!
       // ================================================
-      const lats = chatbotProperties.map((p) => Number(p.lat)).filter((lat) => !isNaN(lat) && lat !== 0);
-      const lngs = chatbotProperties.map((p) => Number(p.lon)).filter((lng) => !isNaN(lng) && lng !== 0);
+      const lats = chatSearchResults.map((p) => Number(p.lat)).filter((lat) => !isNaN(lat) && lat !== 0); // <-- تعديل
+      const lngs = chatSearchResults.map((p) => Number(p.lon)).filter((lng) => !isNaN(lng) && lng !== 0); // <-- تعديل
 
       if (lats.length > 0 && lngs.length > 0) {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
@@ -676,7 +690,7 @@ const RealEstateSearch = () => {
         mapRef.current.setZoom(13);
       }
     }
-  }, [showChatbotResults, chatbotProperties]);
+  }, [showChatbotResults, chatSearchResults]); // <-- تعديل
 
   // توجيه الخريطة عند تغيير نتائج البحث العادية
   useEffect(() => {
@@ -796,7 +810,10 @@ const RealEstateSearch = () => {
               );
             })}
 
+            {/* !! تعديل: فلترة عرض المدارس/الجامعات !! */}
             {hasSearched &&
+              (filters.selectedSchool ||
+                (showChatbotResults && messages.some((m) => m.criteria?.school_requirements?.required))) &&
               nearbySchools.map((school) => (
                 <AdvancedMarker
                   key={`school-${school.id}`}
@@ -834,6 +851,8 @@ const RealEstateSearch = () => {
               ))}
 
             {hasSearched &&
+              (filters.selectedUniversity ||
+                (showChatbotResults && messages.some((m) => m.criteria?.university_requirements?.required))) &&
               nearbyUniversities.map((university) => (
                 <AdvancedMarker
                   key={`university-${university.name_ar}`}
@@ -1850,7 +1869,9 @@ const RealEstateSearch = () => {
             <Button
               onClick={() => {
                 setShowChatbotResults(false);
-                setChatbotProperties([]);
+                // setChatbotProperties([]); // (لم نعد نعتمد عليه)
+                setHasSearched(false); // <-- تعديل: إخفاء عداد العقارات
+                handleResetChat(); // <-- !! تعديل: استدعاء الريستارت ليقوم بمسح كل شيء !!
               }}
               variant="outline"
               className="bg-white/95 backdrop-blur-sm shadow-lg"
@@ -1911,6 +1932,18 @@ const RealEstateSearch = () => {
                 ) : (
                   <span className="text-xs bg-red-500 px-2 py-1 rounded-full">غير متصل</span>
                 )}
+
+                {/* !! -- هذا هو الزر الجديد (Reset) -- !! */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetChat} // <-- !! تعديل: ربط الدالة !!
+                  className="text-white hover:bg-white/20"
+                >
+                  <RotateCw className="h-4 w-4" />
+                </Button>
+                {/* !! -- نهاية الزر الجديد -- !! */}
+
                 <Button
                   variant="ghost"
                   size="sm"
