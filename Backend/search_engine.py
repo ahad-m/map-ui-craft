@@ -25,8 +25,7 @@ class SearchEngine:
     
     def search(self, criteria: PropertyCriteria, mode: SearchMode) -> List[Property]:
         """
-        البحث عن العقارات بناءً
- على المعايير ونوع البحث
+        البحث عن العقارات بناءً على المعايير ونوع البحث
         """
         try:
             if mode == SearchMode.EXACT:
@@ -104,7 +103,8 @@ class SearchEngine:
                 query = query.lte('time_to_metro_min', criteria.metro_time_max)
             
             # تنفيذ الاستعلام الأولي
-            result = query.order('price_num').limit(self.exact_limit * 2).execute() # (نجلب ضعف العدد احتياطاً للفلترة)
+            # (نجلب ضعف العدد احتياطاً للفلترة الجغرافية)
+            result = query.order('price_num').limit(self.exact_limit * 2).execute() 
             properties_data = result.data if result.data else []
             
             # ==========================================================
@@ -154,7 +154,8 @@ class SearchEngine:
             properties = [self._row_to_property(row) for row in filtered_properties]
             
             logger.info(f"البحث الدقيق (المحسّن): وجد {len(properties)} عقار بعد الفلترة")
-            return properties[:self.exact_limit] # إرجاع العدد المحدد
+            # إرجاع العدد المحدد فقط
+            return properties[:self.exact_limit] 
             
         except Exception as e:
             logger.error(f"خطأ في البحث الدقيق: {e}")
@@ -218,7 +219,15 @@ class SearchEngine:
                 if criteria.rooms.max is not None:
                     query = query.lte('rooms', criteria.rooms.max + 1)
             
-            # (باقي الفلاتر المرنة للحمامات والصالات...)
+            if criteria.baths and criteria.baths.exact is not None:
+                min_baths = max(0, criteria.baths.exact - 1)
+                max_baths = criteria.baths.exact + 1
+                query = query.gte('baths', min_baths).lte('baths', max_baths)
+            
+            if criteria.halls and criteria.halls.exact is not None:
+                min_halls = max(0, criteria.halls.exact - 1)
+                max_halls = criteria.halls.exact + 1
+                query = query.gte('halls', min_halls).lte('halls', max_halls)
             
             # تنفيذ الاستعلام الأولي
             result = query.limit(100).execute()
@@ -262,8 +271,60 @@ class SearchEngine:
             # (حساب النقاط فقط على العقارات المفلترة)
             for prop in filtered_properties:
                 scores = []
-                # (الكود الخاص بحساب النقاط... scores.append(...))
-                # ... (تم حذفه للاختصار، افترض أنه موجود هنا) ...
+                
+                # نقاط الغرف
+                if criteria.rooms and criteria.rooms.exact is not None:
+                    prop_rooms = prop.get('rooms', 0) or 0
+                    if prop_rooms == criteria.rooms.exact: scores.append(1.0)
+                    elif abs(prop_rooms - criteria.rooms.exact) <= 1: scores.append(0.7)
+                    else: scores.append(0.3)
+                else: scores.append(1.0)
+                
+                # نقاط الحمامات
+                if criteria.baths and criteria.baths.exact is not None:
+                    prop_baths = prop.get('baths', 0) or 0
+                    if prop_baths == criteria.baths.exact: scores.append(1.0)
+                    elif abs(prop_baths - criteria.baths.exact) <= 1: scores.append(0.7)
+                    else: scores.append(0.3)
+                else: scores.append(1.0)
+                
+                # نقاط المساحة
+                if criteria.area_m2 and (criteria.area_m2.min or criteria.area_m2.max):
+                    area = prop.get('area_m2')
+                    if area is not None:
+                        min_area = criteria.area_m2.min or 0
+                        max_area = criteria.area_m2.max or 999999
+                        expanded_min = min_area * 0.8
+                        expanded_max = max_area * 1.2
+                        if min_area <= area <= max_area: scores.append(1.0)
+                        elif expanded_min <= area <= expanded_max: scores.append(0.7)
+                        else: scores.append(0.3)
+                    else: scores.append(0.5)
+                else: scores.append(1.0)
+                
+                # نقاط السعر
+                if criteria.price and (criteria.price.min or criteria.price.max):
+                    price = prop.get('price_num')
+                    if price is not None:
+                        min_price = criteria.price.min or 0
+                        max_price = criteria.price.max or 999999999
+                        expanded_min_price = min_price * 0.8
+                        expanded_max_price = max_price * 1.2
+                        if min_price <= price <= max_price: scores.append(1.0)
+                        elif expanded_min_price <= price <= expanded_max_price: scores.append(0.7)
+                        else: scores.append(0.3)
+                    else: scores.append(0.5)
+                else: scores.append(1.0)
+                
+                # نقاط المترو
+                if criteria.metro_time_max:
+                    metro_time = prop.get('time_to_metro_min')
+                    if metro_time is not None:
+                        if metro_time <= criteria.metro_time_max: scores.append(1.0)
+                        elif metro_time <= criteria.metro_time_max * 1.5: scores.append(0.5)
+                        else: scores.append(0.2)
+                    else: scores.append(0.5)
+                else: scores.append(1.0)
                 
                 prop['sql_score'] = sum(scores) / len(scores) if scores else 0.5
             
@@ -291,7 +352,7 @@ class SearchEngine:
             
             logger.info("البحث الدلالي: جاري استدعاء دالة 'match_properties_bge_m3' في Supabase")
             result = self.db.client.rpc(
-                'match_properties_bge_m3',
+                'match_properties_bge_m3', # <-- ملاحظة: اسم الدالة لا يزال BGE، لكنها تعمل مع أي حجم
                 {
                     'query_embedding': query_embedding,
                     'match_threshold': settings.VECTOR_SIMILARITY_THRESHOLD,
