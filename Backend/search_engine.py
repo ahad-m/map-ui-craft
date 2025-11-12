@@ -46,10 +46,12 @@ class SearchEngine:
             # بناء استعلام Supabase
             query = self.db.client.table('properties').select('*')
             
-            # فلترة الإحداثيات الخاطئة
+            # !! -- تعديل: فلترة الإحداثيات الخاطئة من قاعدة البيانات -- !!
+            # (نستخدم final_lat لأنه الحقل الأساسي في الداتابيس)
             query = query.not_.is_('final_lat', 'null')
             query = query.not_.eq('final_lat', 0)
-            
+            # !! -- نهاية التعديل -- !!
+
             # الشروط الإلزامية
             query = query.eq('purpose', criteria.purpose.value)
             query = query.eq('property_type', criteria.property_type.value)
@@ -102,7 +104,6 @@ class SearchEngine:
                 query = query.not_.is_('time_to_metro_min', 'null')
                 query = query.lte('time_to_metro_min', criteria.metro_time_max)
             
-            # تنفيذ الاستعلام الأولي
             # (نجلب ضعف العدد احتياطاً للفلترة الجغرافية)
             result = query.order('price_num').limit(self.exact_limit * 2).execute() 
             properties_data = result.data if result.data else []
@@ -130,7 +131,7 @@ class SearchEngine:
                     lat = prop.get('final_lat') or prop.get('lat')
                     lon = prop.get('final_lon') or prop.get('lon')
 
-                    # إذا لم يكن لديه إحداثيات، تجاهله
+                    # إذا لم يكن لديه إحداثيات، تجاهله (تم فلترته في الـ SQL أصلاً، لكن هذا أمان إضافي)
                     if not lat or not lon:
                         continue
 
@@ -196,9 +197,10 @@ class SearchEngine:
             # بناء الاستعلام
             query = self.db.client.table('properties').select('*')
 
-            # فلترة الإحداثيات الخاطئة
+            # !! -- تعديل: فلترة الإحداثيات الخاطئة من قاعدة البيانات -- !!
             query = query.not_.is_('final_lat', 'null')
             query = query.not_.eq('final_lat', 0)
+            # !! -- نهاية التعديل -- !!
             
             # الشروط الإلزامية
             query = query.eq('purpose', criteria.purpose.value)
@@ -352,7 +354,7 @@ class SearchEngine:
             
             logger.info("البحث الدلالي: جاري استدعاء دالة 'match_properties_bge_m3' في Supabase")
             result = self.db.client.rpc(
-                'match_properties_bge_m3', # <-- ملاحظة: اسم الدالة لا يزال BGE، لكنها تعمل مع أي حجم
+                'match_properties_bge_m3', 
                 {
                     'query_embedding': query_embedding,
                     'match_threshold': settings.VECTOR_SIMILARITY_THRESHOLD,
@@ -444,12 +446,14 @@ class SearchEngine:
         """
         تحويل صف من قاعدة البيانات إلى Property object (نسخة موحدة)
         """
-        # (الكود كما هو، لا يحتاج تعديل)
         try:
             rooms = int(row['rooms']) if row.get('rooms') is not None else None
             baths = int(row['baths']) if row.get('baths') is not None else None
             halls = int(row['halls']) if row.get('halls') is not None else None
 
+            # !! -- هذا هو الإصلاح (التوحيد) -- !!
+            # جلب الإحداثيات الصحيحة (final) ووضعها في الحقول القياسية (lat/lon)
+            # إذا كانت final_lat فارغة، استخدم lat العادية كاحتياط
             correct_lat = row.get('final_lat') or row.get('lat')
             correct_lon = row.get('final_lon') or row.get('lon')
             
@@ -467,10 +471,15 @@ class SearchEngine:
                 area_m2=row.get('area_m2'),
                 description=row.get('description'),
                 image_url=row.get('image_url'),
+                
+                # !! -- إرسال الإحداثيات الصحيحة فقط في 'lat' و 'lon' -- !!
                 lat=correct_lat,
                 lon=correct_lon,
+                
+                # (الحقول القديمة (final) لا تهم الواجهة الآن)
                 final_lat=row.get('final_lat'),
                 final_lon=row.get('final_lon'),
+
                 time_to_metro_min=row.get('time_to_metro_min'),
                 rooms=rooms,
                 baths=baths,
