@@ -21,7 +21,7 @@ import {
   Send,
   Loader2,
   LogOut,
-  RotateCw, // <-- إضافة: زر الريستارت
+  RotateCw, // <-- !! تعديل: إضافة أيقونة الريستارت !!
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 import riyalEstateLogo from "@/assets/riyal-estate-logo.jpg";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useFavorites } from "@/hooks/useFavorites";
-import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant"; // <-- تأكد أن المسار صحيح
+import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
 
 // Component to save map reference - MUST be defined outside to avoid React hook errors
 const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.Map | null> }) => {
@@ -1871,7 +1871,7 @@ const RealEstateSearch = () => {
                 setShowChatbotResults(false);
                 // setChatbotProperties([]); // (لم نعد نعتمد عليه)
                 setHasSearched(false); // <-- تعديل: إخفاء عداد العقارات
-                resetChat(); // <-- !! تعديل: استدعاء الريستارت ليقوم بمسح كل شيء !!
+                handleResetChat(); // <-- !! تعديل: استدعاء الريستارت ليقوم بمسح كل شيء !!
               }}
               variant="outline"
               className="bg-white/95 backdrop-blur-sm shadow-lg"
@@ -1934,7 +1934,12 @@ const RealEstateSearch = () => {
                 )}
 
                 {/* !! -- هذا هو الزر الجديد (Reset) -- !! */}
-                <Button variant="ghost" size="sm" onClick={handleResetChat} className="text-white hover:bg-white/20">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetChat} // <-- !! تعديل: ربط الدالة !!
+                  className="text-white hover:bg-white/20"
+                >
                   <RotateCw className="h-4 w-4" />
                 </Button>
                 {/* !! -- نهاية الزر الجديد -- !! */}
