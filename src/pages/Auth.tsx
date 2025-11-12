@@ -239,6 +239,15 @@ const Auth = () => {
             </Button>
             <Button
               type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate('/search')}
+              disabled={loading}
+            >
+              {t('skip')}
+            </Button>
+            <Button
+              type="button"
               variant="ghost"
               className="w-full"
               onClick={() => {

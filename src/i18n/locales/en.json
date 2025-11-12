@@ -133,6 +133,7 @@
   "signUp": "Sign Up",
   "signingIn": "Signing in...",
   "creatingAccount": "Creating account...",
+  "skip": "Continue without signing in",
   "noAccount": "Don't have an account? Sign Up",
   "haveAccount": "Already have an account? Sign In",
   "validEmailRequired": "Please enter a valid email address",
