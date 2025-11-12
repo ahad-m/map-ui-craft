@@ -38,120 +38,144 @@ class SearchEngine:
             traceback.print_exc()
             return []
     
+    def _get_base_query(self, criteria: PropertyCriteria):
+        """
+        إنشاء الاستعلام الأساسي مع الفلاتر المشتركة
+        """
+        query = self.db.client.table('properties').select('*')
+        
+        # !! -- الفلترة الأساسية للإحداثيات -- !!
+        # 1. استخدم `final_lat` إذا كان موجوداً، وإلا استخدم `lat`
+        # 2. تأكد أن الإحداثيات ليست null وليست 0
+        query = query.not_.is_('final_lat', 'null') # (افترض أن final_lat هو المصدر الرئيسي)
+        query = query.not_.eq('final_lat', 0)
+        
+        # الشروط الإلزامية
+        query = query.eq('purpose', criteria.purpose.value)
+        query = query.eq('property_type', criteria.property_type.value)
+        
+        # الحي (إذا حُدد)
+        if criteria.district:
+            query = query.eq('district', criteria.district)
+            
+        return query
+
+    def _apply_common_filters(self, query, criteria: PropertyCriteria):
+        """
+        تطبيق الفلاتر المشتركة (غرف، حمامات، سعر... إلخ)
+        """
+        # عدد الغرف
+        if criteria.rooms:
+            if criteria.rooms.exact is not None:
+                query = query.eq('rooms', criteria.rooms.exact)
+            else:
+                if criteria.rooms.min is not None:
+                    query = query.gte('rooms', criteria.rooms.min)
+                if criteria.rooms.max is not None:
+                    query = query.lte('rooms', criteria.rooms.max)
+        
+        # عدد الحمامات
+        if criteria.baths:
+            if criteria.baths.exact is not None:
+                query = query.eq('baths', criteria.baths.exact)
+            else:
+                if criteria.baths.min is not None:
+                    query = query.gte('baths', criteria.baths.min)
+                if criteria.baths.max is not None:
+                    query = query.lte('baths', criteria.baths.max)
+        
+        # عدد الصالات
+        if criteria.halls:
+            if criteria.halls.exact is not None:
+                query = query.eq('halls', criteria.halls.exact)
+            else:
+                if criteria.halls.min is not None:
+                    query = query.gte('halls', criteria.halls.min)
+                if criteria.halls.max is not None:
+                    query = query.lte('halls', criteria.halls.max)
+
+        # فلترة المساحة
+        if criteria.area_m2:
+            if criteria.area_m2.min is not None:
+                query = query.gte('area_m2', criteria.area_m2.min)
+            if criteria.area_m2.max is not None:
+                query = query.lte('area_m2', criteria.area_m2.max)
+        
+        # فلترة السعر
+        if criteria.price:
+            if criteria.price.min is not None:
+                query = query.gte('price_num', criteria.price.min)
+            if criteria.price.max is not None:
+                query = query.lte('price_num', criteria.price.max)
+
+        # فلترة المترو
+        if criteria.metro_time_max:
+            query = query.not_.is_('time_to_metro_min', 'null')
+            query = query.lte('time_to_metro_min', criteria.metro_time_max)
+            
+        return query
+
+    def _apply_geospatial_filters(self, properties_data: List[Dict], criteria: PropertyCriteria) -> List[Dict]:
+        """
+        تطبيق فلاتر القرب (مدارس وجامعات) على قائمة عقارات
+        """
+        # التحقق إذا كانت الفلاتر الجغرافية مطلوبة أم لا
+        school_req_active = criteria.school_requirements and criteria.school_requirements.required
+        uni_req_active = criteria.university_requirements and criteria.university_requirements.required
+
+        # إذا لم تكن مطلوبة، تخطى الفلترة
+        if not school_req_active and not uni_req_active:
+            return properties_data
+
+        logger.info(f"البحث: بدء الفلترة الجغرافية لـ {len(properties_data)} عقار")
+        filtered_properties = []
+        
+        for prop in properties_data:
+            # !! التوحيد: استخدم دائماً الإحداثيات الصحيحة !!
+            lat = prop.get('final_lat') or prop.get('lat')
+            lon = prop.get('final_lon') or prop.get('lon')
+
+            # (الأمان الإضافي، على الرغم من أن الـ SQL قام بفلترتها)
+            if not lat or not lon or (lat == 0 and lon == 0):
+                continue
+
+            # 1. التحقق من المدارس
+            if school_req_active:
+                is_near_school = self.db.check_school_proximity(lat, lon, criteria.school_requirements)
+                if not is_near_school:
+                    continue # إذا لم يكن قريباً من مدرسة، تجاهل العقار وانتقل للتالي
+
+            # 2. التحقق من الجامعات
+            if uni_req_active:
+                is_near_university = self.db.check_university_proximity(lat, lon, criteria.university_requirements)
+                if not is_near_university:
+                    continue # إذا لم يكن قريباً من جامعة، تجاهل العقار وانتقل للتالي
+            
+            # إذا نجح العقار في كل الفلاتر، أضفه للنتائج
+            filtered_properties.append(prop)
+            
+        return filtered_properties
+
     def _exact_search(self, criteria: PropertyCriteria) -> List[Property]:
         """
         البحث الدقيق - يطابق جميع المعايير بالضبط (نسخة محسّنة)
         """
         try:
-            # بناء استعلام Supabase
-            query = self.db.client.table('properties').select('*')
+            # 1. الحصول على الاستعلام الأساسي (مع فلاتر الإحداثيات والغرض والنوع)
+            query = self._get_base_query(criteria)
             
-            # !! -- تعديل: فلترة الإحداثيات الخاطئة من قاعدة البيانات -- !!
-            # (نستخدم final_lat لأنه الحقل الأساسي في الداتابيس)
-            query = query.not_.is_('final_lat', 'null')
-            query = query.not_.eq('final_lat', 0)
-            # !! -- نهاية التعديل -- !!
-
-            # الشروط الإلزامية
-            query = query.eq('purpose', criteria.purpose.value)
-            query = query.eq('property_type', criteria.property_type.value)
+            # 2. تطبيق الفلاتر الدقيقة (غرف، سعر، ...)
+            query = self._apply_common_filters(query, criteria)
             
-            # الحي (إذا حُدد)
-            if criteria.district:
-                query = query.eq('district', criteria.district)
-            
-            # (باقي الفلاتر...)
-            if criteria.rooms:
-                if criteria.rooms.exact is not None:
-                    query = query.eq('rooms', criteria.rooms.exact)
-                else:
-                    if criteria.rooms.min is not None:
-                        query = query.gte('rooms', criteria.rooms.min)
-                    if criteria.rooms.max is not None:
-                        query = query.lte('rooms', criteria.rooms.max)
-            
-            if criteria.baths:
-                if criteria.baths.exact is not None:
-                    query = query.eq('baths', criteria.baths.exact)
-                else:
-                    if criteria.baths.min is not None:
-                        query = query.gte('baths', criteria.baths.min)
-                    if criteria.baths.max is not None:
-                        query = query.lte('baths', criteria.baths.max)
-            
-            if criteria.halls:
-                if criteria.halls.exact is not None:
-                    query = query.eq('halls', criteria.halls.exact)
-                else:
-                    if criteria.halls.min is not None:
-                        query = query.gte('halls', criteria.halls.min)
-                    if criteria.halls.max is not None:
-                        query = query.lte('halls', criteria.halls.max)
-
-            if criteria.area_m2:
-                if criteria.area_m2.min is not None:
-                    query = query.gte('area_m2', criteria.area_m2.min)
-                if criteria.area_m2.max is not None:
-                    query = query.lte('area_m2', criteria.area_m2.max)
-            
-            if criteria.price:
-                if criteria.price.min is not None:
-                    query = query.gte('price_num', criteria.price.min)
-                if criteria.price.max is not None:
-                    query = query.lte('price_num', criteria.price.max)
-
-            if criteria.metro_time_max:
-                query = query.not_.is_('time_to_metro_min', 'null')
-                query = query.lte('time_to_metro_min', criteria.metro_time_max)
-            
+            # 3. تنفيذ الاستعلام الأولي
             # (نجلب ضعف العدد احتياطاً للفلترة الجغرافية)
             result = query.order('price_num').limit(self.exact_limit * 2).execute() 
             properties_data = result.data if result.data else []
             
-            # ==========================================================
-            # !! تعديل: مرحلة الفلترة الجغرافية (المدارس والجامعات) !!
-            # ==========================================================
-            if not properties_data:
-                logger.info("البحث الدقيق: لا توجد نتائج أولية.")
-                return []
+            # 4. تطبيق الفلاتر الجغرافية (مدارس/جامعات)
+            filtered_properties = self._apply_geospatial_filters(properties_data, criteria)
 
-            filtered_properties = []
-            
-            # التحقق إذا كانت الفلاتر الجغرافية مطلوبة أم لا
-            school_req_active = criteria.school_requirements and criteria.school_requirements.required
-            uni_req_active = criteria.university_requirements and criteria.university_requirements.required
-
-            # إذا لم تكن مطلوبة، تخطى الفلترة
-            if not school_req_active and not uni_req_active:
-                filtered_properties = properties_data
-            else:
-                logger.info(f"البحث الدقيق: بدء الفلترة الجغرافية لـ {len(properties_data)} عقار")
-                # فلترة العقارات واحداً تلو الآخر
-                for prop in properties_data:
-                    lat = prop.get('final_lat') or prop.get('lat')
-                    lon = prop.get('final_lon') or prop.get('lon')
-
-                    # إذا لم يكن لديه إحداثيات، تجاهله (تم فلترته في الـ SQL أصلاً، لكن هذا أمان إضافي)
-                    if not lat or not lon:
-                        continue
-
-                    # 1. التحقق من المدارس
-                    if school_req_active:
-                        is_near_school = self.db.check_school_proximity(lat, lon, criteria.school_requirements)
-                        if not is_near_school:
-                            continue # إذا لم يكن قريباً من مدرسة، تجاهل العقار وانتقل للتالي
-
-                    # 2. التحقق من الجامعات
-                    if uni_req_active:
-                        is_near_university = self.db.check_university_proximity(lat, lon, criteria.university_requirements)
-                        if not is_near_university:
-                            continue # إذا لم يكن قريباً من جامعة، تجاهل العقار وانتقل للتالي
-                    
-                    # إذا نجح العقار في كل الفلاتر، أضفه للنتائج
-                    filtered_properties.append(prop)
-            # ==========================================================
-
-            # تحويل النتائج إلى Property objects
+            # 5. تحويل النتائج إلى Property objects
             properties = [self._row_to_property(row) for row in filtered_properties]
             
             logger.info(f"البحث الدقيق (المحسّن): وجد {len(properties)} عقار بعد الفلترة")
@@ -194,23 +218,10 @@ class SearchEngine:
         بحث SQL مرن - يوسع نطاقات البحث
         """
         try:
-            # بناء الاستعلام
-            query = self.db.client.table('properties').select('*')
-
-            # !! -- تعديل: فلترة الإحداثيات الخاطئة من قاعدة البيانات -- !!
-            query = query.not_.is_('final_lat', 'null')
-            query = query.not_.eq('final_lat', 0)
-            # !! -- نهاية التعديل -- !!
+            # 1. الحصول على الاستعلام الأساسي (مع فلاتر الإحداثيات والغرض والنوع)
+            query = self._get_base_query(criteria)
             
-            # الشروط الإلزامية
-            query = query.eq('purpose', criteria.purpose.value)
-            query = query.eq('property_type', criteria.property_type.value)
-            
-            # الحي (مرن)
-            if criteria.district:
-                query = query.eq('district', criteria.district)
-            
-            # (باقي الفلاتر المرنة...)
+            # 2. تطبيق الفلاتر (المرنة)
             if criteria.rooms and criteria.rooms.exact is not None:
                 min_rooms = max(0, criteria.rooms.exact - 1)
                 max_rooms = criteria.rooms.exact + 1
@@ -231,46 +242,14 @@ class SearchEngine:
                 max_halls = criteria.halls.exact + 1
                 query = query.gte('halls', min_halls).lte('halls', max_halls)
             
-            # تنفيذ الاستعلام الأولي
+            # 3. تنفيذ الاستعلام الأولي
             result = query.limit(100).execute()
             properties_data = result.data if result.data else []
 
-            # ==========================================================
-            # !! تعديل: مرحلة الفلترة الجغرافية (المدارس والجامعات) !!
-            # ==========================================================
-            if not properties_data:
-                logger.info("البحث المرن: لا توجد نتائج أولية.")
-                return []
+            # 4. تطبيق الفلاتر الجغرافية (مدارس/جامعات)
+            filtered_properties = self._apply_geospatial_filters(properties_data, criteria)
 
-            filtered_properties = []
-            school_req_active = criteria.school_requirements and criteria.school_requirements.required
-            uni_req_active = criteria.university_requirements and criteria.university_requirements.required
-
-            if not school_req_active and not uni_req_active:
-                filtered_properties = properties_data
-            else:
-                logger.info(f"البحث المرن: بدء الفلترة الجغرافية لـ {len(properties_data)} عقار")
-                for prop in properties_data:
-                    lat = prop.get('final_lat') or prop.get('lat')
-                    lon = prop.get('final_lon') or prop.get('lon')
-
-                    if not lat or not lon:
-                        continue
-
-                    if school_req_active:
-                        is_near_school = self.db.check_school_proximity(lat, lon, criteria.school_requirements)
-                        if not is_near_school:
-                            continue 
-
-                    if uni_req_active:
-                        is_near_university = self.db.check_university_proximity(lat, lon, criteria.university_requirements)
-                        if not is_near_university:
-                            continue
-                    
-                    filtered_properties.append(prop)
-            # ==========================================================
-
-            # (حساب النقاط فقط على العقارات المفلترة)
+            # 5. (حساب النقاط فقط على العقارات المفلترة)
             for prop in filtered_properties:
                 scores = []
                 
@@ -476,7 +455,7 @@ class SearchEngine:
                 lat=correct_lat,
                 lon=correct_lon,
                 
-                # (الحقول القديمة (final) لا تهم الواجهة الآن)
+                # (الحقول القديمة (final) لا تهم الواجهة الآن، ولكن نرسلها للاحتياط)
                 final_lat=row.get('final_lat'),
                 final_lon=row.get('final_lon'),
 
