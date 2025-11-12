@@ -6,7 +6,7 @@ from config import settings
 from models import (
     PropertyCriteria, PropertyPurpose, PropertyType, PricePeriod,
     RangeFilter, IntRangeFilter, PriceFilter, 
-    SchoolRequirements, UniversityRequirements, SchoolGender, SchoolLevel, # <-- إضافة النماذج الجديدة
+    SchoolRequirements, UniversityRequirements, SchoolGender, SchoolLevel,
     CriteriaExtractionResponse
 )
 import json
@@ -49,33 +49,24 @@ class LLMParser:
 - إيجار / للإيجار / للايجار / تأجير → "للايجار"
 
 # ==========================================================
-# !! تعديل: إضافة قاموس القرب من الخدمات !!
+# !! تعديل: إضافة قاموس ترجمة الإدخالات !!
 # ==========================================================
+## ترجمة قيم المدارس (Enums):
+عند استدعاء الدالة، يجب عليك "ترجمة" الكلمات العربية إلى القيم الإنجليزية التالية:
+- (الجندر): "بنات" → "girls", "اولاد" / "بنين" → "boys", "مختلط" / "كلاهما" → "both"
+- (المستوى): "ابتدائي" / "ابتدائية" → "elementary", "متوسط" / "متوسطة" → "middle", "ثانوي" / "ثانوية" → "high", "روضة" → "kindergarten", "حضانة" → "nursery", "مجمع" → "all"
+# ==========================================================
+
 ## القرب من الخدمات (بالدقائق):
 - "قريب من مدرسة 5 دقايق" → school_requirements: { required: true, proximity_minutes: 5 }
 - "اقصى شي 10 دقايق للجامعة" → university_requirements: { required: true, proximity_minutes: 10 }
-- "جنب المترو" (إذا لم يحدد وقت) → metro_time_max: 5 (افترض 5 دقائق إذا قال "قريب" ولم يحدد)
-
-## المدارس (الجندر):
-- "مدرسة بنات" / "مدرسة بنات ابتدائي" → school_requirements: { gender: "girls" }
-- "مدرسة اولاد" / "مدرسة بنين" → school_requirements: { gender: "boys" }
-- "مدرسة مختلطة" / "مدرسة أولاد وبنات" → school_requirements: { gender: "both" }
-- (إذا لم يحدد، اترك gender فارغاً)
-
-## المدارس (المستوى):
-- "حضانة" → school_requirements: { level: "nursery" }
-- "روضة" → school_requirements: { level: "kindergarten" }
-- "ابتدائي" / "ابتدائية" → school_requirements: { level: "elementary" }
-- "متوسط" / "متوسطة" → school_requirements: { level: "middle" }
-- "ثانوي" / "ثانوية" → school_requirements: { level: "high" }
-- "مجمع مدارس" / "كل المستويات" → school_requirements: { level: "all" }
-- (إذا لم يحدد، اترك level فارغاً)
+- "جنب المترو" (إذا لم يحدد وقت) → metro_time_max: 5
 
 ## الخدمات بالاسم:
 - "قريب من جامعة سعود" → university_requirements: { required: true, name: "جامعة سعود" }
 - "جنب مدرسة المملكة" → school_requirements: { required: true, name: "مدرسة المملكة" }
 - "قريب من جامعه نوره 10 دقايق" → university_requirements: { required: true, name: "جامعه نوره", proximity_minutes: 10 }
-# ==========================================================
+- "مدرسة بنات ابتدائي" → school_requirements: { required: true, gender: "girls", level: "elementary" }
 
 ## ملاحظات مهمة:
 1. إذا ذكر المستخدم رقم واحد للغرف/الحمامات/الصالات، ضعه في "exact"
@@ -148,9 +139,6 @@ class LLMParser:
                             "type": "number",
                             "description": "أقصى وقت للوصول لمحطة المترو بالدقائق"
                         },
-                        # ==========================================================
-                        # !! تعديل: إضافة "الاسم" لمتطلبات القرب !!
-                        # ==========================================================
                         "school_requirements": {
                             "type": "object",
                             "description": "متطلبات قرب المدارس (إذا طلب المستخدم مدرسة)",
@@ -171,7 +159,6 @@ class LLMParser:
                                 "proximity_minutes": {"type": "number", "description": "أقصى وقت وصول للجامعة بالدقائق"}
                             }
                         }
-                        # ==========================================================
                     },
                     "required": ["purpose", "property_type"]
                 }
@@ -247,19 +234,52 @@ class LLMParser:
         price = PriceFilter(**data['price']) if data.get('price') else None
 
         # ==========================================================
-        # !! تعديل: معالجة النماذج المعقدة الجديدة !!
+        # !! تعديل: معالجة النماذج المعقدة الجديدة + إضافة "شبكة أمان" للترجمة !!
         # ==========================================================
+        
+        # 1. متطلبات المدارس
         school_reqs_data = data.get('school_requirements')
-        school_requirements = SchoolRequirements(**school_reqs_data) if school_reqs_data else SchoolRequirements()
-        # التأكد من أن 'required' صحيح إذا تم توفير أي تفاصيل
-        if school_reqs_data and (school_reqs_data.get('proximity_minutes') or school_reqs_data.get('gender') or school_reqs_data.get('level') or school_reqs_data.get('name')):
-            school_requirements.required = True
+        school_requirements = SchoolRequirements() # إنشاء نموذج فارغ
+        if school_reqs_data:
+            # !! -- هذا هو الإصلاح -- !!
+            # (ترجمة الجندر والمستوى كإجراء احتياطي قبل التحقق)
+            gender_map = {"بنات": "girls", "اولاد": "boys", "بنين": "boys", "كلاهما": "both", "مختلط": "both"}
+            level_map = {
+                "ابتدائي": "elementary", "ابتدائية": "elementary",
+                "متوسط": "middle", "متوسطة": "middle",
+                "ثانوي": "high", "ثانوية": "high",
+                "روضة": "kindergarten",
+                "حضانة": "nursery",
+                "مجمع": "all"
+            }
+            
+            raw_gender = school_reqs_data.get('gender')
+            if raw_gender in gender_map:
+                school_reqs_data['gender'] = gender_map[raw_gender] # استبدال "بنات" بـ "girls"
+            
+            raw_level = school_reqs_data.get('level')
+            if raw_level in level_map:
+                school_reqs_data['level'] = level_map[raw_level] # استبدال "ابتدائي" بـ "elementary"
+            # !! -- نهاية الإصلاح -- !!
 
+            # الآن التحقق (Validation) آمن
+            school_requirements = SchoolRequirements(**school_reqs_data)
+            
+            # التأكد من أن 'required' صحيح إذا تم توفير أي تفاصيل
+            if (school_reqs_data.get('proximity_minutes') or 
+                school_reqs_data.get('gender') or 
+                school_reqs_data.get('level') or 
+                school_reqs_data.get('name')):
+                school_requirements.required = True
+
+        # 2. متطلبات الجامعات
         university_reqs_data = data.get('university_requirements')
-        university_requirements = UniversityRequirements(**university_reqs_data) if university_reqs_data else UniversityRequirements()
-        # التأكد من أن 'required' صحيح إذا تم توفير أي تفاصيل
-        if university_reqs_data and (university_reqs_data.get('proximity_minutes') or university_reqs_data.get('name')):
-            university_requirements.required = True
+        university_requirements = UniversityRequirements() # إنشاء نموذج فارغ
+        if university_reqs_data:
+            university_requirements = UniversityRequirements(**university_reqs_data)
+            # التأكد من أن 'required' صحيح إذا تم توفير أي تفاصيل
+            if (university_reqs_data.get('proximity_minutes') or university_reqs_data.get('name')):
+                university_requirements.required = True
         # ==========================================================
 
         return PropertyCriteria(
@@ -309,16 +329,23 @@ class LLMParser:
                 
             details = []
             if criteria.school_requirements.level:
-                # (لتحسين العرض، يمكن تحويل "elementary" إلى "ابتدائي" هنا)
-                details.append(f"{criteria.school_requirements.level.value}")
+                # قاموس ترجمة عكسي (للعرض فقط)
+                level_display = {
+                    "elementary": "ابتدائي", "middle": "متوسط", "high": "ثانوي",
+                    "kindergarten": "روضة", "nursery": "حضانة", "all": "مجمع"
+                }
+                details.append(level_display.get(criteria.school_requirements.level.value, criteria.school_requirements.level.value))
+            
             if criteria.school_requirements.gender:
-                # (لتحسين العرض، يمكن تحويل "boys" إلى "بنين" هنا)
-                details.append(f"{criteria.school_requirements.gender.value}")
+                # قاموس ترجمة عكسي (للعرض فقط)
+                gender_display = {"girls": "بنات", "boys": "بنين", "both": "بنين/بنات"}
+                details.append(gender_display.get(criteria.school_requirements.gender.value, criteria.school_requirements.gender.value))
+
             if criteria.school_requirements.proximity_minutes:
                 details.append(f"≤{criteria.school_requirements.proximity_minutes:.0f} دقيقة")
             
             if details:
-                school_text += f" ({', '.join(details)})"
+                school_text += f" ({'، '.join(details)})"
             message += school_text + "\n"
 
         # الجامعات
