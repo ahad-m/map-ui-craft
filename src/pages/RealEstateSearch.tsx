@@ -84,7 +84,9 @@ const RealEstateSearch = () => {
     schoolGender: '',
     schoolLevel: '',
     selectedSchool: '',
+    maxSchoolTime: 15,
     selectedUniversity: '',
+    maxUniversityTime: 30,
     nearMetro: false,
     minMetroTime: 1,
     nearHospitals: false,
@@ -498,11 +500,10 @@ const RealEstateSearch = () => {
     };
   }, [properties]);
 
-  // تصفية المدارس لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر)
+  // تصفية المدارس لإظهار القريبة فقط (حسب الوقت المحدد من slider)
   const nearbySchools = useMemo(() => {
     if (!propertiesCenterLocation || allSchools.length === 0) return [];
     
-    const MAX_TRAVEL_TIME_MIN = 30; // حد أقصى 30 دقيقة
     return allSchools.filter(school => {
       const distance = calculateDistance(
         propertiesCenterLocation.lat,
@@ -511,9 +512,9 @@ const RealEstateSearch = () => {
         school.lon
       );
       const travelTime = calculateTravelTime(distance);
-      return travelTime <= MAX_TRAVEL_TIME_MIN;
+      return travelTime <= filters.maxSchoolTime;
     });
-  }, [allSchools, propertiesCenterLocation]);
+  }, [allSchools, propertiesCenterLocation, filters.maxSchoolTime]);
 
   const selectedSchoolData = nearbySchools.find(school => school.id === filters.selectedSchool);
 
@@ -541,11 +542,10 @@ const RealEstateSearch = () => {
     },
   });
 
-  // تصفية الجامعات لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر)
+  // تصفية الجامعات لإظهار القريبة فقط (حسب الوقت المحدد من slider)
   const nearbyUniversities = useMemo(() => {
     if (!propertiesCenterLocation || allUniversities.length === 0) return [];
     
-    const MAX_TRAVEL_TIME_MIN = 30; // حد أقصى 30 دقيقة
     return allUniversities.filter(uni => {
       const distance = calculateDistance(
         propertiesCenterLocation.lat,
@@ -554,9 +554,9 @@ const RealEstateSearch = () => {
         uni.lon
       );
       const travelTime = calculateTravelTime(distance);
-      return travelTime <= MAX_TRAVEL_TIME_MIN;
+      return travelTime <= filters.maxUniversityTime;
     });
-  }, [allUniversities, propertiesCenterLocation]);
+  }, [allUniversities, propertiesCenterLocation, filters.maxUniversityTime]);
 
   const selectedUniversityData = nearbyUniversities.find(uni => 
     (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity
@@ -702,7 +702,9 @@ const RealEstateSearch = () => {
       schoolGender: '',
       schoolLevel: '',
       selectedSchool: '',
+      maxSchoolTime: 15,
       selectedUniversity: '',
+      maxUniversityTime: 30,
       nearMetro: false,
       minMetroTime: 1,
       nearHospitals: false,
@@ -1427,6 +1429,21 @@ const RealEstateSearch = () => {
                               </PopoverContent>
                             </Popover>
 
+                            {/* School Time Slider */}
+                            <div className="space-y-2">
+                              <Label className="text-xs font-medium">
+                                {t('maxTravelTime')}: {filters.maxSchoolTime} {t('minutes')}
+                              </Label>
+                              <Slider
+                                value={[filters.maxSchoolTime]}
+                                onValueChange={(value) => setFilters({ ...filters, maxSchoolTime: value[0] })}
+                                min={1}
+                                max={15}
+                                step={1}
+                                className="w-full"
+                              />
+                            </div>
+
                             {/* School Selection */}
                             <Popover open={openSchoolCombobox} onOpenChange={setOpenSchoolCombobox}>
                               <PopoverTrigger asChild>
@@ -1484,7 +1501,22 @@ const RealEstateSearch = () => {
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('universities')}</Label>
                             
-                            {/* University Selection with Search */}
+                            {/* University Time Slider */}
+                            <div className="space-y-2">
+                              <Label className="text-xs font-medium">
+                                {t('maxTravelTime')}: {filters.maxUniversityTime} {t('minutes')}
+                              </Label>
+                              <Slider
+                                value={[filters.maxUniversityTime]}
+                                onValueChange={(value) => setFilters({ ...filters, maxUniversityTime: value[0] })}
+                                min={1}
+                                max={30}
+                                step={1}
+                                className="w-full"
+                              />
+                            </div>
+
+                            {/* University Selection with All Universities */}
                             <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
                               <PopoverTrigger asChild>
                                 <Button variant="outline" role="combobox" className="w-full justify-between bg-background hover:bg-accent">
@@ -1502,7 +1534,7 @@ const RealEstateSearch = () => {
                                   />
                                    <CommandList>
                                     <CommandEmpty>
-                                      {nearbyUniversities.length === 0 ? t('noNearbyUniversities') || 'No nearby universities found' : t('noUniversityFound')}
+                                      {allUniversities.length === 0 ? t('noUniversityFound') : t('noUniversityFound')}
                                     </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
@@ -1515,7 +1547,7 @@ const RealEstateSearch = () => {
                                         <Check className={cn("mr-2 h-4 w-4", !filters.selectedUniversity ? "opacity-100" : "opacity-0")} />
                                         {t('none')}
                                       </CommandItem>
-                                      {nearbyUniversities.map((uni, index) => {
+                                      {allUniversities.map((uni, index) => {
                                         const uniName = i18n.language === 'ar' ? uni.name_ar : uni.name_en;
                                         return (
                                           <CommandItem
