@@ -30,12 +30,24 @@ class PricePeriod(str, Enum):
     MONTHLY = "شهري"
     DAILY = "يومي"
 
-
+# ==========================================================
+# !! تعديل: إضافة Enums جديدة للمدارس !!
+# ==========================================================
 class SchoolGender(str, Enum):
-    """جنس المدرسة"""
-    BOYS = "بنين"
-    GIRLS = "بنات"
-    MIXED = "مختلط"
+    """جنس المدرسة (مطابق للداتابيس مع إضافة 'كلاهما')"""
+    BOYS = "boys"
+    GIRLS = "girls"
+    BOTH = "both" # 'كلاهما' سيتم تحويله لهذا
+
+class SchoolLevel(str, Enum):
+    """مستوى المدرسة (مطابق للداتابيس مع إضافة 'مجمع')"""
+    NURSERY = "nursery"
+    KINDERGARTEN = "kindergarten"
+    ELEMENTARY = "elementary"
+    MIDDLE = "middle"
+    HIGH = "high"
+    ALL = "all" # 'مجمع' سيتم تحويله لهذا
+# ==========================================================
 
 
 class RangeFilter(BaseModel):
@@ -59,13 +71,23 @@ class PriceFilter(BaseModel):
     currency: str = "SAR"
     period: Optional[PricePeriod] = None
 
-
+# ==========================================================
+# !! تعديل: إضافة "الاسم" للمتطلبات !!
+# ==========================================================
 class SchoolRequirements(BaseModel):
     """متطلبات المدارس"""
-    required: bool = False
-    levels: Optional[List[str]] = None  # مثل: ["ابتدائي", "متوسط", "ثانوي"]
-    gender: Optional[SchoolGender] = None
-    max_distance_minutes: Optional[float] = None  # بالدقائق (بالسيارة)
+    required: bool = Field(default=False, description="هل طلب المستخدم مدرسة؟")
+    name: Optional[str] = Field(None, description="اسم المدرسة (أو جزء منه)") # <-- إضافة
+    proximity_minutes: Optional[float] = Field(None, description="أقصى وقت وصول للمدرسة بالدقائق")
+    gender: Optional[SchoolGender] = Field(None, description="جنس المدرسة المطلوب")
+    level: Optional[SchoolLevel] = Field(None, description="المستوى الدراسي المطلوب")
+
+class UniversityRequirements(BaseModel):
+    """متطلبات الجامعات"""
+    required: bool = Field(default=False, description="هل طلب المستخدم جامعة؟")
+    name: Optional[str] = Field(None, description="اسم الجامعة (أو جزء منه)") # <-- إضافة
+    proximity_minutes: Optional[float] = Field(None, description="أقصى وقت وصول للجامعة بالدقائق")
+# ==========================================================
 
 
 class PropertyCriteria(BaseModel):
@@ -88,7 +110,9 @@ class PropertyCriteria(BaseModel):
     
     # القرب من الخدمات
     metro_time_max: Optional[float] = Field(None, description="أقصى وقت للوصول لمحطة المترو بالدقائق")
-    school_requirements: Optional[SchoolRequirements] = Field(None, description="متطلبات المدارس")
+    
+    school_requirements: Optional[SchoolRequirements] = Field(default_factory=SchoolRequirements, description="متطلبات المدارس")
+    university_requirements: Optional[UniversityRequirements] = Field(default_factory=UniversityRequirements, description="متطلبات الجامعات")
     
     # النص الأصلي للطلب (للبحث الدلالي)
     original_query: Optional[str] = Field(None, description="النص الأصلي لطلب المستخدم")
