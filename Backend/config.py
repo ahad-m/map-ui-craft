@@ -20,12 +20,6 @@ class Settings(BaseSettings):
     
     # إعدادات النموذج اللغوي
     LLM_MODEL: str = "gpt-3.5-turbo"  # يمكن التبديل إلى "gemini-2.5-flash" أو "gpt-4.1-nano"
-    # (... باقي الإعدادات ...)
-    
-    # !! -- أضف هذا السطر -- !!
-    DEFAULT_PROXIMITY_MINUTES: float = 10.0 # الوقت الافتراضي (10 دقائق) إذا قال المستخدم "قريب"
-    
-    # (... باقي الإعدادات ...)
     LLM_TEMPERATURE: float = 0.1  # منخفضة للدقة العالية
     LLM_MAX_TOKENS: int = 1000
     

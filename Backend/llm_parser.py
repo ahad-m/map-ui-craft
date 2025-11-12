@@ -5,8 +5,7 @@ from openai import OpenAI
 from config import settings
 from models import (
     PropertyCriteria, PropertyPurpose, PropertyType, PricePeriod,
-    RangeFilter, IntRangeFilter, PriceFilter, 
-    SchoolRequirements, UniversityRequirements, SchoolGender, SchoolLevel,
+    RangeFilter, IntRangeFilter, PriceFilter, SchoolRequirements,
     CriteriaExtractionResponse
 )
 import json
@@ -33,6 +32,8 @@ class LLMParser:
 - "اقل شي" = الحد الأدنى
 - "بحدود" = تقريباً / حوالي
 - "تتراوح بين" / "من ... إلى" = نطاق
+- "k" = ألف (1000)
+- "م" / "متر" = متر مربع
 
 ## أنواع العقارات (مع المرادفات):
 - فيلا → "فلل"
@@ -48,39 +49,33 @@ class LLMParser:
 - بيع / للبيع → "للبيع"
 - إيجار / للإيجار / للايجار / تأجير → "للايجار"
 
-# ==========================================================
-# !! تعديل: إضافة قاموس ترجمة الإدخالات !!
-# ==========================================================
-## ترجمة قيم المدارس (Enums):
-عند استدعاء الدالة، يجب عليك "ترجمة" الكلمات العربية إلى القيم الإنجليزية التالية:
-- (الجندر): "بنات" → "girls", "اولاد" / "بنين" → "boys", "مختلط" / "كلاهما" → "both"
-- (المستوى): "ابتدائي" / "ابتدائية" → "elementary", "متوسط" / "متوسطة" → "middle", "ثانوي" / "ثانوية" → "high", "روضة" → "kindergarten", "حضانة" → "nursery", "مجمع" → "all"
-# ==========================================================
-
-## القرب من الخدمات (بالدقائق):
-- "قريب من مدرسة 5 دقايق" → school_requirements: { required: true, proximity_minutes: 5 }
-- "اقصى شي 10 دقايق للجامعة" → university_requirements: { required: true, proximity_minutes: 10 }
-- "جنب المترو" (إذا لم يحدد وقت) → metro_time_max: 5
-
-## الخدمات بالاسم:
-- "قريب من جامعة سعود" → university_requirements: { required: true, name: "جامعة سعود" }
-- "جنب مدرسة المملكة" → school_requirements: { required: true, name: "مدرسة المملكة" }
-- "قريب من جامعه نوره 10 دقايق" → university_requirements: { required: true, name: "جامعه نوره", proximity_minutes: 10 }
-- "مدرسة بنات ابتدائي" → school_requirements: { required: true, gender: "girls", level: "elementary" }
+## فترة السعر:
+- سنوي / بالسنة / سنوياً → "سنوي"
+- شهري / بالشهر / شهرياً → "شهري"
+- يومي / باليوم / يومياً → "يومي"
 
 ## ملاحظات مهمة:
 1. إذا ذكر المستخدم رقم واحد للغرف/الحمامات/الصالات، ضعه في "exact"
 2. إذا ذكر "اقل شي X"، ضع X في "min" فقط
 3. إذا ذكر "اقصى شي X"، ضع X في "max" فقط
-4. وقت المترو/المدرسة/الجامعة بالدقائق
-5. إذا طلب "مدرسة" أو "جامعة" بدون وقت، ضع required: true
-6. استخرج اسم الجامعة/المدرسة كما ذكره المستخدم.
+4. إذا ذكر نطاق (من X إلى Y)، ضع X في "min" و Y في "max"
+5. السعر بالريال السعودي (SAR) ما لم يُذكر خلاف ذلك
+6. المساحة بالمتر المربع
+7. وقت المترو بالدقائق
+8. إذا لم يُذكر الحي، اترك district فارغاً (null)
+9. احفظ النص الأصلي في original_query
 
 استخرج المعايير بدقة وحول جميع القيم إلى الصيغة المعيارية."""
     
     def extract_criteria(self, user_query: str) -> CriteriaExtractionResponse:
         """
         استخراج معايير البحث من طلب المستخدم
+        
+        Args:
+            user_query: طلب المستخدم النصي
+        
+        Returns:
+            CriteriaExtractionResponse يحتوي على المعايير المستخرجة
         """
         try:
             # تعريف function للاستخراج المنظم
@@ -93,18 +88,23 @@ class LLMParser:
                         "purpose": {
                             "type": "string",
                             "enum": ["للبيع", "للايجار"],
+                            "description": "الغرض من العقار (بيع أو إيجار)"
                         },
                         "property_type": {
                             "type": "string",
                             "enum": ["فلل", "بيت", "شقق", "استوديو", "دور", "تاون هاوس", "دوبلكس", "عمائر"],
+                            "description": "نوع العقار"
                         },
-                        "district": { "type": "string" },
+                        "district": {
+                            "type": "string",
+                            "description": "اسم الحي (إذا ذُكر)"
+                        },
                         "rooms": {
                             "type": "object",
                             "properties": {
-                                "min": {"type": "integer"},
-                                "max": {"type": "integer"},
-                                "exact": {"type": "integer"}
+                                "min": {"type": "integer", "description": "الحد الأدنى لعدد الغرف"},
+                                "max": {"type": "integer", "description": "الحد الأقصى لعدد الغرف"},
+                                "exact": {"type": "integer", "description": "عدد الغرف المحدد"}
                             }
                         },
                         "baths": {
@@ -125,13 +125,17 @@ class LLMParser:
                         },
                         "area_m2": {
                             "type": "object",
-                            "properties": { "min": {"type": "number"}, "max": {"type": "number"} }
+                            "properties": {
+                                "min": {"type": "number", "description": "الحد الأدنى للمساحة بالمتر المربع"},
+                                "max": {"type": "number", "description": "الحد الأقصى للمساحة بالمتر المربع"}
+                            }
                         },
                         "price": {
                             "type": "object",
                             "properties": {
-                                "min": {"type": "number"},
-                                "max": {"type": "number"},
+                                "min": {"type": "number", "description": "الحد الأدنى للسعر"},
+                                "max": {"type": "number", "description": "الحد الأقصى للسعر"},
+                                "currency": {"type": "string", "default": "SAR"},
                                 "period": {"type": "string", "enum": ["سنوي", "شهري", "يومي"]}
                             }
                         },
@@ -141,22 +145,11 @@ class LLMParser:
                         },
                         "school_requirements": {
                             "type": "object",
-                            "description": "متطلبات قرب المدارس (إذا طلب المستخدم مدرسة)",
                             "properties": {
-                                "required": {"type": "boolean", "default": False},
-                                "name": {"type": "string", "description": "اسم المدرسة المحدد"},
-                                "proximity_minutes": {"type": "number", "description": "أقصى وقت وصول للمدرسة بالدقائق"},
-                                "gender": {"type": "string", "enum": ["boys", "girls", "both"], "description": "جنس المدرسة (بنين، بنات، كلاهما)"},
-                                "level": {"type": "string", "enum": ["nursery", "kindergarten", "elementary", "middle", "high", "all"], "description": "المستوى الدراسي (ابتدائي، متوسط،... إلخ)"}
-                            }
-                        },
-                        "university_requirements": {
-                            "type": "object",
-                            "description": "متطلبات قرب الجامعات (إذا طلب المستخدم جامعة)",
-                            "properties": {
-                                "required": {"type": "boolean", "default": False},
-                                "name": {"type": "string", "description": "اسم الجامعة المحدد"},
-                                "proximity_minutes": {"type": "number", "description": "أقصى وقت وصول للجامعة بالدقائق"}
+                                "required": {"type": "boolean"},
+                                "levels": {"type": "array", "items": {"type": "string"}},
+                                "gender": {"type": "string", "enum": ["بنين", "بنات", "مختلط"]},
+                                "max_distance_minutes": {"type": "number"}
                             }
                         }
                     },
@@ -227,61 +220,30 @@ class LLMParser:
         """تحويل dict إلى PropertyCriteria"""
         
         # معالجة الحقول المعقدة
-        rooms = IntRangeFilter(**data['rooms']) if data.get('rooms') else None
-        baths = IntRangeFilter(**data['baths']) if data.get('baths') else None
-        halls = IntRangeFilter(**data['halls']) if data.get('halls') else None
-        area_m2 = RangeFilter(**data['area_m2']) if data.get('area_m2') else None
-        price = PriceFilter(**data['price']) if data.get('price') else None
-
-        # ==========================================================
-        # !! تعديل: معالجة النماذج المعقدة الجديدة + إضافة "شبكة أمان" للترجمة !!
-        # ==========================================================
+        rooms = None
+        if data.get('rooms'):
+            rooms = IntRangeFilter(**data['rooms'])
         
-        # 1. متطلبات المدارس
-        school_reqs_data = data.get('school_requirements')
-        school_requirements = SchoolRequirements() # إنشاء نموذج فارغ
-        if school_reqs_data:
-            # !! -- هذا هو الإصلاح -- !!
-            # (ترجمة الجندر والمستوى كإجراء احتياطي قبل التحقق)
-            gender_map = {"بنات": "girls", "اولاد": "boys", "بنين": "boys", "كلاهما": "both", "مختلط": "both"}
-            level_map = {
-                "ابتدائي": "elementary", "ابتدائية": "elementary",
-                "متوسط": "middle", "متوسطة": "middle",
-                "ثانوي": "high", "ثانوية": "high",
-                "روضة": "kindergarten",
-                "حضانة": "nursery",
-                "مجمع": "all"
-            }
-            
-            raw_gender = school_reqs_data.get('gender')
-            if raw_gender in gender_map:
-                school_reqs_data['gender'] = gender_map[raw_gender] # استبدال "بنات" بـ "girls"
-            
-            raw_level = school_reqs_data.get('level')
-            if raw_level in level_map:
-                school_reqs_data['level'] = level_map[raw_level] # استبدال "ابتدائي" بـ "elementary"
-            # !! -- نهاية الإصلاح -- !!
-
-            # الآن التحقق (Validation) آمن
-            school_requirements = SchoolRequirements(**school_reqs_data)
-            
-            # التأكد من أن 'required' صحيح إذا تم توفير أي تفاصيل
-            if (school_reqs_data.get('proximity_minutes') or 
-                school_reqs_data.get('gender') or 
-                school_reqs_data.get('level') or 
-                school_reqs_data.get('name')):
-                school_requirements.required = True
-
-        # 2. متطلبات الجامعات
-        university_reqs_data = data.get('university_requirements')
-        university_requirements = UniversityRequirements() # إنشاء نموذج فارغ
-        if university_reqs_data:
-            university_requirements = UniversityRequirements(**university_reqs_data)
-            # التأكد من أن 'required' صحيح إذا تم توفير أي تفاصيل
-            if (university_reqs_data.get('proximity_minutes') or university_reqs_data.get('name')):
-                university_requirements.required = True
-        # ==========================================================
-
+        baths = None
+        if data.get('baths'):
+            baths = IntRangeFilter(**data['baths'])
+        
+        halls = None
+        if data.get('halls'):
+            halls = IntRangeFilter(**data['halls'])
+        
+        area_m2 = None
+        if data.get('area_m2'):
+            area_m2 = RangeFilter(**data['area_m2'])
+        
+        price = None
+        if data.get('price'):
+            price = PriceFilter(**data['price'])
+        
+        school_requirements = None
+        if data.get('school_requirements'):
+            school_requirements = SchoolRequirements(**data['school_requirements'])
+        
         return PropertyCriteria(
             purpose=PropertyPurpose(data['purpose']),
             property_type=PropertyType(data['property_type']),
@@ -293,7 +255,6 @@ class LLMParser:
             price=price,
             metro_time_max=data.get('metro_time_max'),
             school_requirements=school_requirements,
-            university_requirements=university_requirements,
             original_query=original_query
         )
     
@@ -309,57 +270,65 @@ class LLMParser:
         if criteria.district:
             message += f"• حي {criteria.district}\n"
         
-        # (الكود الخاص بالغرف والمساحة والسعر... كما هو)
-        # ... (تم حذفه للاختصار، افترض أنه موجود هنا) ...
-
-        # ==========================================================
-        # !! تعديل: إضافة رسائل القرب الجديدة !!
-        # ==========================================================
+        # الغرف والحمامات والصالات
+        specs = []
+        if criteria.rooms:
+            if criteria.rooms.exact:
+                specs.append(f"{criteria.rooms.exact} غرف")
+            elif criteria.rooms.min and criteria.rooms.max:
+                specs.append(f"{criteria.rooms.min}-{criteria.rooms.max} غرف")
+            elif criteria.rooms.min:
+                specs.append(f"≥{criteria.rooms.min} غرف")
+        
+        if criteria.baths:
+            if criteria.baths.exact:
+                specs.append(f"{criteria.baths.exact} حمامات")
+            elif criteria.baths.min and criteria.baths.max:
+                specs.append(f"{criteria.baths.min}-{criteria.baths.max} حمامات")
+            elif criteria.baths.min:
+                specs.append(f"≥{criteria.baths.min} حمامات")
+        
+        if criteria.halls:
+            if criteria.halls.exact:
+                specs.append(f"{criteria.halls.exact} صالة")
+            elif criteria.halls.min:
+                specs.append(f"≥{criteria.halls.min} صالة")
+        
+        if specs:
+            message += f"• {', '.join(specs)}\n"
+        
+        # المساحة
+        if criteria.area_m2:
+            if criteria.area_m2.min and criteria.area_m2.max:
+                message += f"• المساحة: {criteria.area_m2.min:.0f}-{criteria.area_m2.max:.0f} م²\n"
+            elif criteria.area_m2.min:
+                message += f"• المساحة: ≥{criteria.area_m2.min:.0f} م²\n"
+            elif criteria.area_m2.max:
+                message += f"• المساحة: ≤{criteria.area_m2.max:.0f} م²\n"
+        
+        # السعر
+        if criteria.price:
+            if criteria.price.min and criteria.price.max:
+                period_text = f" {criteria.price.period.value}" if criteria.price.period else ""
+                message += f"• الميزانية: {criteria.price.min:,.0f}-{criteria.price.max:,.0f} ريال{period_text}\n"
+            elif criteria.price.max:
+                period_text = f" {criteria.price.period.value}" if criteria.price.period else ""
+                message += f"• الميزانية: ≤{criteria.price.max:,.0f} ريال{period_text}\n"
+        
         # القرب من المترو
         if criteria.metro_time_max:
             message += f"• قريب من محطة مترو (≤{criteria.metro_time_max:.0f} دقيقة)\n"
         
         # المدارس
         if criteria.school_requirements and criteria.school_requirements.required:
-            school_text = "• قريب من "
-            if criteria.school_requirements.name:
-                school_text += f'"{criteria.school_requirements.name}"'
-            else:
-                school_text += "مدرسة"
-                
-            details = []
-            if criteria.school_requirements.level:
-                # قاموس ترجمة عكسي (للعرض فقط)
-                level_display = {
-                    "elementary": "ابتدائي", "middle": "متوسط", "high": "ثانوي",
-                    "kindergarten": "روضة", "nursery": "حضانة", "all": "مجمع"
-                }
-                details.append(level_display.get(criteria.school_requirements.level.value, criteria.school_requirements.level.value))
-            
+            school_text = "• قريب من مدرسة"
+            if criteria.school_requirements.levels:
+                school_text += f" ({', '.join(criteria.school_requirements.levels)})"
             if criteria.school_requirements.gender:
-                # قاموس ترجمة عكسي (للعرض فقط)
-                gender_display = {"girls": "بنات", "boys": "بنين", "both": "بنين/بنات"}
-                details.append(gender_display.get(criteria.school_requirements.gender.value, criteria.school_requirements.gender.value))
-
-            if criteria.school_requirements.proximity_minutes:
-                details.append(f"≤{criteria.school_requirements.proximity_minutes:.0f} دقيقة")
-            
-            if details:
-                school_text += f" ({'، '.join(details)})"
+                school_text += f" {criteria.school_requirements.gender.value}"
+            if criteria.school_requirements.max_distance_minutes:
+                school_text += f" (≤{criteria.school_requirements.max_distance_minutes:.0f} دقيقة)"
             message += school_text + "\n"
-
-        # الجامعات
-        if criteria.university_requirements and criteria.university_requirements.required:
-            uni_text = "• قريب من "
-            if criteria.university_requirements.name:
-                uni_text += f'"{criteria.university_requirements.name}"'
-            else:
-                uni_text += "جامعة"
-                
-            if criteria.university_requirements.proximity_minutes:
-                uni_text += f" (≤{criteria.university_requirements.proximity_minutes:.0f} دقيقة)"
-            message += uni_text + "\n"
-        # ==========================================================
         
         message += "\nتبي بس المطابق لطلبك ولا عادي نقترح لك اللي يشبهه؟\nمتأكدين بيعجبك! 😊"
         
