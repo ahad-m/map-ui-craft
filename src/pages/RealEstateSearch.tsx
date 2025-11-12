@@ -477,11 +477,10 @@ const RealEstateSearch = () => {
 
   // حساب موقع مركز العقارات المفلترة
   const propertiesCenterLocation = useMemo(() => {
-    const sourceProps = showChatbotResults ? chatbotProperties : properties;
-    if (sourceProps.length === 0) return null;
+    if (properties.length === 0) return null;
     
     // !! التوحيد: اقرأ من 'lat' و 'lon' (لأن الباك إند يوحدها)
-    const validProperties = sourceProps.filter(p => 
+    const validProperties = properties.filter(p => 
       p.lat && p.lon && 
       !isNaN(Number(p.lat)) && !isNaN(Number(p.lon)) &&
       Number(p.lat) !== 0 && Number(p.lon) !== 0
@@ -497,12 +496,11 @@ const RealEstateSearch = () => {
       lat: sumLat / validProperties.length,
       lon: sumLon / validProperties.length
     };
-  }, [properties, chatbotProperties, showChatbotResults]);
+  }, [properties]);
 
-  // تصفية المدارس لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر من العقارات المعروضة)
+  // تصفية المدارس لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر)
   const nearbySchools = useMemo(() => {
-    // Only show schools when there are properties and search has been performed
-    if (!propertiesCenterLocation || allSchools.length === 0 || !hasSearched) return [];
+    if (!propertiesCenterLocation || allSchools.length === 0) return [];
     
     const MAX_TRAVEL_TIME_MIN = 30; // حد أقصى 30 دقيقة
     return allSchools.filter(school => {
@@ -515,7 +513,7 @@ const RealEstateSearch = () => {
       const travelTime = calculateTravelTime(distance);
       return travelTime <= MAX_TRAVEL_TIME_MIN;
     });
-  }, [allSchools, propertiesCenterLocation, hasSearched]);
+  }, [allSchools, propertiesCenterLocation]);
 
   const selectedSchoolData = nearbySchools.find(school => school.id === filters.selectedSchool);
 
@@ -543,10 +541,9 @@ const RealEstateSearch = () => {
     },
   });
 
-  // تصفية الجامعات لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر من العقارات المعروضة)
+  // تصفية الجامعات لإظهار القريبة فقط (ضمن 30 دقيقة وقت سفر)
   const nearbyUniversities = useMemo(() => {
-    // Only show universities when there are properties and search has been performed
-    if (!propertiesCenterLocation || allUniversities.length === 0 || !hasSearched) return [];
+    if (!propertiesCenterLocation || allUniversities.length === 0) return [];
     
     const MAX_TRAVEL_TIME_MIN = 30; // حد أقصى 30 دقيقة
     return allUniversities.filter(uni => {
@@ -559,7 +556,7 @@ const RealEstateSearch = () => {
       const travelTime = calculateTravelTime(distance);
       return travelTime <= MAX_TRAVEL_TIME_MIN;
     });
-  }, [allUniversities, propertiesCenterLocation, hasSearched]);
+  }, [allUniversities, propertiesCenterLocation]);
 
   const selectedUniversityData = nearbyUniversities.find(uni => 
     (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity
