@@ -715,14 +715,20 @@ const RealEstateSearch = () => {
               );
             })}
 
-            {hasSearched && nearbySchools.map((school) => (
+            {nearbySchools.map((school) => (
               <AdvancedMarker
                 key={`school-${school.id}`}
                 position={{ lat: school.lat, lng: school.lon }}
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-...
+                    <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                      <div className="p-2 rounded-full shadow-elevated bg-green-500">
+                        <School className="h-5 w-5 text-white" />
+                      </div>
+                      {/* Hover pulse effect */}
+                      <div className="absolute inset-0 rounded-full bg-green-500/30 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '1.5s' }} />
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="font-medium">{school.name}</p>
@@ -731,7 +737,7 @@ const RealEstateSearch = () => {
               </AdvancedMarker>
             ))}
 
-            {hasSearched && nearbyUniversities.map((university) => (
+            {nearbyUniversities.map((university) => (
               <AdvancedMarker
                 key={`university-${university.name_ar}`}
                 position={{ lat: university.lat, lng: university.lon }}
