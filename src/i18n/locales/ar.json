@@ -120,6 +120,8 @@
   "education": "التعليم",
   "maxMetroDistance": "الحد الأقصى للمسافة من المترو",
   "typeToSearchDatabase": "اكتب للبحث في قاعدة البيانات عن قيم مخصصة",
+  "schoolsFound": "مدرسة في النطاق",
+  "universitiesFound": "جامعة في النطاق",
   "notFound": "غير موجود",
   "enterCustomNumber": "أدخل الرقم المخصص",
   "useCustomValue": "استخدم القيمة المخصصة",

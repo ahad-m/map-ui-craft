@@ -83,9 +83,7 @@ const RealEstateSearch = () => {
     bathrooms: '',
     schoolGender: '',
     schoolLevel: '',
-    selectedSchool: '',
     maxSchoolTime: 15,
-    selectedUniversity: '',
     maxUniversityTime: 30,
     nearMetro: false,
     minMetroTime: 1,
@@ -516,8 +514,6 @@ const RealEstateSearch = () => {
     });
   }, [allSchools, propertiesCenterLocation, filters.maxSchoolTime]);
 
-  const selectedSchoolData = nearbySchools.find(school => school.id === filters.selectedSchool);
-
   // Fetch all universities with custom search
   const { data: allUniversities = [] } = useQuery({
     queryKey: ['universities', customSearchTerms.university],
@@ -558,50 +554,13 @@ const RealEstateSearch = () => {
     });
   }, [allUniversities, propertiesCenterLocation, filters.maxUniversityTime]);
 
-  const selectedUniversityData = nearbyUniversities.find(uni => 
-    (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity
-  );
-
   // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
   const baseProperties = showChatbotResults ? chatbotProperties : properties;
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
-    const propsToSort = [...baseProperties];
-    
-    // !! التوحيد: استخدم 'lat' و 'lon'
-    if (selectedSchoolData) {
-      propsToSort.sort((a, b) => {
-        const distA = calculateDistance(
-          selectedSchoolData.lat, selectedSchoolData.lon,
-          Number(a.lat), Number(a.lon)
-        );
-        const distB = calculateDistance(
-          selectedSchoolData.lat, selectedSchoolData.lon,
-          Number(b.lat), Number(b.lon)
-        );
-        const timeA = calculateTravelTime(distA);
-        const timeB = calculateTravelTime(distB);
-        return timeA - timeB;
-      });
-    } else if (selectedUniversityData) {
-      propsToSort.sort((a, b) => {
-        const distA = calculateDistance(
-          selectedUniversityData.lat, selectedUniversityData.lon,
-          Number(a.lat), Number(a.lon)
-        );
-        const distB = calculateDistance(
-          selectedUniversityData.lat, selectedUniversityData.lon,
-          Number(b.lat), Number(b.lon)
-        );
-        const timeA = calculateTravelTime(distA);
-        const timeB = calculateTravelTime(distB);
-        return timeA - timeB;
-      });
-    }
-    
-    return propsToSort;
-  }, [baseProperties, selectedSchoolData, selectedUniversityData]);
+    return [...baseProperties];
+  }, [baseProperties]);
 
   const displayedFavorites = displayedProperties.filter(p => favorites.includes(p.id));
 
@@ -618,19 +577,6 @@ const RealEstateSearch = () => {
       toast({ title: t('addedToFavorites') });
     }
   };
-
-  // Update map center for school/university selection
-  useEffect(() => {
-    if (!mapRef.current) return;
-    
-    if (selectedSchoolData) {
-      mapRef.current.setCenter({ lat: selectedSchoolData.lat, lng: selectedSchoolData.lon });
-      mapRef.current.setZoom(15);
-    } else if (selectedUniversityData) {
-      mapRef.current.setCenter({ lat: selectedUniversityData.lat, lng: selectedUniversityData.lon });
-      mapRef.current.setZoom(15);
-    }
-  }, [selectedSchoolData, selectedUniversityData]);
 
   // توجيه الخريطة عند البحث من الشات
   useEffect(() => {
@@ -698,14 +644,12 @@ const RealEstateSearch = () => {
       areaMax: 0,
       bedrooms: '',
       livingRooms: '',
-      bathrooms: '',
-      schoolGender: '',
-      schoolLevel: '',
-      selectedSchool: '',
-      maxSchoolTime: 15,
-      selectedUniversity: '',
-      maxUniversityTime: 30,
-      nearMetro: false,
+    bathrooms: '',
+    schoolGender: '',
+    schoolLevel: '',
+    maxSchoolTime: 15,
+    maxUniversityTime: 30,
+    nearMetro: false,
       minMetroTime: 1,
       nearHospitals: false,
       nearMosques: false,
@@ -775,23 +719,10 @@ const RealEstateSearch = () => {
               <AdvancedMarker
                 key={`school-${school.id}`}
                 position={{ lat: school.lat, lng: school.lon }}
-                onClick={() => {
-                  setFilters({ ...filters, selectedSchool: school.id });
-                }}
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className={`relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2 ${
-                      filters.selectedSchool === school.id ? 'animate-pulse-glow' : ''
-                    }`}>
-                      <div className={`p-2 rounded-full shadow-elevated ${
-                        filters.selectedSchool === school.id ? 'bg-green-400 ring-4 ring-green-200' : 'bg-green-300'
-                      }`}>
-                        <School className="h-5 w-5 text-white" />
-                      </div>
-                      {/* Hover pulse effect */}
-                      <div className="absolute inset-0 rounded-full bg-green-400/30 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '1.5s' }} />
-                    </div>
+...
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="font-medium">{school.name}</p>
@@ -804,21 +735,11 @@ const RealEstateSearch = () => {
               <AdvancedMarker
                 key={`university-${university.name_ar}`}
                 position={{ lat: university.lat, lng: university.lon }}
-                onClick={() => {
-                  const uniName = i18n.language === 'ar' ? university.name_ar : university.name_en;
-                  setFilters({ ...filters, selectedUniversity: uniName });
-                }}
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className={`relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2 ${
-                      filters.selectedUniversity === (i18n.language === 'ar' ? university.name_ar : university.name_en) 
-                        ? 'animate-pulse-glow' : ''
-                    }`}>
-                      <div className={`p-2 rounded-full shadow-elevated ${
-                        filters.selectedUniversity === (i18n.language === 'ar' ? university.name_ar : university.name_en) 
-                          ? 'bg-green-700 ring-4 ring-green-400' : 'bg-green-600'
-                      }`}>
+                    <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                      <div className="p-2 rounded-full shadow-elevated bg-green-600">
                         <GraduationCap className="h-5 w-5 text-white" />
                       </div>
                       {/* Hover pulse effect */}
@@ -1442,60 +1363,12 @@ const RealEstateSearch = () => {
                                 step={1}
                                 className="w-full"
                               />
+                              {nearbySchools.length > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  {nearbySchools.length} {t('schoolsFound')}
+                                </p>
+                              )}
                             </div>
-
-                            {/* School Selection */}
-                            <Popover open={openSchoolCombobox} onOpenChange={setOpenSchoolCombobox}>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" role="combobox" className="w-full justify-between bg-background hover:bg-accent">
-                                  {filters.selectedSchool
-                                    ? nearbySchools.find((s) => s.id === filters.selectedSchool)?.name || t('selectSchool')
-                                    : t('selectSchool')}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-[400px] p-0 z-[100]">
-                                <Command>
-                                  <CommandInput 
-                                    placeholder={t('searchSchool')} 
-                                    onValueChange={(value) => {
-                                      setCustomSearchTerms({ ...customSearchTerms, school: value });
-                                    }}
-                                  />
-                                   <CommandList>
-                                    <CommandEmpty>
-                                      {nearbySchools.length === 0 ? t('noNearbySchools') || 'No nearby schools found' : t('noSchoolFound')}
-                                    </CommandEmpty>
-                                    <CommandGroup>
-                                      <CommandItem
-                                        onSelect={() => {
-                                          setFilters({ ...filters, selectedSchool: '' });
-                                          setCustomSearchTerms({ ...customSearchTerms, school: '' });
-                                          setOpenSchoolCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", !filters.selectedSchool ? "opacity-100" : "opacity-0")} />
-                                        {t('none')}
-                                      </CommandItem>
-                                      {nearbySchools.map((school) => (
-                                        <CommandItem
-                                          key={school.id}
-                                          value={`${school.name} ${school.district || ''}`}
-                                          onSelect={() => {
-                                            setFilters({ ...filters, selectedSchool: school.id || '' });
-                                            setCustomSearchTerms({ ...customSearchTerms, school: '' });
-                                            setOpenSchoolCombobox(false);
-                                          }}
-                                        >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.selectedSchool === school.id ? "opacity-100" : "opacity-0")} />
-                                          {school.name} {school.district ? `- ${school.district}` : ''}
-                                        </CommandItem>
-                                      ))}
-                                    </CommandGroup>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
                           </div>
 
                           <div className="space-y-2">
@@ -1514,61 +1387,12 @@ const RealEstateSearch = () => {
                                 step={1}
                                 className="w-full"
                               />
+                              {nearbyUniversities.length > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  {nearbyUniversities.length} {t('universitiesFound')}
+                                </p>
+                              )}
                             </div>
-
-                            {/* University Selection with All Universities */}
-                            <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" role="combobox" className="w-full justify-between bg-background hover:bg-accent">
-                                  {filters.selectedUniversity || t('selectUniversity')}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-[400px] p-0 z-[100]">
-                                <Command>
-                                  <CommandInput 
-                                    placeholder={t('searchUniversity')} 
-                                    onValueChange={(value) => {
-                                      setCustomSearchTerms({ ...customSearchTerms, university: value });
-                                    }}
-                                  />
-                                   <CommandList>
-                                    <CommandEmpty>
-                                      {allUniversities.length === 0 ? t('noUniversityFound') : t('noUniversityFound')}
-                                    </CommandEmpty>
-                                    <CommandGroup>
-                                      <CommandItem
-                                        onSelect={() => {
-                                          setFilters({ ...filters, selectedUniversity: '' });
-                                          setCustomSearchTerms({ ...customSearchTerms, university: '' });
-                                          setOpenUniversityCombobox(false);
-                                        }}
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", !filters.selectedUniversity ? "opacity-100" : "opacity-0")} />
-                                        {t('none')}
-                                      </CommandItem>
-                                      {allUniversities.map((uni, index) => {
-                                        const uniName = i18n.language === 'ar' ? uni.name_ar : uni.name_en;
-                                        return (
-                                          <CommandItem
-                                            key={index}
-                                            value={uniName || ''}
-                                            onSelect={() => {
-                                              setFilters({ ...filters, selectedUniversity: uniName || '' });
-                                              setCustomSearchTerms({ ...customSearchTerms, university: '' });
-                                              setOpenUniversityCombobox(false);
-                                            }}
-                                          >
-                                            <Check className={cn("mr-2 h-4 w-4", filters.selectedUniversity === uniName ? "opacity-100" : "opacity-0")} />
-                                            {uniName}
-                                          </CommandItem>
-                                        );
-                                      })}
-                                    </CommandGroup>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
                           </div>
                         </div>
                       </div>
@@ -1645,16 +1469,8 @@ const RealEstateSearch = () => {
           }}
           isFavorite={selectedProperty ? isFavorite(selectedProperty.id) : false}
           onToggleFavorite={() => selectedProperty && handleToggleFavorite(selectedProperty.id)}
-          selectedSchool={selectedSchoolData ? {
-            name: selectedSchoolData.name,
-            lat: selectedSchoolData.lat,
-            lon: selectedSchoolData.lon
-          } : null}
-          selectedUniversity={selectedUniversityData ? {
-            name: i18n.language === 'ar' ? selectedUniversityData.name_ar : selectedUniversityData.name_en,
-            lat: selectedUniversityData.lat,
-            lon: selectedUniversityData.lon
-          } : null}
+          selectedSchool={null}
+          selectedUniversity={null}
         />
 
         {/* Favorites Sheet */}

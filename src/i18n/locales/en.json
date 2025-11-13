@@ -118,6 +118,8 @@
   "education": "Education",
   "maxMetroDistance": "Maximum Distance from Metro",
   "typeToSearchDatabase": "Type to search database for custom values",
+  "schoolsFound": "schools found within range",
+  "universitiesFound": "universities found within range",
   "notFound": "Not Found",
   "enterCustomNumber": "Enter Custom Number",
   "useCustomValue": "Use custom value",
