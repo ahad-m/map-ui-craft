@@ -21,6 +21,7 @@ import {
   Send,
   Loader2,
   LogOut,
+  RefreshCw, // [!! تعديل 1 !!] : إضافة أيقونة
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -76,7 +77,7 @@ const RealEstateSearch = () => {
   const mapRef = useRef<google.maps.Map | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
-  // [!! تعديل 1.1 !!] : إضافة currentCriteria
+  // [!! تعديل 2 !!] : إضافة clearChat
   const {
     messages,
     isLoading: isChatLoading,
@@ -85,6 +86,7 @@ const RealEstateSearch = () => {
     searchResults: chatSearchResults,
     sendMessage,
     selectSearchMode,
+    clearChat, // <-- تمت إضافته
   } = useRealEstateAssistant();
 
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -1846,15 +1848,29 @@ const RealEstateSearch = () => {
                 <Bot className="h-5 w-5 animate-float" />
                 <span className="font-semibold">المساعد العقاري الذكي</span>
               </div>
-              <div className="flex items-center gap-2">
+
+              {/* [!! تعديل 3 !!] : إضافة أزرار إعادة التشغيل والإغلاق */}
+              <div className="flex items-center gap-1">
                 {isBackendOnline ? (
                   <span className="text-xs bg-green-500 px-2 py-1 rounded-full">متصل</span>
                 ) : (
                   <span className="text-xs bg-red-500 px-2 py-1 rounded-full">غير متصل</span>
                 )}
+
+                {/* --- زر إعادة التشغيل (الجديد) --- */}
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
+                  onClick={() => clearChat()}
+                  className="text-white hover:bg-white/20"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+
+                {/* --- زر الإغلاق (الكود الصحيح) --- */}
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setIsChatOpen(false)}
                   className="text-white hover:bg-white/20"
                 >
