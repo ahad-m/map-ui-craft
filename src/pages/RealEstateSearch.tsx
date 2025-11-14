@@ -116,7 +116,7 @@ const RealEstateSearch = () => {
     minMetroTime: 1,
     nearHospitals: false,
     nearMosques: false,
-    maxMosqueTime: 15,
+    maxMosqueTime: 30,
   });
 
   // Custom search states for database-wide search
@@ -714,7 +714,11 @@ const RealEstateSearch = () => {
         .not("lon", "is", null)
         .not("name", "is", null);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching mosques:", error);
+        throw error;
+      }
+      console.log("Fetched mosques:", data?.length);
       return data || [];
     },
   });
@@ -737,7 +741,14 @@ const RealEstateSearch = () => {
   const nearbyMosques = useMemo(() => {
     if (!hasSearched || !propertiesCenterLocation || allMosques.length === 0) return [];
 
-    return allMosques
+    console.log("Calculating nearby mosques:", {
+      hasSearched,
+      propertiesCenterLocation,
+      mosquesCount: allMosques.length,
+      maxTime: filters.maxMosqueTime
+    });
+
+    const nearby = allMosques
       .map((mosque) => {
         const distance = calculateDistance(
           propertiesCenterLocation.lat,
@@ -750,6 +761,9 @@ const RealEstateSearch = () => {
         return { ...mosque, travelTime };
       })
       .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
+    
+    console.log("Nearby mosques found:", nearby.length);
+    return nearby;
   }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, hasSearched]);
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
@@ -934,7 +948,7 @@ const RealEstateSearch = () => {
       minMetroTime: 1,
       nearHospitals: false,
       nearMosques: false,
-      maxMosqueTime: 15,
+      maxMosqueTime: 30,
     });
     setCustomSearchTerms({
       propertyType: "",
