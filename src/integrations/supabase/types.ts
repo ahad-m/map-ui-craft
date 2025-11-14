@@ -588,6 +588,16 @@ export type Database = {
             }
             Returns: string
           }
+      check_school_proximity: {
+        Args: {
+          p_distance_meters: number
+          p_gender: string
+          p_lat: number
+          p_levels: string[]
+          p_lon: number
+        }
+        Returns: boolean
+      }
       disablelongtransactions: { Args: never; Returns: string }
       drive_minutes_from_km: {
         Args: { avg_speed_kmh?: number; distance_km: number }

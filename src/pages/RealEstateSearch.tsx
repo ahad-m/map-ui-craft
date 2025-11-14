@@ -728,11 +728,11 @@ const RealEstateSearch = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                      <div className="p-2 rounded-full shadow-elevated bg-school-pin">
+                      <div className="p-2 rounded-full shadow-elevated" style={{ backgroundColor: 'hsl(217 91% 60%)' }}>
                         <School className="h-5 w-5 text-white" />
                       </div>
                       {/* Hover pulse effect */}
-                      <div className="absolute inset-0 rounded-full bg-school-pin/30 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '1.5s' }} />
+                      <div className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100" style={{ backgroundColor: 'hsl(217 91% 60% / 0.3)', animationDuration: '1.5s' }} />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -750,11 +750,11 @@ const RealEstateSearch = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                      <div className="p-2 rounded-full shadow-elevated bg-university-pin">
+                      <div className="p-2 rounded-full shadow-elevated" style={{ backgroundColor: 'hsl(142 71% 45%)' }}>
                         <GraduationCap className="h-5 w-5 text-white" />
                       </div>
                       {/* Hover pulse effect */}
-                      <div className="absolute inset-0 rounded-full bg-university-pin/30 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '1.5s' }} />
+                      <div className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100" style={{ backgroundColor: 'hsl(142 71% 45% / 0.3)', animationDuration: '1.5s' }} />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
