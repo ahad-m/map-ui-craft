@@ -707,14 +707,25 @@ const RealEstateSearch = () => {
     // Only show university if one is selected
     if (!filters.selectedUniversity) return [];
     if (allUniversities.length === 0) return [];
+    if (!propertiesCenterLocation) return [];
 
-    // Return the selected university without distance filtering
-    // Distance filtering will be done per property in displayedProperties
-    return allUniversities.filter((uni) => {
-      const nameMatch = (i18n.language === "ar" ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
-      return nameMatch;
-    });
-  }, [allUniversities, filters.selectedUniversity, i18n.language]);
+    // Return the selected university with travel time calculation
+    return allUniversities
+      .filter((uni) => {
+        const nameMatch = (i18n.language === "ar" ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
+        return nameMatch;
+      })
+      .map((uni) => {
+        const distance = calculateDistance(
+          propertiesCenterLocation.lat,
+          propertiesCenterLocation.lon,
+          uni.lat,
+          uni.lon
+        );
+        const travelTime = calculateTravelTime(distance);
+        return { ...uni, travelTime };
+      });
+  }, [allUniversities, filters.selectedUniversity, propertiesCenterLocation, i18n.language]);
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
@@ -966,7 +977,7 @@ const RealEstateSearch = () => {
                       <p className="font-medium">{school.name}</p>
                       {school.travelTime !== undefined && (
                         <p className="text-xs text-muted-foreground">
-                          {t("maxTravelTime")}: {school.travelTime} {t("minutes")}
+                          {t("travelTimeFromProperty")}: {school.travelTime} {t("minutes")}
                         </p>
                       )}
                     </TooltipContent>
@@ -998,6 +1009,11 @@ const RealEstateSearch = () => {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
+                      {university.travelTime !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("travelTimeFromProperty")}: {university.travelTime} {t("minutes")}
+                        </p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 </AdvancedMarker>
