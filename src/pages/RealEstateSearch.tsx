@@ -702,26 +702,19 @@ const RealEstateSearch = () => {
     },
   });
 
-  // تصفية الجامعات لإظهار الجامعة المختارة فقط (إذا كانت ضمن الوقت المحدد)
+  // تصفية الجامعات لإظهار الجامعة المختارة فقط
   const nearbyUniversities = useMemo(() => {
-    // [!! تعديل !!] : إصلاح الاعتمادية على `propertiesCenterLocation`
-    // (هذا الكود سيعمل الآن للبحث اليدوي والبحث بالشات)
-
     // Only show university if one is selected
     if (!filters.selectedUniversity) return [];
-    if (!propertiesCenterLocation || allUniversities.length === 0) return [];
+    if (allUniversities.length === 0) return [];
 
+    // Return the selected university without distance filtering
+    // Distance filtering will be done per property in displayedProperties
     return allUniversities.filter((uni) => {
-      // Match the selected university name
       const nameMatch = (i18n.language === "ar" ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
-      if (!nameMatch) return false;
-
-      // Check if it's within the time range
-      const distance = calculateDistance(propertiesCenterLocation.lat, propertiesCenterLocation.lon, uni.lat, uni.lon);
-      const travelTime = calculateTravelTime(distance);
-      return travelTime <= filters.maxUniversityTime;
+      return nameMatch;
     });
-  }, [allUniversities, propertiesCenterLocation, filters.maxUniversityTime, filters.selectedUniversity, i18n.language]);
+  }, [allUniversities, filters.selectedUniversity, i18n.language]);
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
