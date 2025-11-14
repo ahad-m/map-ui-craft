@@ -753,6 +753,21 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_nearby_schools: {
+        Args: {
+          p_distance_meters: number
+          p_gender: string
+          p_lat: number
+          p_levels: string[]
+          p_lon: number
+        }
+        Returns: {
+          id: string
+          lat: number
+          lon: number
+          name: string
+        }[]
+      }
       gettransactionid: { Args: never; Returns: unknown }
       haversine_km: {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
