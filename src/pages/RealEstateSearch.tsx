@@ -735,7 +735,7 @@ const RealEstateSearch = () => {
 
   // Calculate nearby mosques
   const nearbyMosques = useMemo(() => {
-    if (!filters.nearMosques || !propertiesCenterLocation || allMosques.length === 0) return [];
+    if (!hasSearched || !propertiesCenterLocation || allMosques.length === 0) return [];
 
     return allMosques
       .map((mosque) => {
@@ -750,7 +750,7 @@ const RealEstateSearch = () => {
         return { ...mosque, travelTime };
       })
       .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
-  }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, filters.nearMosques]);
+  }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, hasSearched]);
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
@@ -1062,7 +1062,7 @@ const RealEstateSearch = () => {
               ))}
 
             {/* Mosque markers */}
-            {filters.nearMosques &&
+            {hasSearched &&
               nearbyMosques.map((mosque) => (
                 <AdvancedMarker key={`mosque-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }}>
                   <Tooltip>
