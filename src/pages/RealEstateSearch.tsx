@@ -725,8 +725,54 @@ const RealEstateSearch = () => {
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
-    return [...baseProperties];
-  }, [baseProperties]);
+    let filtered = [...baseProperties];
+
+    // Filter by school proximity if school filters are active
+    if (hasSearched && (filters.schoolGender || filters.schoolLevel) && nearbySchools.length > 0) {
+      filtered = filtered.filter((property) => {
+        const lat = Number(property.lat);
+        const lon = Number(property.lon);
+        
+        if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
+
+        // Check if there's at least one school within the time range
+        return nearbySchools.some((school) => {
+          const distance = calculateDistance(lat, lon, school.lat, school.lon);
+          const travelTime = calculateTravelTime(distance);
+          return travelTime <= filters.maxSchoolTime;
+        });
+      });
+    }
+
+    // Filter by university proximity if university is selected
+    if (filters.selectedUniversity && nearbyUniversities.length > 0) {
+      filtered = filtered.filter((property) => {
+        const lat = Number(property.lat);
+        const lon = Number(property.lon);
+        
+        if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
+
+        // Check if the selected university is within the time range
+        return nearbyUniversities.some((uni) => {
+          const distance = calculateDistance(lat, lon, uni.lat, uni.lon);
+          const travelTime = calculateTravelTime(distance);
+          return travelTime <= filters.maxUniversityTime;
+        });
+      });
+    }
+
+    return filtered;
+  }, [
+    baseProperties,
+    hasSearched,
+    filters.schoolGender,
+    filters.schoolLevel,
+    filters.maxSchoolTime,
+    filters.selectedUniversity,
+    filters.maxUniversityTime,
+    nearbySchools,
+    nearbyUniversities,
+  ]);
 
   const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
 
