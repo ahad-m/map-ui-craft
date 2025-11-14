@@ -500,16 +500,11 @@ const RealEstateSearch = () => {
 
   // تصفية المدارس لإظهار القريبة فقط (حسب الوقت المحدد من slider)
   const nearbySchools = useMemo(() => {
+    // Only show schools if at least gender OR level is selected
+    if (!filters.schoolGender && !filters.schoolLevel) return [];
     if (!propertiesCenterLocation || allSchools.length === 0) return [];
     
     return allSchools.filter(school => {
-      // Filter by gender
-      const genderMatch = !filters.schoolGender || school.gender === filters.schoolGender;
-      
-      // Filter by level
-      const levelMatch = !filters.schoolLevel || 
-        (school.levels_pg_array && school.levels_pg_array.includes(filters.schoolLevel));
-      
       // Filter by travel time
       const distance = calculateDistance(
         propertiesCenterLocation.lat,
@@ -520,7 +515,7 @@ const RealEstateSearch = () => {
       const travelTime = calculateTravelTime(distance);
       const timeMatch = travelTime <= filters.maxSchoolTime;
       
-      return genderMatch && levelMatch && timeMatch;
+      return timeMatch;
     });
   }, [allSchools, propertiesCenterLocation, filters.maxSchoolTime, filters.schoolGender, filters.schoolLevel]);
 
