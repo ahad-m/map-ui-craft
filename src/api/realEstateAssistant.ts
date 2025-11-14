@@ -42,6 +42,24 @@ export interface SearchRequest {
   mode: "exact" | "similar";
 }
 
+export interface School {
+  name: string;
+  lat: number;
+  lon: number;
+  gender?: string;
+  levels_pg_array?: string;
+  drive_minutes?: number;
+  district?: string;
+}
+
+export interface University {
+  name_ar?: string;
+  name_en?: string;
+  lat: number;
+  lon: number;
+  drive_minutes?: number;
+}
+
 export interface Property {
   id: string;
   url?: string;
@@ -64,6 +82,8 @@ export interface Property {
   rooms?: number;
   baths?: number;
   halls?: number;
+  nearby_schools?: School[];
+  nearby_universities?: University[];
 }
 
 export interface SearchResponse {
