@@ -1528,7 +1528,7 @@ const RealEstateSearch = () => {
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
-                                          setFilters({ ...filters, schoolGender: "" });
+                                          setFilters({ ...filters, schoolGender: "All" });
                                           setCustomSearchTerms({ ...customSearchTerms, schoolGender: "" });
                                           setOpenSchoolGenderCombobox(false);
                                         }}
@@ -1536,7 +1536,7 @@ const RealEstateSearch = () => {
                                         <Check
                                           className={cn(
                                             "mr-2 h-4 w-4",
-                                            !filters.schoolGender ? "opacity-100" : "opacity-0",
+                                            filters.schoolGender === "All" ? "opacity-100" : "opacity-0",
                                           )}
                                         />
                                         {t("all")}
@@ -1611,7 +1611,7 @@ const RealEstateSearch = () => {
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
-                                          setFilters({ ...filters, schoolLevel: "" });
+                                          setFilters({ ...filters, schoolLevel: "combined" });
                                           setCustomSearchTerms({ ...customSearchTerms, schoolLevel: "" });
                                           setOpenSchoolLevelCombobox(false);
                                         }}
@@ -1619,7 +1619,7 @@ const RealEstateSearch = () => {
                                         <Check
                                           className={cn(
                                             "mr-2 h-4 w-4",
-                                            !filters.schoolLevel ? "opacity-100" : "opacity-0",
+                                            filters.schoolLevel === "combined" ? "opacity-100" : "opacity-0",
                                           )}
                                         />
                                         {t("combined")}
