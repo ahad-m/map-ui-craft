@@ -503,6 +503,14 @@ const RealEstateSearch = () => {
     if (!propertiesCenterLocation || allSchools.length === 0) return [];
     
     return allSchools.filter(school => {
+      // Filter by gender
+      const genderMatch = !filters.schoolGender || school.gender === filters.schoolGender;
+      
+      // Filter by level
+      const levelMatch = !filters.schoolLevel || 
+        (school.levels_pg_array && school.levels_pg_array.includes(filters.schoolLevel));
+      
+      // Filter by travel time
       const distance = calculateDistance(
         propertiesCenterLocation.lat,
         propertiesCenterLocation.lon,
@@ -510,9 +518,11 @@ const RealEstateSearch = () => {
         school.lon
       );
       const travelTime = calculateTravelTime(distance);
-      return travelTime <= filters.maxSchoolTime;
+      const timeMatch = travelTime <= filters.maxSchoolTime;
+      
+      return genderMatch && levelMatch && timeMatch;
     });
-  }, [allSchools, propertiesCenterLocation, filters.maxSchoolTime]);
+  }, [allSchools, propertiesCenterLocation, filters.maxSchoolTime, filters.schoolGender, filters.schoolLevel]);
 
   // Fetch all universities with custom search
   const { data: allUniversities = [] } = useQuery({

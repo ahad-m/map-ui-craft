@@ -415,33 +415,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_preferences: {
-        Row: {
-          created_at: string | null
-          id: string
-          preference_key: string
-          preference_value: Json
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          preference_key: string
-          preference_value: Json
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          preference_key?: string
-          preference_value?: Json
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       geography_columns: {
@@ -652,6 +625,26 @@ export type Database = {
           }
       enablelongtransactions: { Args: never; Returns: string }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      find_schools_near_location: {
+        Args: {
+          max_minutes: number
+          prop_lat: number
+          prop_lon: number
+          req_gender: string
+          req_level: string
+          req_name: string
+        }
+        Returns: boolean
+      }
+      find_universities_near_location: {
+        Args: {
+          max_minutes: number
+          prop_lat: number
+          prop_lon: number
+          req_name: string
+        }
+        Returns: boolean
+      }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
         Args: { geom1: unknown; geom2: unknown }
@@ -794,6 +787,7 @@ export type Database = {
           similarity_score: number
         }[]
       }
+      normalize_arabic_text: { Args: { "": string }; Returns: string }
       populate_geometry_columns:
         | { Args: { use_typmod?: boolean }; Returns: string }
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
@@ -1517,6 +1511,7 @@ export type Database = {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
       }
+      unaccent: { Args: { "": string }; Returns: string }
       unlockrows: { Args: { "": string }; Returns: number }
       updategeometrysrid: {
         Args: {
