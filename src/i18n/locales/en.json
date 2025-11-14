@@ -84,6 +84,8 @@
   "latestInArea": "Latest in the area",
   "loading": "Loading...",
   "propertiesFound": "properties found",
+  "noPropertiesFound": "No properties match your filters",
+  "tryAdjustingFilters": "Try adjusting your filters or search criteria",
   "noExactMatches": "No exact matches found - showing similar results",
   "pageNotFound": "Page not found",
   "oops": "Oops! Page not found",
