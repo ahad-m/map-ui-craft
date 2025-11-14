@@ -93,7 +93,7 @@ const RealEstateSearch = () => {
   const [isListening, setIsListening] = useState(false); // [!! تعديل 2 !!] : إضافة حالة الاستماع
   const [hasSearched, setHasSearched] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   // Filter states - MUST be before early return
   const [filters, setFilters] = useState({
@@ -136,17 +136,13 @@ const RealEstateSearch = () => {
   const [chatbotProperties, setChatbotProperties] = useState<any[]>([]);
   const [showChatbotResults, setShowChatbotResults] = useState(false);
 
-  // Check authentication
+  // Check authentication (optional, doesn't block access)
   useEffect(() => {
     const checkAuth = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth", { replace: true });
-      } else {
-        setAuthChecked(true);
-      }
+      setUser(session?.user ?? null);
     };
 
     checkAuth();
@@ -154,9 +150,7 @@ const RealEstateSearch = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/auth", { replace: true });
-      }
+      setUser(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
@@ -792,14 +786,6 @@ const RealEstateSearch = () => {
     }
   }, [displayedProperties, hasSearched]);
 
-  // Don't render until auth is checked - MUST be after all hooks
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   const resetFilters = () => {
     setFilters({
