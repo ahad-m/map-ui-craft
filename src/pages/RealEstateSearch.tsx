@@ -261,10 +261,8 @@ const RealEstateSearch = () => {
     }
   };
 
-  // [!! تعديل 3 !!] : إضافة دالة معالجة الإدخال الصوتي
+  // [!! تعديل 3 !!] : إضافة دالة معالجة الإدخال الصوتي (نسخة محسّنة)
   const handleVoiceInput = () => {
-    // Check for browser support
-    // [!! إصلاح الخطأ !!] : نستخدم (as any) لإجبار TypeScript على قبول الميزة
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast({
@@ -277,39 +275,68 @@ const RealEstateSearch = () => {
 
     const recognition = new SpeechRecognition();
     recognition.lang = "ar-SA"; // تحديد اللغة العربية (السعودية)
-    recognition.continuous = false; // التوقف بعد نطق جملة واحدة
-    recognition.interimResults = false; // إرجاع النتيجة النهائية فقط
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    let finalTranscript = ""; // متغير مؤقت لتجنب race condition
 
     recognition.onstart = () => {
       setIsListening(true);
-      setChatInput("...جاري الاستماع"); // إعطاء تغذية راجعة للمستخدم
+      setChatInput("...جاري الاستماع");
     };
 
-    recognition.onend = () => {
-      setIsListening(false);
-      if (chatInput === "...جاري الاستماع") {
-        setChatInput(""); // تنظيف النص إذا لم يتم التقاط شيء
-      }
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      finalTranscript = transcript; // تخزين النتيجة
+      setChatInput(transcript); // تحديث الواجهة فوراً
     };
 
-    recognition.onerror = (event: any) => {
-      // استخدام 'any' لتجنب أخطاء نوع الحدث
-      setIsListening(false);
-      setChatInput(""); // تنظيف النص عند حدوث خطأ
+    // (جديد) للتعامل مع عدم التطابق
+    recognition.onnomatch = () => {
       toast({
-        title: "خطأ في الصوت",
-        description: "لم أتمكن من سماعك بوضوح أو أن المايكروفون غير مسموح به. حاول مرة أخرى.",
+        title: "لم يتم التعرف على الكلام",
+        description: "حاول التحدث بوضوح أكثر.",
         variant: "destructive",
       });
     };
 
-    recognition.onresult = (event: any) => {
-      // استخدام 'any' لتجنب أخطاء نوع الحدث
-      const transcript = event.results[0][0].transcript;
-      setChatInput(transcript); // وضع النص المسموع في صندوق الإدخال
+    recognition.onerror = (event: any) => {
+      // (جديد) معالجة خطأ حظر المايكروفون
+      if (event.error === "not-allowed") {
+        toast({
+          title: "المايكروفون محجوب",
+          description: "تحتاج إلى السماح بالوصول إلى المايكروفون في إعدادات المتصفح (علامة القفل 🔒).",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "خطأ في الصوت",
+          description: `حدث خطأ: ${event.error}. حاول مرة أخرى.`,
+          variant: "destructive",
+        });
+      }
     };
 
-    recognition.start(); // بدء الاستماع
+    // (جديد) تبسيط onend
+    recognition.onend = () => {
+      setIsListening(false);
+      // إذا انتهى الاستماع ولم يتم تسجيل أي نص
+      if (finalTranscript === "") {
+        setChatInput(""); // تنظيف "...جاري الاستماع"
+      }
+    };
+
+    try {
+      recognition.start(); // بدء الاستماع
+    } catch (e) {
+      setIsListening(false);
+      setChatInput("");
+      toast({
+        title: "خطأ",
+        description: "لم يتمكن من بدء خدمة التعرف على الصوت. قد تكون قيد الاستخدام.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Predefined property types
@@ -590,13 +617,10 @@ const RealEstateSearch = () => {
   // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
   const baseProperties = showChatbotResults ? chatbotProperties : properties;
 
-  // [!! تعديل 2.1 !!] : تغيير `propertiesCenterLocation`
-  // حساب موقع مركز العقارات المفلترة
+  // [!! تعديل 4 !!] : إعادة `propertiesCenterLocation`
   const propertiesCenterLocation = useMemo(() => {
-    // [!! تعديل !!] : استخدم 'displayedProperties' بدلاً من 'properties'
     if (baseProperties.length === 0) return null;
 
-    // !! التوحيد: اقرأ من 'lat' و 'lon' (لأن الباك إند يوحدها)
     const validProperties = baseProperties.filter(
       (p) =>
         p.lat && p.lon && !isNaN(Number(p.lat)) && !isNaN(Number(p.lon)) && Number(p.lat) !== 0 && Number(p.lon) !== 0,
@@ -604,7 +628,6 @@ const RealEstateSearch = () => {
 
     if (validProperties.length === 0) return null;
 
-    // حساب متوسط الإحداثيات
     const sumLat = validProperties.reduce((sum, p) => sum + Number(p.lat), 0);
     const sumLon = validProperties.reduce((sum, p) => sum + Number(p.lon), 0);
 
@@ -612,12 +635,17 @@ const RealEstateSearch = () => {
       lat: sumLat / validProperties.length,
       lon: sumLon / validProperties.length,
     };
-  }, [baseProperties]); // [!! تعديل !!] : غير الاعتمادية
+  }, [baseProperties]);
 
-  // [!! تعديل 2.2 !!] : استبدال nearbySchools لإضافة travelTime
+  // [!! تعديل 5 !!] : إعادة `nearbySchools` (النسخة البسيطة)
   const nearbySchools = useMemo(() => {
-    // Only show schools if at least gender OR level is selected
-    if (!filters.schoolGender && !filters.schoolLevel) return [];
+    // لا تظهر دبابيس المدارس إلا إذا بحث المستخدم (عبر الشات أو يدوياً)
+    if (!hasSearched) return [];
+
+    // لا تظهر الدبابيس إذا لم يحدد فلتر (للبحث اليدوي) أو لا يوجد معايير (للبحث بالشات)
+    // (ملاحظة: currentCriteria يتم تحديثه في useEffect)
+    if (!filters.schoolGender && !filters.schoolLevel && !currentCriteria?.school_requirements) return [];
+
     if (!propertiesCenterLocation || allSchools.length === 0) return [];
 
     return allSchools
@@ -630,7 +658,7 @@ const RealEstateSearch = () => {
         );
         const travelTime = calculateTravelTime(distance);
 
-        // [!! التعديل !!] إرجاع كائن المدرسة مع إضافة وقت السفر
+        // إرجاع كائن المدرسة مع إضافة وقت السفر
         return { ...school, travelTime };
       })
       .filter(
@@ -638,7 +666,15 @@ const RealEstateSearch = () => {
           // الفلترة بناءً على الوقت
           school.travelTime <= filters.maxSchoolTime,
       );
-  }, [allSchools, propertiesCenterLocation, filters.maxSchoolTime, filters.schoolGender, filters.schoolLevel]);
+  }, [
+    allSchools,
+    propertiesCenterLocation,
+    filters.maxSchoolTime,
+    filters.schoolGender,
+    filters.schoolLevel,
+    hasSearched,
+    currentCriteria,
+  ]);
 
   // Fetch all universities with custom search
   const { data: allUniversities = [] } = useQuery({
@@ -668,6 +704,9 @@ const RealEstateSearch = () => {
 
   // تصفية الجامعات لإظهار الجامعة المختارة فقط (إذا كانت ضمن الوقت المحدد)
   const nearbyUniversities = useMemo(() => {
+    // [!! تعديل !!] : إصلاح الاعتمادية على `propertiesCenterLocation`
+    // (هذا الكود سيعمل الآن للبحث اليدوي والبحث بالشات)
+
     // Only show university if one is selected
     if (!filters.selectedUniversity) return [];
     if (!propertiesCenterLocation || allUniversities.length === 0) return [];
@@ -847,6 +886,7 @@ const RealEstateSearch = () => {
               );
             })}
 
+            {/* [!! تعديل 6 !!] : العودة إلى `nearbySchools` لعرض الدبابيس */}
             {hasSearched &&
               nearbySchools.map((school) => (
                 <AdvancedMarker key={`school-${school.id}`} position={{ lat: school.lat, lng: school.lon }}>
@@ -866,10 +906,9 @@ const RealEstateSearch = () => {
                         />
                       </div>
                     </TooltipTrigger>
-                    {/* [!! تعديل 3 !!] : عرض وقت السفر في الـ Tooltip */}
+                    {/* [!! تعديل 7 !!] : إعادة عرض الوقت */}
                     <TooltipContent>
                       <p className="font-medium">{school.name}</p>
-                      {/* التأكد من وجود الوقت قبل عرضه */}
                       {school.travelTime !== undefined && (
                         <p className="text-xs text-muted-foreground">
                           {t("maxTravelTime")}: {school.travelTime} {t("minutes")}
