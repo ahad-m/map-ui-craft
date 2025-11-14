@@ -56,6 +56,7 @@
   "nearMetro": "Near Metro Station",
   "maxWalkingTime": "Maximum driving time",
   "maxTravelTime": "Maximum travel time",
+  "travelTimeFromProperty": "Travel time from property",
   "minutes": "min",
   "minToMetro": "min to metro",
   "nearHospitals": "Near Hospitals",

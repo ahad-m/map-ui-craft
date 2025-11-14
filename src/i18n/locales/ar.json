@@ -58,6 +58,7 @@
   "nearMetro": "قريب من محطة المترو",
   "maxWalkingTime": "أقصى وقت قيادة",
   "maxTravelTime": "أقصى وقت سفر",
+  "travelTimeFromProperty": "وقت السفر من العقار",
   "minutes": "دقيقة",
   "minToMetro": "د للمترو",
   "nearHospitals": "قريب من المستشفيات",
