@@ -950,14 +950,14 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(217 91% 60%)" }}
+                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
                         >
                           <School className="h-5 w-5 text-white" />
                         </div>
                         {/* Hover pulse effect */}
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(217 91% 60% / 0.3)", animationDuration: "1.5s" }}
+                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
                         />
                       </div>
                     </TooltipTrigger>
