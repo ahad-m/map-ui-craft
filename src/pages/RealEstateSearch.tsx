@@ -776,6 +776,22 @@ const RealEstateSearch = () => {
 
   const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
 
+  // Check if user has applied any filters
+  const hasActiveFilters = 
+    filters.propertyType ||
+    filters.neighborhood ||
+    filters.minPrice > 0 ||
+    filters.maxPrice > 0 ||
+    filters.areaMin > 0 ||
+    filters.areaMax > 0 ||
+    filters.bedrooms ||
+    filters.bathrooms ||
+    filters.livingRooms ||
+    filters.schoolGender ||
+    filters.schoolLevel ||
+    filters.selectedUniversity ||
+    filters.nearMetro;
+
   const handlePropertyClick = (property: any) => {
     setSelectedProperty(property);
     setShowPropertyDialog(true);
@@ -1946,9 +1962,24 @@ const RealEstateSearch = () => {
             <Card className="glass-effect shadow-elegant border-primary/20">
               <div className="p-3">
                 <div className="text-center">
-                  <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    {isLoading ? t("loading") : `${displayedProperties.length} ${t("propertiesFound")}`}
-                  </p>
+                  {isLoading ? (
+                    <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      {t("loading")}
+                    </p>
+                  ) : displayedProperties.length === 0 ? (
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-destructive">
+                        {t("noPropertiesFound")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("tryAdjustingFilters")}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      {`${displayedProperties.length} ${t("propertiesFound")}`}
+                    </p>
+                  )}
                 </div>
               </div>
             </Card>
