@@ -57,6 +57,8 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        "school-pin": "hsl(var(--school-pin))",
+        "university-pin": "hsl(var(--university-pin))",
       },
       borderRadius: {
         lg: "var(--radius)",
