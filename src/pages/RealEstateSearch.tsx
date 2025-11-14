@@ -503,7 +503,7 @@ const RealEstateSearch = () => {
   });
 
   // Predefined school gender options
-  const predefinedSchoolGenders = ["All", "Boys", "Girls"];
+  const predefinedSchoolGenders = ["Boys", "Girls"];
 
   // Fetch additional school genders from database with custom search
   const { data: additionalSchoolGenders = [] } = useQuery({
@@ -534,7 +534,7 @@ const RealEstateSearch = () => {
   const allSchoolGenders = [...predefinedSchoolGenders, ...additionalSchoolGenders];
 
   // Predefined school level options
-  const predefinedSchoolLevels = ["combined", "nursery", "kindergarten", "elementary", "middle", "high"];
+  const predefinedSchoolLevels = ["nursery", "kindergarten", "elementary", "middle", "high"];
 
   // Fetch additional school levels from database with custom search
   const { data: additionalSchoolLevels = [] } = useQuery({
