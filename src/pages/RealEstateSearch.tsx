@@ -1886,6 +1886,22 @@ const RealEstateSearch = () => {
                           {t("proximityFilters")}
                         </h3>
                         <div className="space-y-3">
+                          <Label className="text-sm font-medium">{t("nearMosques")}</Label>
+                          
+                          <div className="space-y-2 p-3 bg-background/50 rounded-lg">
+                            <Label className="text-xs font-medium">
+                              {t("maxTravelTime")}: {filters.maxMosqueTime} {t("minutes")}
+                            </Label>
+                            <Slider
+                              value={[filters.maxMosqueTime]}
+                              onValueChange={(value) => setFilters({ ...filters, maxMosqueTime: value[0], nearMosques: true })}
+                              min={1}
+                              max={30}
+                              step={1}
+                              className="w-full"
+                            />
+                          </div>
+
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               id="metro"
@@ -1904,32 +1920,6 @@ const RealEstateSearch = () => {
                               <Slider
                                 value={[filters.minMetroTime]}
                                 onValueChange={(value) => setFilters({ ...filters, minMetroTime: value[0] })}
-                                min={1}
-                                max={30}
-                                step={1}
-                                className="w-full"
-                              />
-                            </div>
-                          )}
-
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id="mosques"
-                              checked={filters.nearMosques}
-                              onCheckedChange={(checked) => setFilters({ ...filters, nearMosques: checked as boolean })}
-                            />
-                            <label htmlFor="mosques" className="text-sm cursor-pointer">
-                              {t("nearMosques")}
-                            </label>
-                          </div>
-                          {filters.nearMosques && (
-                            <div className="ml-6 space-y-2 p-3 bg-background/50 rounded-lg">
-                              <Label className="text-xs font-medium">
-                                {t("maxTravelTime")}: {filters.maxMosqueTime} {t("minutes")}
-                              </Label>
-                              <Slider
-                                value={[filters.maxMosqueTime]}
-                                onValueChange={(value) => setFilters({ ...filters, maxMosqueTime: value[0] })}
                                 min={1}
                                 max={30}
                                 step={1}
