@@ -116,6 +116,7 @@ const RealEstateSearch = () => {
     minMetroTime: 1,
     nearHospitals: false,
     nearMosques: false,
+    maxMosqueTime: 15,
   });
 
   // Custom search states for database-wide search
@@ -702,6 +703,22 @@ const RealEstateSearch = () => {
     },
   });
 
+  // Fetch all mosques
+  const { data: allMosques = [] } = useQuery({
+    queryKey: ["mosques"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mosques")
+        .select("*")
+        .not("lat", "is", null)
+        .not("lon", "is", null)
+        .not("name", "is", null);
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // تصفية الجامعات لإظهار الجامعة المختارة فقط
   const nearbyUniversities = useMemo(() => {
     // Only show university if one is selected
@@ -715,6 +732,25 @@ const RealEstateSearch = () => {
       return nameMatch;
     });
   }, [allUniversities, filters.selectedUniversity, i18n.language]);
+
+  // Calculate nearby mosques
+  const nearbyMosques = useMemo(() => {
+    if (!filters.nearMosques || !propertiesCenterLocation || allMosques.length === 0) return [];
+
+    return allMosques
+      .map((mosque) => {
+        const distance = calculateDistance(
+          propertiesCenterLocation.lat,
+          propertiesCenterLocation.lon,
+          mosque.lat,
+          mosque.lon,
+        );
+        const travelTime = calculateTravelTime(distance);
+
+        return { ...mosque, travelTime };
+      })
+      .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
+  }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, filters.nearMosques]);
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
@@ -754,6 +790,23 @@ const RealEstateSearch = () => {
       });
     }
 
+    // Filter by mosque proximity if mosques filter is active
+    if (filters.nearMosques && nearbyMosques.length > 0) {
+      filtered = filtered.filter((property) => {
+        const lat = Number(property.lat);
+        const lon = Number(property.lon);
+        
+        if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
+
+        // Check if there's at least one mosque within the time range
+        return nearbyMosques.some((mosque) => {
+          const distance = calculateDistance(lat, lon, mosque.lat, mosque.lon);
+          const travelTime = calculateTravelTime(distance);
+          return travelTime <= filters.maxMosqueTime;
+        });
+      });
+    }
+
     return filtered;
   }, [
     baseProperties,
@@ -763,8 +816,11 @@ const RealEstateSearch = () => {
     filters.maxSchoolTime,
     filters.selectedUniversity,
     filters.maxUniversityTime,
+    filters.nearMosques,
+    filters.maxMosqueTime,
     nearbySchools,
     nearbyUniversities,
+    nearbyMosques,
   ]);
 
   const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
@@ -783,7 +839,8 @@ const RealEstateSearch = () => {
     filters.schoolGender ||
     filters.schoolLevel ||
     filters.selectedUniversity ||
-    filters.nearMetro;
+    filters.nearMetro ||
+    filters.nearMosques;
 
   const handlePropertyClick = (property: any) => {
     setSelectedProperty(property);
@@ -877,6 +934,7 @@ const RealEstateSearch = () => {
       minMetroTime: 1,
       nearHospitals: false,
       nearMosques: false,
+      maxMosqueTime: 15,
     });
     setCustomSearchTerms({
       propertyType: "",
@@ -998,6 +1056,38 @@ const RealEstateSearch = () => {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </AdvancedMarker>
+              ))}
+
+            {/* Mosque markers */}
+            {filters.nearMosques &&
+              nearbyMosques.map((mosque) => (
+                <AdvancedMarker key={`mosque-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated"
+                          style={{ backgroundColor: "hsl(280 65% 55%)" }}
+                        >
+                          <MapPin className="h-5 w-5 text-white" />
+                        </div>
+                        {/* Hover pulse effect */}
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(280 65% 55% / 0.3)", animationDuration: "1.5s" }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-medium">{mosque.name}</p>
+                      {mosque.travelTime !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("maxTravelTime")}: {mosque.travelTime} {t("minutes")}
+                        </p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 </AdvancedMarker>
@@ -1806,6 +1896,32 @@ const RealEstateSearch = () => {
                               <Slider
                                 value={[filters.minMetroTime]}
                                 onValueChange={(value) => setFilters({ ...filters, minMetroTime: value[0] })}
+                                min={1}
+                                max={30}
+                                step={1}
+                                className="w-full"
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="mosques"
+                              checked={filters.nearMosques}
+                              onCheckedChange={(checked) => setFilters({ ...filters, nearMosques: checked as boolean })}
+                            />
+                            <label htmlFor="mosques" className="text-sm cursor-pointer">
+                              {t("nearMosques")}
+                            </label>
+                          </div>
+                          {filters.nearMosques && (
+                            <div className="ml-6 space-y-2 p-3 bg-background/50 rounded-lg">
+                              <Label className="text-xs font-medium">
+                                {t("maxTravelTime")}: {filters.maxMosqueTime} {t("minutes")}
+                              </Label>
+                              <Slider
+                                value={[filters.maxMosqueTime]}
+                                onValueChange={(value) => setFilters({ ...filters, maxMosqueTime: value[0] })}
                                 min={1}
                                 max={30}
                                 step={1}
