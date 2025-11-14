@@ -157,33 +157,10 @@ const RealEstateSearch = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // [!! تعديل 4 !!] : إضافة useEffect لتحميل أصوات النطق
-  useEffect(() => {
-    // تحميل الأصوات مسبقاً (مهم لبعض المتصفحات)
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.getVoices();
-      if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-      }
-    }
-  }, []); // يعمل مرة واحدة فقط
-
   // Auto-scroll للرسائل
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // [!! تعديل 5 !!] : إضافة useEffect لنطق رسائل المساعد
-  useEffect(() => {
-    if (messages.length === 0) return;
-
-    const lastMessage = messages[messages.length - 1];
-
-    // نطق الرسالة فقط إذا كانت من المساعد
-    if (lastMessage.type === "assistant") {
-      speakText(lastMessage.content);
-    }
-  }, [messages]); // يعمل هذا الكود كل مرة تتغير فيها الرسائل
 
   // Set hasSearched when user types in search query
   useEffect(() => {
@@ -355,39 +332,6 @@ const RealEstateSearch = () => {
         variant: "destructive",
       });
     }
-  };
-
-  // [!! تعديل 6 !!] : إضافة دالة نطق النص
-  const speakText = (text: string) => {
-    if (!("speechSynthesis" in window)) {
-      console.warn("Browser does not support Speech Synthesis.");
-      return;
-    }
-
-    // إيقاف أي نطق شغال حالياً
-    window.speechSynthesis.cancel();
-
-    // تنظيف النص من الرموز التعبيرية والماركداون
-    const cleanText = text
-      .replace(/👍|🎉|🏡|😔|👇|⚠️|😊|✅|🗺️|🎯|🛠️/g, "") // إزالة الرموز التعبيرية
-      .replace(/(\*|_|~|`|#)/g, "") // إزالة الماركداون
-      .replace(/\n/g, " "); // استبدال السطر الجديد بمسافة
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = "ar-SA"; // اللغة العربية (السعودية)
-
-    // محاولة إيجاد صوت سعودي (مثل Majed على أجهزة أبل)
-    const voices = window.speechSynthesis.getVoices();
-    const arabicVoice =
-      voices.find((voice) => voice.lang === "ar-SA") || voices.find((voice) => voice.lang.startsWith("ar-"));
-
-    if (arabicVoice) {
-      utterance.voice = arabicVoice;
-    } else {
-      console.warn("No 'ar-SA' voice found. Using browser default.");
-    }
-
-    window.speechSynthesis.speak(utterance);
   };
 
   // Predefined property types
@@ -795,7 +739,7 @@ const RealEstateSearch = () => {
       hasSearched,
       propertiesCenterLocation,
       mosquesCount: allMosques.length,
-      maxTime: filters.maxMosqueTime,
+      maxTime: filters.maxMosqueTime
     });
 
     const nearby = allMosques
@@ -811,7 +755,7 @@ const RealEstateSearch = () => {
         return { ...mosque, travelTime };
       })
       .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
-
+    
     console.log("Nearby mosques found:", nearby.length);
     return nearby;
   }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, hasSearched]);
@@ -825,7 +769,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-
+        
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if there's at least one school within the time range
@@ -842,7 +786,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-
+        
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if the selected university is within the time range
@@ -859,7 +803,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-
+        
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if there's at least one mosque within the time range
@@ -890,7 +834,7 @@ const RealEstateSearch = () => {
   const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
 
   // Check if user has applied any filters
-  const hasActiveFilters =
+  const hasActiveFilters = 
     filters.propertyType ||
     filters.neighborhood ||
     filters.minPrice > 0 ||
@@ -1072,7 +1016,7 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(142 71% 45%)" }} // لون أخضر للمدارس
+                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
                         >
                           <School className="h-5 w-5 text-white" />
                         </div>
@@ -1134,7 +1078,7 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(280 65% 55%)" }} // لون بنفسجي للمساجد
+                          style={{ backgroundColor: "hsl(280 65% 55%)" }}
                         >
                           <MapPin className="h-5 w-5 text-white" />
                         </div>
@@ -1943,16 +1887,14 @@ const RealEstateSearch = () => {
                         </h3>
                         <div className="space-y-3">
                           <Label className="text-sm font-medium">{t("nearMosques")}</Label>
-
+                          
                           <div className="space-y-2 p-3 bg-background/50 rounded-lg">
                             <Label className="text-xs font-medium">
                               {t("maxTravelTime")}: {filters.maxMosqueTime} {t("minutes")}
                             </Label>
                             <Slider
                               value={[filters.maxMosqueTime]}
-                              onValueChange={(value) =>
-                                setFilters({ ...filters, maxMosqueTime: value[0], nearMosques: true })
-                              }
+                              onValueChange={(value) => setFilters({ ...filters, maxMosqueTime: value[0], nearMosques: true })}
                               min={1}
                               max={30}
                               step={1}
@@ -2145,8 +2087,12 @@ const RealEstateSearch = () => {
                     </p>
                   ) : displayedProperties.length === 0 ? (
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-destructive">{t("noPropertiesFound")}</p>
-                      <p className="text-xs text-muted-foreground">{t("tryAdjustingFilters")}</p>
+                      <p className="text-sm font-semibold text-destructive">
+                        {t("noPropertiesFound")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("tryAdjustingFilters")}
+                      </p>
                     </div>
                   ) : (
                     <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
