@@ -21,6 +21,7 @@ import {
   Send,
   Loader2,
   LogOut,
+  Mic, // [!! تعديل 1 !!] : إضافة أيقونة المايكروفون
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -89,6 +90,7 @@ const RealEstateSearch = () => {
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
+  const [isListening, setIsListening] = useState(false); // [!! تعديل 2 !!] : إضافة حالة الاستماع
   const [hasSearched, setHasSearched] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -258,6 +260,56 @@ const RealEstateSearch = () => {
       });
     }
   };
+
+  // [!! تعديل 3 !!] : إضافة دالة معالجة الإدخال الصوتي
+  const handleVoiceInput = () => {
+    // Check for browser support
+    // [!! إصلاح الخطأ !!] : نستخدم (as any) لإجبار TypeScript على قبول الميزة
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({
+        title: "غير مدعوم",
+        description: "متصفحك لا يدعم ميزة الإدخال الصوتي. جرب متصفح Chrome أو Edge.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ar-SA'; // تحديد اللغة العربية (السعودية)
+    recognition.continuous = false; // التوقف بعد نطق جملة واحدة
+    recognition.interimResults = false; // إرجاع النتيجة النهائية فقط
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setChatInput("...جاري الاستماع"); // إعطاء تغذية راجعة للمستخدم
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      if (chatInput === "...جاري الاستماع") {
+        setChatInput(""); // تنظيف النص إذا لم يتم التقاط شيء
+      }
+    };
+
+    recognition.onerror = (event: any) => { // استخدام 'any' لتجنب أخطاء نوع الحدث
+      setIsListening(false);
+      setChatInput(""); // تنظيف النص عند حدوث خطأ
+      toast({
+        title: "خطأ في الصوت",
+        description: "لم أتمكن من سماعك بوضوح أو أن المايكروفون غير مسموح به. حاول مرة أخرى.",
+        variant: "destructive",
+      });
+    };
+
+    recognition.onresult = (event: any) => { // استخدام 'any' لتجنب أخطاء نوع الحدث
+      const transcript = event.results[0][0].transcript;
+      setChatInput(transcript); // وضع النص المسموع في صندوق الإدخال
+    };
+
+    recognition.start(); // بدء الاستماع
+  };
+
 
   // Predefined property types
   const predefinedPropertyTypes = ["استوديو", "شقق", "فلل", "تاون هاوس", "دوبلكس", "دور", "عمائر"];
@@ -1913,22 +1965,37 @@ const RealEstateSearch = () => {
               </div>
             </ScrollArea>
 
-            {/* Input Area */}
+            {/* [!! تعديل 4 !!] : إضافة زر المايكروفون وتعديل التعطيل */}
             <div className="p-4 border-t">
               <div className="flex gap-2">
                 <Input
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                  placeholder="اكتب طلبك هنا..."
-                  disabled={isChatLoading || !isBackendOnline}
+                  placeholder={isListening ? "...جاري الاستماع" : "اكتب طلبك هنا..."}
+                  disabled={isChatLoading || !isBackendOnline || isListening} // تعطيل أثناء الاستماع
                   className="flex-1"
                   dir="rtl"
                 />
+                {/* --- زر المايكروفون (الجديد) --- */}
+                <Button
+                  onClick={handleVoiceInput}
+                  disabled={isChatLoading || !isBackendOnline || isListening}
+                  variant="outline"
+                  size="icon"
+                  className={cn(
+                    "h-10 w-10", // حجم موحد
+                    isListening && "animate-pulse bg-blue-100 border-blue-300 text-blue-700"
+                  )}
+                >
+                  <Mic className="h-4 w-4" />
+                </Button>
+                {/* --- زر الإرسال --- */}
                 <Button
                   onClick={handleSendMessage}
-                  disabled={isChatLoading || !isBackendOnline || !chatInput.trim()}
+                  disabled={isChatLoading || !isBackendOnline || !chatInput.trim() || isListening} // تعطيل أثناء الاستماع
                   className="bg-blue-600 hover:bg-blue-700"
+                  size="icon" // حجم موحد
                 >
                   {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
@@ -1942,3 +2009,4 @@ const RealEstateSearch = () => {
 };
 
 export default RealEstateSearch;
+t RealEstateSearch;
