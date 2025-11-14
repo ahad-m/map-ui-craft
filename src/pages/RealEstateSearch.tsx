@@ -276,7 +276,7 @@ const RealEstateSearch = () => {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'ar-SA'; // تحديد اللغة العربية (السعودية)
+    recognition.lang = "ar-SA"; // تحديد اللغة العربية (السعودية)
     recognition.continuous = false; // التوقف بعد نطق جملة واحدة
     recognition.interimResults = false; // إرجاع النتيجة النهائية فقط
 
@@ -292,7 +292,8 @@ const RealEstateSearch = () => {
       }
     };
 
-    recognition.onerror = (event: any) => { // استخدام 'any' لتجنب أخطاء نوع الحدث
+    recognition.onerror = (event: any) => {
+      // استخدام 'any' لتجنب أخطاء نوع الحدث
       setIsListening(false);
       setChatInput(""); // تنظيف النص عند حدوث خطأ
       toast({
@@ -302,14 +303,14 @@ const RealEstateSearch = () => {
       });
     };
 
-    recognition.onresult = (event: any) => { // استخدام 'any' لتجنب أخطاء نوع الحدث
+    recognition.onresult = (event: any) => {
+      // استخدام 'any' لتجنب أخطاء نوع الحدث
       const transcript = event.results[0][0].transcript;
       setChatInput(transcript); // وضع النص المسموع في صندوق الإدخال
     };
 
     recognition.start(); // بدء الاستماع
   };
-
 
   // Predefined property types
   const predefinedPropertyTypes = ["استوديو", "شقق", "فلل", "تاون هاوس", "دوبلكس", "دور", "عمائر"];
@@ -1985,7 +1986,7 @@ const RealEstateSearch = () => {
                   size="icon"
                   className={cn(
                     "h-10 w-10", // حجم موحد
-                    isListening && "animate-pulse bg-blue-100 border-blue-300 text-blue-700"
+                    isListening && "animate-pulse bg-blue-100 border-blue-300 text-blue-700",
                   )}
                 >
                   <Mic className="h-4 w-4" />
@@ -2009,4 +2010,3 @@ const RealEstateSearch = () => {
 };
 
 export default RealEstateSearch;
-t RealEstateSearch;
