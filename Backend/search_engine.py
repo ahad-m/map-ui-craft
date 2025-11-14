@@ -123,7 +123,6 @@ class SearchEngine:
                 query = query.lte('time_to_metro_min', criteria.metro_time_max)
             
             # تنفيذ الاستعلام الأولي
-            # [تعديل] زدنا الـ limit هنا ليتم الفلترة لاحقاً
             result = query.order('price_num').limit(100).execute()
             
             properties_data = result.data if result.data else []
@@ -139,19 +138,27 @@ class SearchEngine:
                 
                 # 1. تحضير معايير المدارس
                 school_reqs = criteria.school_requirements
-                distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0) # افتراضي 10 دقايق
-                school_gender = school_reqs.gender.value if school_reqs.gender else None
+                distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0) 
+                
+                # [!! إصلاح !!] : ترجمة الجنس من عربي إلى إنجليزي
+                school_gender_english = None
+                if school_reqs.gender:
+                    if school_reqs.gender.value == "بنات":
+                        school_gender_english = "girls"
+                    elif school_reqs.gender.value == "بنين":
+                        school_gender_english = "boys"
+                    # (ملاحظة: "مختلط" لا تحتاج ترجمة إذا كانت مخزنة هكذا)
+
                 school_levels = school_reqs.levels if school_reqs.levels else None
                 
                 # 2. المرور على العقارات الأولية وفلترتها
                 for prop_row in properties_data:
                     
-                    # (نستخدم الإحداثيات الصحيحة الموحدة)
                     prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
                     prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
 
                     if not prop_lat or not prop_lon:
-                        continue # تخطي العقار إذا لم يكن له إحداثيات
+                        continue 
 
                     try:
                         # 3. استدعاء دالة RPC في Supabase
@@ -161,7 +168,7 @@ class SearchEngine:
                                 'p_lat': float(prop_lat),
                                 'p_lon': float(prop_lon),
                                 'p_distance_meters': distance_meters,
-                                'p_gender': school_gender,
+                                'p_gender': school_gender_english, # [!! إصلاح !!] : إرسال القيمة الإنجليزية
                                 'p_levels': school_levels
                             }
                         ).execute()
@@ -280,8 +287,16 @@ class SearchEngine:
                 
                 # 1. تحضير معايير المدارس
                 school_reqs = criteria.school_requirements
-                distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0) # افتراضي 10 دقايق
-                school_gender = school_reqs.gender.value if school_reqs.gender else None
+                distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0)
+                
+                # [!! إصلاح !!] : ترجمة الجنس من عربي إلى إنجليزي
+                school_gender_english = None
+                if school_reqs.gender:
+                    if school_reqs.gender.value == "بنات":
+                        school_gender_english = "girls"
+                    elif school_reqs.gender.value == "بنين":
+                        school_gender_english = "boys"
+                
                 school_levels = school_reqs.levels if school_reqs.levels else None
                 
                 # 2. المرور على العقارات الأولية وفلترتها
@@ -301,7 +316,7 @@ class SearchEngine:
                                 'p_lat': float(prop_lat),
                                 'p_lon': float(prop_lon),
                                 'p_distance_meters': distance_meters,
-                                'p_gender': school_gender,
+                                'p_gender': school_gender_english, # [!! إصلاح !!] : إرسال القيمة الإنجليزية
                                 'p_levels': school_levels
                             }
                         ).execute()
