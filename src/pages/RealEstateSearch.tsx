@@ -732,7 +732,13 @@ const RealEstateSearch = () => {
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-...
+                    <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                      <div className="p-2 rounded-full shadow-elevated bg-blue-600">
+                        <School className="h-5 w-5 text-white" />
+                      </div>
+                      {/* Hover pulse effect */}
+                      <div className="absolute inset-0 rounded-full bg-blue-600/30 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '1.5s' }} />
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="font-medium">{school.name}</p>
