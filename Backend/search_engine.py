@@ -26,6 +26,14 @@ def _minutes_to_meters(minutes: float, avg_speed_kmh: float = 30.0) -> float:
     # تحويل من كم إلى متر
     return distance_km * 1000
 
+# [!! تعديل !!] : إضافة قاموس لترجمة المراحل الدراسية
+LEVELS_TRANSLATION_MAP = {
+    "ابتدائي": "elementary",
+    "متوسط": "middle",
+    "ثانوي": "high",
+    "روضة": "kindergarten",
+    "حضانة": "nursery"
+}
 
 class SearchEngine:
     """محرك البحث الهجين للعقارات"""
@@ -149,7 +157,10 @@ class SearchEngine:
                         school_gender_english = "boys"
                     # (ملاحظة: "مختلط" لا تحتاج ترجمة إذا كانت مخزنة هكذا)
 
-                school_levels = school_reqs.levels if school_reqs.levels else None
+                # [!! إصلاح !!] : ترجمة المراحل الدراسية من عربي إلى إنجليزي
+                school_levels_english = None
+                if school_reqs.levels:
+                    school_levels_english = [LEVELS_TRANSLATION_MAP.get(level, level) for level in school_reqs.levels]
                 
                 # 2. المرور على العقارات الأولية وفلترتها
                 for prop_row in properties_data:
@@ -169,7 +180,7 @@ class SearchEngine:
                                 'p_lon': float(prop_lon),
                                 'p_distance_meters': distance_meters,
                                 'p_gender': school_gender_english, # [!! إصلاح !!] : إرسال القيمة الإنجليزية
-                                'p_levels': school_levels
+                                'p_levels': school_levels_english  # [!! إصلاح !!] : إرسال القيمة الإنجليزية
                             }
                         ).execute()
                         
@@ -297,7 +308,10 @@ class SearchEngine:
                     elif school_reqs.gender.value == "بنين":
                         school_gender_english = "boys"
                 
-                school_levels = school_reqs.levels if school_reqs.levels else None
+                # [!! إصلاح !!] : ترجمة المراحل الدراسية من عربي إلى إنجليزي
+                school_levels_english = None
+                if school_reqs.levels:
+                    school_levels_english = [LEVELS_TRANSLATION_MAP.get(level, level) for level in school_reqs.levels]
                 
                 # 2. المرور على العقارات الأولية وفلترتها
                 for prop_row in properties_data:
@@ -316,8 +330,8 @@ class SearchEngine:
                                 'p_lat': float(prop_lat),
                                 'p_lon': float(prop_lon),
                                 'p_distance_meters': distance_meters,
-                                'p_gender': school_gender_english, # [!! إصلاح !!] : إرسال القيمة الإنجليزية
-                                'p_levels': school_levels
+                                'p_gender': school_gender_english, # [!! إصلاح !!]
+                                'p_levels': school_levels_english  # [!! إصلاح !!]
                             }
                         ).execute()
                         
