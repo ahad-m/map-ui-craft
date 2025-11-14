@@ -129,7 +129,7 @@ class SearchEngine:
             properties_data = result.data if result.data else []
             
             # ==========================================================
-            # [!! -- التعديل الجديد: فلترة المدارس -- !!]
+            # [!! -- فلترة المدارس (البحث الدقيق) -- !!]
             # ==========================================================
             final_properties_data = []
             
@@ -177,11 +177,10 @@ class SearchEngine:
                 # إذا لم يطلب المستخدم فلترة مدارس، استخدم كل النتائج الأولية
                 final_properties_data = properties_data
             # ==========================================================
-            # [!! -- نهاية التعديل -- !!]
+            # [!! -- نهاية الفلترة -- !!]
             # ==========================================================
 
             # تحويل النتائج النهائية إلى Property objects
-            # [تعديل] نستخدم final_properties_data ونأخذ الـ limit النهائي
             properties = [self._row_to_property(row) for row in final_properties_data]
             
             logger.info(f"البحث الدقيق (المحسّن): وجد {len(properties)} عقار")
@@ -268,10 +267,62 @@ class SearchEngine:
             result = query.limit(100).execute()
             
             # معالجة النتائج
-            properties = result.data if result.data else []
+            properties_data = result.data if result.data else []
+
+            # ==========================================================
+            # [!! -- التعديل الجديد: فلترة المدارس (البحث المرن) -- !!]
+            # ==========================================================
+            final_properties_data = []
+            
+            # هل طلب المستخدم فلترة للمدارس؟
+            if criteria.school_requirements and criteria.school_requirements.required:
+                logger.info("البحث المرن: جاري تنفيذ فلترة المدارس...")
+                
+                # 1. تحضير معايير المدارس
+                school_reqs = criteria.school_requirements
+                distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0) # افتراضي 10 دقايق
+                school_gender = school_reqs.gender.value if school_reqs.gender else None
+                school_levels = school_reqs.levels if school_reqs.levels else None
+                
+                # 2. المرور على العقارات الأولية وفلترتها
+                for prop_row in properties_data:
+                    
+                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
+                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
+
+                    if not prop_lat or not prop_lon:
+                        continue 
+
+                    try:
+                        # 3. استدعاء دالة RPC في Supabase
+                        match_found = self.db.client.rpc(
+                            'check_school_proximity',
+                            {
+                                'p_lat': float(prop_lat),
+                                'p_lon': float(prop_lon),
+                                'p_distance_meters': distance_meters,
+                                'p_gender': school_gender,
+                                'p_levels': school_levels
+                            }
+                        ).execute()
+                        
+                        # 4. إذا رجعت الدالة "true"، أضف العقار للنتائج
+                        if match_found.data:
+                            final_properties_data.append(prop_row)
+                            
+                    except Exception as rpc_error:
+                        logger.error(f"خطأ في استدعاء RPC (مرن) للعقار {prop_row.get('id')}: {rpc_error}")
+                        
+            else:
+                # إذا لم يطلب المستخدم فلترة مدارس، استخدم كل النتائج الأولية
+                final_properties_data = properties_data
+            # ==========================================================
+            # [!! -- نهاية التعديل -- !!]
+            # ==========================================================
             
             # (حساب النقاط كما هو...)
-            for prop in properties:
+            # [!! تعديل !!] : تم تغيير 'properties' إلى 'final_properties_data'
+            for prop in final_properties_data:
                 scores = []
                 if criteria.rooms and criteria.rooms.exact is not None:
                     prop_rooms = prop.get('rooms', 0) or 0
@@ -328,8 +379,9 @@ class SearchEngine:
                 prop['price_score'] = scores[3] if len(scores) > 3 else 1.0
                 prop['metro_score'] = scores[4] if len(scores) > 4 else 1.0
             
-            logger.info(f"البحث المرن: وجد {len(properties)} عقار")
-            return properties
+            # [!! تعديل !!] : تم تغيير 'properties' إلى 'final_properties_data'
+            logger.info(f"البحث المرن: وجد {len(final_properties_data)} عقار")
+            return final_properties_data
             
         except Exception as e:
             logger.error(f"خطأ في البحث المرن: {e}")
@@ -495,4 +547,3 @@ class SearchEngine:
 
 # إنشاء instance عام من SearchEngine
 search_engine = SearchEngine()
-
