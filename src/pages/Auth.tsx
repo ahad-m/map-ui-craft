@@ -254,18 +254,16 @@ const Auth = () => {
                 : t('haveAccount')
               }
             </Button>
+            <button
+              type="button"
+              onClick={() => navigate('/search')}
+              disabled={loading}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+            >
+              {t('skip')}
+            </button>
           </CardFooter>
         </form>
-        <div className="mt-4 text-center">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => navigate('/search')}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            {t('skip')}
-          </Button>
-        </div>
       </Card>
     </div>
   );
