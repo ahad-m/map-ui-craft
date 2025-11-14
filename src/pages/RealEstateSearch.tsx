@@ -503,7 +503,7 @@ const RealEstateSearch = () => {
   });
 
   // Predefined school gender options
-  const predefinedSchoolGenders = ["Boys", "Girls"];
+  const predefinedSchoolGenders = ["All", "Boys", "Girls"];
 
   // Fetch additional school genders from database with custom search
   const { data: additionalSchoolGenders = [] } = useQuery({
@@ -534,7 +534,7 @@ const RealEstateSearch = () => {
   const allSchoolGenders = [...predefinedSchoolGenders, ...additionalSchoolGenders];
 
   // Predefined school level options
-  const predefinedSchoolLevels = ["nursery", "kindergarten", "elementary", "middle", "high"];
+  const predefinedSchoolLevels = ["combined", "nursery", "kindergarten", "elementary", "middle", "high"];
 
   // Fetch additional school levels from database with custom search
   const { data: additionalSchoolLevels = [] } = useQuery({
@@ -575,13 +575,13 @@ const RealEstateSearch = () => {
         .not("lon", "is", null)
         .not("name", "is", null);
 
-      if (filters.schoolGender) {
+      if (filters.schoolGender && filters.schoolGender !== "All") {
         const genderValue =
           filters.schoolGender === "Boys" ? "boys" : filters.schoolGender === "Girls" ? "girls" : "both";
         query = query.eq("gender", genderValue);
       }
 
-      if (filters.schoolLevel) {
+      if (filters.schoolLevel && filters.schoolLevel !== "combined") {
         query = query.eq("primary_level", filters.schoolLevel);
       }
 
@@ -1503,11 +1503,13 @@ const RealEstateSearch = () => {
                                   role="combobox"
                                   className="w-full justify-between bg-background hover:bg-accent"
                                 >
-                                  {filters.schoolGender === "Boys"
-                                    ? t("boys")
-                                    : filters.schoolGender === "Girls"
-                                      ? t("girls")
-                                      : filters.schoolGender || t("gender")}
+                                  {filters.schoolGender === "All"
+                                    ? t("all")
+                                    : filters.schoolGender === "Boys"
+                                      ? t("boys")
+                                      : filters.schoolGender === "Girls"
+                                        ? t("girls")
+                                        : filters.schoolGender || t("gender")}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
@@ -1555,7 +1557,13 @@ const RealEstateSearch = () => {
                                               filters.schoolGender === gender ? "opacity-100" : "opacity-0",
                                             )}
                                           />
-                                          {gender === "Boys" ? t("boys") : gender === "Girls" ? t("girls") : gender}
+                                          {gender === "All"
+                                            ? t("all")
+                                            : gender === "Boys"
+                                              ? t("boys")
+                                              : gender === "Girls"
+                                                ? t("girls")
+                                                : gender}
                                         </CommandItem>
                                       ))}
                                     </CommandGroup>
@@ -1572,17 +1580,19 @@ const RealEstateSearch = () => {
                                   role="combobox"
                                   className="w-full justify-between bg-background hover:bg-accent"
                                 >
-                                  {filters.schoolLevel === "nursery"
-                                    ? t("nursery")
-                                    : filters.schoolLevel === "kindergarten"
-                                      ? t("kindergarten")
-                                      : filters.schoolLevel === "elementary"
-                                        ? t("elementary")
-                                        : filters.schoolLevel === "middle"
-                                          ? t("middle")
-                                          : filters.schoolLevel === "high"
-                                            ? t("high")
-                                            : filters.schoolLevel || t("schoolLevel")}
+                                  {filters.schoolLevel === "combined"
+                                    ? t("combined")
+                                    : filters.schoolLevel === "nursery"
+                                      ? t("nursery")
+                                      : filters.schoolLevel === "kindergarten"
+                                        ? t("kindergarten")
+                                        : filters.schoolLevel === "elementary"
+                                          ? t("elementary")
+                                          : filters.schoolLevel === "middle"
+                                            ? t("middle")
+                                            : filters.schoolLevel === "high"
+                                              ? t("high")
+                                              : filters.schoolLevel || t("schoolLevel")}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
@@ -1630,17 +1640,19 @@ const RealEstateSearch = () => {
                                               filters.schoolLevel === level ? "opacity-100" : "opacity-0",
                                             )}
                                           />
-                                          {level === "nursery"
-                                            ? t("nursery")
-                                            : level === "kindergarten"
-                                              ? t("kindergarten")
-                                              : level === "elementary"
-                                                ? t("elementary")
-                                                : level === "middle"
-                                                  ? t("middle")
-                                                  : level === "high"
-                                                    ? t("high")
-                                                    : level}
+                                          {level === "combined"
+                                            ? t("combined")
+                                            : level === "nursery"
+                                              ? t("nursery")
+                                              : level === "kindergarten"
+                                                ? t("kindergarten")
+                                                : level === "elementary"
+                                                  ? t("elementary")
+                                                  : level === "middle"
+                                                    ? t("middle")
+                                                    : level === "high"
+                                                      ? t("high")
+                                                      : level}
                                         </CommandItem>
                                       ))}
                                     </CommandGroup>
