@@ -452,30 +452,30 @@ const RealEstateSearch = () => {
         const areaValue = property.area_m2 as any;
         const area = typeof areaValue === "string" ? parseFloat(areaValue.replace(/,/g, "")) : Number(areaValue) || 0;
 
-        // Price matching logic: exact if only one value, range if both values
+        // Price matching logic: exact range match only
         let priceMatch = true;
         if (filters.minPrice > 0 && filters.maxPrice > 0) {
-          // Both filled: range match
+          // Both filled: strict range match
           priceMatch = price >= filters.minPrice && price <= filters.maxPrice;
         } else if (filters.minPrice > 0) {
-          // Only min filled: exact match
-          priceMatch = price === filters.minPrice;
+          // Only min filled: must be at least this price
+          priceMatch = price >= filters.minPrice;
         } else if (filters.maxPrice > 0) {
-          // Only max filled: exact match
-          priceMatch = price === filters.maxPrice;
+          // Only max filled: must be at most this price
+          priceMatch = price <= filters.maxPrice;
         }
 
-        // Area matching logic: exact if only one value, range if both values
+        // Area matching logic: exact range match only
         let areaMatch = true;
         if (filters.areaMin > 0 && filters.areaMax > 0) {
-          // Both filled: range match
+          // Both filled: strict range match
           areaMatch = area >= filters.areaMin && area <= filters.areaMax;
         } else if (filters.areaMin > 0) {
-          // Only min filled: exact match
-          areaMatch = area === filters.areaMin;
+          // Only min filled: must be at least this area
+          areaMatch = area >= filters.areaMin;
         } else if (filters.areaMax > 0) {
-          // Only max filled: exact match
-          areaMatch = area === filters.areaMax;
+          // Only max filled: must be at most this area
+          areaMatch = area <= filters.areaMax;
         }
 
         let metroMatch = true;
