@@ -137,17 +137,13 @@ const RealEstateSearch = () => {
   const [chatbotProperties, setChatbotProperties] = useState<any[]>([]);
   const [showChatbotResults, setShowChatbotResults] = useState(false);
 
-  // Check authentication
+  // Check authentication (optional - allow unauthenticated access)
   useEffect(() => {
     const checkAuth = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth", { replace: true });
-      } else {
-        setAuthChecked(true);
-      }
+      setAuthChecked(true);
     };
 
     checkAuth();
@@ -155,9 +151,7 @@ const RealEstateSearch = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/auth", { replace: true });
-      }
+      // Just update auth state, don't redirect
     });
 
     return () => subscription.unsubscribe();
