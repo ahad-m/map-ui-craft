@@ -1,28 +1,49 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
-import { Search, MapPin, MessageCircle, SlidersHorizontal, X, Sparkles, Languages, ArrowLeft, Bed, Bath, Maximize, School, GraduationCap, Check, ChevronsUpDown, Heart, Bot, Send, Loader2, LogOut } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { toast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
-import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
-import { PropertyDetailsDialog } from '@/components/PropertyDetailsDialog';
-import { useFavorites } from '@/hooks/useFavorites';
-import { useRealEstateAssistant } from '@/hooks/useRealEstateAssistant';
+import { useState, useEffect, useRef, useMemo } from "react";
+import { APIProvider, Map, AdvancedMarker, Pin, useMap } from "@vis.gl/react-google-maps";
+import {
+  Search,
+  MapPin,
+  MessageCircle,
+  SlidersHorizontal,
+  X,
+  Sparkles,
+  Languages,
+  ArrowLeft,
+  Bed,
+  Bath,
+  Maximize,
+  School,
+  GraduationCap,
+  Check,
+  ChevronsUpDown,
+  Heart,
+  Bot,
+  Send,
+  Loader2,
+  LogOut,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
+import riyalEstateLogo from "@/assets/riyal-estate-logo.jpg";
+import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
 
 // Component to save map reference - MUST be defined outside to avoid React hook errors
 const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.Map | null> }) => {
@@ -38,9 +59,9 @@ const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-  const [transactionType, setTransactionType] = useState<'rent' | 'sale'>('sale');
-  const [searchQuery, setSearchQuery] = useState('');
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+  const [transactionType, setTransactionType] = useState<"rent" | "sale">("sale");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
@@ -54,37 +75,40 @@ const RealEstateSearch = () => {
   const [showFavorites, setShowFavorites] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
+
+  // [!! تعديل 1.1 !!] : إضافة currentCriteria
   const {
     messages,
     isLoading: isChatLoading,
     isBackendOnline,
+    currentCriteria, // <-- تمت إضافته
     searchResults: chatSearchResults,
     sendMessage,
     selectSearchMode,
   } = useRealEstateAssistant();
 
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatInput, setChatInput] = useState('');
+  const [chatInput, setChatInput] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
   // Filter states - MUST be before early return
   const [filters, setFilters] = useState({
-    propertyType: '',
-    city: 'الرياض',
-    neighborhood: '',
+    propertyType: "",
+    city: "الرياض",
+    neighborhood: "",
     minPrice: 0,
     maxPrice: 0,
     areaMin: 0,
     areaMax: 0,
-    bedrooms: '',
-    livingRooms: '',
-    bathrooms: '',
-    schoolGender: '',
-    schoolLevel: '',
+    bedrooms: "",
+    livingRooms: "",
+    bathrooms: "",
+    schoolGender: "",
+    schoolLevel: "",
     maxSchoolTime: 15,
-    selectedUniversity: '',
+    selectedUniversity: "", // <-- (تمت إضافة الحقل المفقود)
     maxUniversityTime: 30,
     nearMetro: false,
     minMetroTime: 1,
@@ -94,12 +118,12 @@ const RealEstateSearch = () => {
 
   // Custom search states for database-wide search
   const [customSearchTerms, setCustomSearchTerms] = useState({
-    propertyType: '',
-    neighborhood: '',
-    school: '',
-    university: '',
-    schoolGender: '',
-    schoolLevel: '',
+    propertyType: "",
+    neighborhood: "",
+    school: "",
+    university: "",
+    schoolGender: "",
+    schoolLevel: "",
   });
 
   const [openPropertyTypeCombobox, setOpenPropertyTypeCombobox] = useState(false);
@@ -113,9 +137,11 @@ const RealEstateSearch = () => {
   // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
-        navigate('/auth', { replace: true });
+        navigate("/auth", { replace: true });
       } else {
         setAuthChecked(true);
       }
@@ -123,92 +149,122 @@ const RealEstateSearch = () => {
 
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!session) {
-          navigate('/auth', { replace: true });
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth", { replace: true });
       }
-    );
+    });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
   // Auto-scroll للرسائل
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // Set hasSearched when user types in search query
   useEffect(() => {
-    if (searchQuery.trim() !== '') {
+    if (searchQuery.trim() !== "") {
       setHasSearched(true);
     }
   }, [searchQuery]);
 
-  // تحديث العقارات عند البحث من الـ chatbot
+  // [!! تعديل 1.2 !!] : استبدال useEffect لمزامنة فلاتر المدارس
   useEffect(() => {
     if (chatSearchResults.length > 0) {
-      // تحديث العقارات المعروضة على الخريطة
-      // ملاحظة: قد تحتاج تعديل اسم الدالة حسب الكود الموجود
-      // تحديث العقارات من Chatbot
-      console.log('🎯 Chatbot Properties:', chatSearchResults);
-      console.log('🎯 Chatbot Properties Length:', chatSearchResults.length);
+      console.log("🎯 Chatbot Properties:", chatSearchResults);
       setChatbotProperties(chatSearchResults);
       setShowChatbotResults(true);
-      setHasSearched(true);
-      
-      // إغلاق الـ chatbot
-      // setIsChatOpen(false); // تم تعطيل الإغلاق التلقائي
+      setHasSearched(true); // مهم لعرض الدبابيس
+
+      // [!! التعديل الجديد يبدأ هنا !!]
+      // مزامنة معايير المدارس من المساعد الذكي إلى فلتر الواجهة
+      if (currentCriteria && currentCriteria.school_requirements?.required) {
+        const schoolReqs = currentCriteria.school_requirements;
+
+        // 1. ترجمة جنس المدرسة
+        // الباك إند يرسل: 'بنات' أو 'بنين'
+        // الواجهة تستخدم: 'Girls' أو 'Boys'
+        let genderFilter = "";
+        if (schoolReqs.gender === "بنات") genderFilter = "Girls";
+        if (schoolReqs.gender === "بنين") genderFilter = "Boys";
+
+        // 2. ترجمة مستوى المدرسة
+        // الباك إند يرسل: ['ابتدائي', 'متوسط']
+        // الواجهة تستخدم: 'elementary', 'middle'
+        let levelFilter = "";
+        if (schoolReqs.levels && schoolReqs.levels.length > 0) {
+          const firstLevel = schoolReqs.levels[0];
+
+          // (يمكن تحسين هذا المابينج لاحقاً)
+          if (firstLevel.includes("ابتدائي")) levelFilter = "elementary";
+          else if (firstLevel.includes("متوسط")) levelFilter = "middle";
+          else if (firstLevel.includes("ثانوي")) levelFilter = "high";
+          else if (firstLevel.includes("روضة")) levelFilter = "kindergarten";
+          else if (firstLevel.includes("حضانة")) levelFilter = "nursery";
+          else levelFilter = firstLevel; // كخيار احتياطي
+        }
+
+        // 3. تحديث الفلتر
+        setFilters((prevFilters) => ({
+          ...prevFilters,
+          schoolGender: genderFilter,
+          schoolLevel: levelFilter,
+          // تحديث السلايدر الخاص بالوقت
+          maxSchoolTime: schoolReqs.max_distance_minutes || 15,
+        }));
+      }
+      // [!! التعديل الجديد ينتهي هنا !!]
     }
-  }, [chatSearchResults]);
+  }, [chatSearchResults, currentCriteria]); // <-- أضفنا currentCriteria
 
   // دالة إرسال رسالة
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isChatLoading) return;
     await sendMessage(chatInput);
-    setChatInput('');
+    setChatInput("");
   };
 
   // دالة اختيار نمط البحث
-  const handleSearchModeSelection = async (mode: 'exact' | 'similar') => {
+  const handleSearchModeSelection = async (mode: "exact" | "similar") => {
     await selectSearchMode(mode);
   };
 
-  
-
   // Update document direction based on language
   useEffect(() => {
-    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = i18n.language === "ar" ? "rtl" : "ltr";
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
 
   const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'ar' : 'en';
+    const newLang = i18n.language === "en" ? "ar" : "en";
     i18n.changeLanguage(newLang);
   };
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      navigate('/auth', { replace: true });
-      toast({ title: t('loggedOut') || 'Logged out successfully' });
+      navigate("/auth", { replace: true });
+      toast({ title: t("loggedOut") || "Logged out successfully" });
     } catch (error) {
-      console.error('Logout error:', error);
-      toast({ 
-        title: 'Error', 
-        description: 'Failed to log out',
-        variant: 'destructive' 
+      console.error("Logout error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to log out",
+        variant: "destructive",
       });
     }
   };
 
   // Predefined property types
-  const predefinedPropertyTypes = ['استوديو', 'شقق', 'فلل', 'تاون هاوس', 'دوبلكس', 'دور', 'عمائر'];
+  const predefinedPropertyTypes = ["استوديو", "شقق", "فلل", "تاون هاوس", "دوبلكس", "دور", "عمائر"];
 
   // Fetch additional property types from database with custom search
   const { data: additionalPropertyTypes = [] } = useQuery({
-    queryKey: ['propertyTypes', customSearchTerms.propertyType],
+    queryKey: ["propertyTypes", customSearchTerms.propertyType],
     queryFn: async () => {
       // Only search database if user has typed something
       if (!customSearchTerms.propertyType) {
@@ -216,22 +272,25 @@ const RealEstateSearch = () => {
       }
 
       let query = supabase
-        .from('properties')
-        .select('property_type')
-        .not('property_type', 'is', null)
-        .not('property_type', 'eq', '')
-        .ilike('property_type', `%${customSearchTerms.propertyType}%`);
-      
+        .from("properties")
+        .select("property_type")
+        .not("property_type", "is", null)
+        .not("property_type", "eq", "")
+        .ilike("property_type", `%${customSearchTerms.propertyType}%`);
+
       const { data, error } = await query;
-      
+
       if (error) throw error;
-      
+
       // Get unique property types, filter out predefined ones and empty values
-      const uniquePropertyTypes = [...new Set(
-        data?.map(p => p.property_type?.trim())
-          .filter(n => n && n !== '' && !predefinedPropertyTypes.includes(n)) || []
-      )];
-      return uniquePropertyTypes.sort((a, b) => a.localeCompare(b, 'ar'));
+      const uniquePropertyTypes = [
+        ...new Set(
+          data
+            ?.map((p) => p.property_type?.trim())
+            .filter((n) => n && n !== "" && !predefinedPropertyTypes.includes(n)) || [],
+        ),
+      ];
+      return uniquePropertyTypes.sort((a, b) => a.localeCompare(b, "ar"));
     },
   });
 
@@ -240,75 +299,69 @@ const RealEstateSearch = () => {
 
   // Fetch unique neighborhoods from Supabase with custom search
   const { data: neighborhoods = [] } = useQuery({
-    queryKey: ['neighborhoods', customSearchTerms.neighborhood],
+    queryKey: ["neighborhoods", customSearchTerms.neighborhood],
     queryFn: async () => {
-      let query = supabase
-        .from('properties')
-        .select('district')
-        .not('district', 'is', null)
-        .not('district', 'eq', '');
-      
+      let query = supabase.from("properties").select("district").not("district", "is", null).not("district", "eq", "");
+
       // If custom search term exists, filter by it
       if (customSearchTerms.neighborhood) {
-        query = query.ilike('district', `%${customSearchTerms.neighborhood}%`);
+        query = query.ilike("district", `%${customSearchTerms.neighborhood}%`);
       }
-      
+
       const { data, error } = await query;
-      
+
       if (error) throw error;
-      
+
       // Get unique neighborhoods, filter out empty/null values, and sort
-      const uniqueNeighborhoods = [...new Set(
-        data?.map(p => p.district?.trim()).filter(n => n && n !== '') || []
-      )];
-      return uniqueNeighborhoods.sort((a, b) => a.localeCompare(b, 'ar'));
+      const uniqueNeighborhoods = [...new Set(data?.map((p) => p.district?.trim()).filter((n) => n && n !== "") || [])];
+      return uniqueNeighborhoods.sort((a, b) => a.localeCompare(b, "ar"));
     },
   });
 
   // Fetch properties from Supabase
   const { data: properties = [], isLoading } = useQuery({
-    queryKey: ['properties', transactionType, filters, searchQuery, customSearchTerms],
+    queryKey: ["properties", transactionType, filters, searchQuery, customSearchTerms],
     queryFn: async () => {
       let query = supabase
-        .from('properties')
-        .select('*')
-        .eq('purpose', transactionType === 'sale' ? 'للبيع' : 'للايجار')
-        .not('final_lat', 'is', null) // <-- الفلترة تتم بالـ final_lat في الباك إند
-        .not('final_lon', 'is', null);
+        .from("properties")
+        .select("*")
+        .eq("purpose", transactionType === "sale" ? "للبيع" : "للايجار")
+        .not("final_lat", "is", null) // <-- الفلترة تتم بالـ final_lat في الباك إند
+        .not("final_lon", "is", null);
 
       if (filters.propertyType) {
-        query = query.eq('property_type', filters.propertyType);
+        query = query.eq("property_type", filters.propertyType);
       }
       if (filters.neighborhood) {
-        query = query.eq('district', filters.neighborhood);
+        query = query.eq("district", filters.neighborhood);
       }
       if (searchQuery) {
         query = query.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
       }
       if (filters.bedrooms) {
         const bedroomsValue = filters.bedrooms;
-        if (bedroomsValue !== 'other') {
+        if (bedroomsValue !== "other") {
           const count = parseInt(bedroomsValue);
           if (!isNaN(count)) {
-            query = query.eq('rooms', count);
+            query = query.eq("rooms", count);
           }
         }
       }
       if (filters.bathrooms) {
         const bathroomsValue = filters.bathrooms;
-        if (bathroomsValue !== 'other') {
+        if (bathroomsValue !== "other") {
           const count = parseInt(bathroomsValue);
           if (!isNaN(count)) {
-            query = query.eq('baths', count);
+            query = query.eq("baths", count);
           }
         }
       }
       if (filters.livingRooms) {
         const livingRoomsValue = filters.livingRooms;
-        if (livingRoomsValue !== 'other') {
+        if (livingRoomsValue !== "other") {
           const count = parseInt(livingRoomsValue);
           if (!isNaN(count)) {
-            query = query.eq('halls', count);
+            query = query.eq("halls", count);
           }
         }
       }
@@ -316,17 +369,14 @@ const RealEstateSearch = () => {
       const { data, error } = await query.limit(500);
       if (error) throw error;
 
-      return (data || []).filter(property => {
+      return (data || []).filter((property) => {
         // Handle numeric types (can be number or string depending on data)
         const priceValue = property.price_num as any;
-        const price = typeof priceValue === 'string' 
-          ? parseFloat(priceValue.replace(/,/g, '')) 
-          : Number(priceValue) || 0;
+        const price =
+          typeof priceValue === "string" ? parseFloat(priceValue.replace(/,/g, "")) : Number(priceValue) || 0;
         const areaValue = property.area_m2 as any;
-        const area = typeof areaValue === 'string'
-          ? parseFloat(areaValue.replace(/,/g, ''))
-          : Number(areaValue) || 0;
-        
+        const area = typeof areaValue === "string" ? parseFloat(areaValue.replace(/,/g, "")) : Number(areaValue) || 0;
+
         // Price matching logic: exact if only one value, range if both values
         let priceMatch = true;
         if (filters.minPrice > 0 && filters.maxPrice > 0) {
@@ -339,7 +389,7 @@ const RealEstateSearch = () => {
           // Only max filled: exact match
           priceMatch = price === filters.maxPrice;
         }
-        
+
         // Area matching logic: exact if only one value, range if both values
         let areaMatch = true;
         if (filters.areaMin > 0 && filters.areaMax > 0) {
@@ -352,47 +402,51 @@ const RealEstateSearch = () => {
           // Only max filled: exact match
           areaMatch = area === filters.areaMax;
         }
-        
+
         let metroMatch = true;
         if (filters.nearMetro) {
           // When metro filter is enabled, only show properties with metro data within the time range
           if (!property.time_to_metro_min) {
             metroMatch = false;
           } else {
-            const metroTime = typeof property.time_to_metro_min === 'string'
-              ? parseFloat(property.time_to_metro_min)
-              : Number(property.time_to_metro_min);
+            const metroTime =
+              typeof property.time_to_metro_min === "string"
+                ? parseFloat(property.time_to_metro_min)
+                : Number(property.time_to_metro_min);
             metroMatch = !isNaN(metroTime) && metroTime <= filters.minMetroTime;
           }
         }
-        
+
         return priceMatch && areaMatch && metroMatch;
       });
     },
   });
 
   // Predefined school gender options
-  const predefinedSchoolGenders = ['Boys', 'Girls'];
+  const predefinedSchoolGenders = ["Boys", "Girls"];
 
   // Fetch additional school genders from database with custom search
   const { data: additionalSchoolGenders = [] } = useQuery({
-    queryKey: ['schoolGenders', customSearchTerms.schoolGender],
+    queryKey: ["schoolGenders", customSearchTerms.schoolGender],
     queryFn: async () => {
       if (!customSearchTerms.schoolGender) return [];
-      
+
       const { data, error } = await supabase
-        .from('schools')
-        .select('gender')
-        .not('gender', 'is', null)
-        .not('gender', 'eq', '')
-        .ilike('gender', `%${customSearchTerms.schoolGender}%`);
-      
+        .from("schools")
+        .select("gender")
+        .not("gender", "is", null)
+        .not("gender", "eq", "")
+        .ilike("gender", `%${customSearchTerms.schoolGender}%`);
+
       if (error) throw error;
-      
-      const uniqueGenders = [...new Set(
-        data?.map(s => s.gender?.trim())
-          .filter(g => g && g !== '' && !['boys', 'girls'].includes(g.toLowerCase())) || []
-      )];
+
+      const uniqueGenders = [
+        ...new Set(
+          data
+            ?.map((s) => s.gender?.trim())
+            .filter((g) => g && g !== "" && !["boys", "girls"].includes(g.toLowerCase())) || [],
+        ),
+      ];
       return uniqueGenders;
     },
   });
@@ -400,27 +454,30 @@ const RealEstateSearch = () => {
   const allSchoolGenders = [...predefinedSchoolGenders, ...additionalSchoolGenders];
 
   // Predefined school level options
-  const predefinedSchoolLevels = ['nursery', 'kindergarten', 'elementary', 'middle', 'high'];
+  const predefinedSchoolLevels = ["nursery", "kindergarten", "elementary", "middle", "high"];
 
   // Fetch additional school levels from database with custom search
   const { data: additionalSchoolLevels = [] } = useQuery({
-    queryKey: ['schoolLevels', customSearchTerms.schoolLevel],
+    queryKey: ["schoolLevels", customSearchTerms.schoolLevel],
     queryFn: async () => {
       if (!customSearchTerms.schoolLevel) return [];
-      
+
       const { data, error } = await supabase
-        .from('schools')
-        .select('primary_level')
-        .not('primary_level', 'is', null)
-        .not('primary_level', 'eq', '')
-        .ilike('primary_level', `%${customSearchTerms.schoolLevel}%`);
-      
+        .from("schools")
+        .select("primary_level")
+        .not("primary_level", "is", null)
+        .not("primary_level", "eq", "")
+        .ilike("primary_level", `%${customSearchTerms.schoolLevel}%`);
+
       if (error) throw error;
-      
-      const uniqueLevels = [...new Set(
-        data?.map(s => s.primary_level?.trim())
-          .filter(l => l && l !== '' && !predefinedSchoolLevels.includes(l.toLowerCase())) || []
-      )];
+
+      const uniqueLevels = [
+        ...new Set(
+          data
+            ?.map((s) => s.primary_level?.trim())
+            .filter((l) => l && l !== "" && !predefinedSchoolLevels.includes(l.toLowerCase())) || [],
+        ),
+      ];
       return uniqueLevels;
     },
   });
@@ -429,30 +486,31 @@ const RealEstateSearch = () => {
 
   // Fetch schools with filters and custom search
   const { data: allSchools = [] } = useQuery({
-    queryKey: ['schools', filters.schoolGender, filters.schoolLevel, customSearchTerms.school],
+    queryKey: ["schools", filters.schoolGender, filters.schoolLevel, customSearchTerms.school],
     queryFn: async () => {
       let query = supabase
-        .from('schools')
-        .select('*')
-        .not('lat', 'is', null)
-        .not('lon', 'is', null)
-        .not('name', 'is', null);
-      
+        .from("schools")
+        .select("*")
+        .not("lat", "is", null)
+        .not("lon", "is", null)
+        .not("name", "is", null);
+
       if (filters.schoolGender) {
-        const genderValue = filters.schoolGender === 'Boys' ? 'boys' : filters.schoolGender === 'Girls' ? 'girls' : 'both';
-        query = query.eq('gender', genderValue);
+        const genderValue =
+          filters.schoolGender === "Boys" ? "boys" : filters.schoolGender === "Girls" ? "girls" : "both";
+        query = query.eq("gender", genderValue);
       }
-      
+
       if (filters.schoolLevel) {
-        query = query.eq('primary_level', filters.schoolLevel);
+        query = query.eq("primary_level", filters.schoolLevel);
       }
 
       // If custom search term exists, filter by it
       if (customSearchTerms.school) {
         query = query.or(`name.ilike.%${customSearchTerms.school}%,district.ilike.%${customSearchTerms.school}%`);
       }
-      
-      const { data, error } = await query.order('name', { ascending: true });
+
+      const { data, error } = await query.order("name", { ascending: true });
       if (error) throw error;
       return data || [];
     },
@@ -461,12 +519,12 @@ const RealEstateSearch = () => {
   // حساب المسافة بين نقطتين (Haversine formula)
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371; // نصف قطر الأرض بالكيلومتر
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c; // المسافة بالكيلومتر
   };
 
@@ -476,69 +534,80 @@ const RealEstateSearch = () => {
     return Math.round((distanceKm / avgSpeed) * 60); // تحويل إلى دقائق
   };
 
+  // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
+  const baseProperties = showChatbotResults ? chatbotProperties : properties;
+
+  // [!! تعديل 2.1 !!] : تغيير `propertiesCenterLocation`
   // حساب موقع مركز العقارات المفلترة
   const propertiesCenterLocation = useMemo(() => {
-    if (properties.length === 0) return null;
-    
+    // [!! تعديل !!] : استخدم 'displayedProperties' بدلاً من 'properties'
+    if (baseProperties.length === 0) return null;
+
     // !! التوحيد: اقرأ من 'lat' و 'lon' (لأن الباك إند يوحدها)
-    const validProperties = properties.filter(p => 
-      p.lat && p.lon && 
-      !isNaN(Number(p.lat)) && !isNaN(Number(p.lon)) &&
-      Number(p.lat) !== 0 && Number(p.lon) !== 0
+    const validProperties = baseProperties.filter(
+      (p) =>
+        p.lat && p.lon && !isNaN(Number(p.lat)) && !isNaN(Number(p.lon)) && Number(p.lat) !== 0 && Number(p.lon) !== 0,
     );
-    
+
     if (validProperties.length === 0) return null;
-    
+
     // حساب متوسط الإحداثيات
     const sumLat = validProperties.reduce((sum, p) => sum + Number(p.lat), 0);
     const sumLon = validProperties.reduce((sum, p) => sum + Number(p.lon), 0);
-    
+
     return {
       lat: sumLat / validProperties.length,
-      lon: sumLon / validProperties.length
+      lon: sumLon / validProperties.length,
     };
-  }, [properties]);
+  }, [baseProperties]); // [!! تعديل !!] : غير الاعتمادية
 
-  // تصفية المدارس لإظهار القريبة فقط (حسب الوقت المحدد من slider)
+  // [!! تعديل 2.2 !!] : استبدال nearbySchools لإضافة travelTime
   const nearbySchools = useMemo(() => {
     // Only show schools if at least gender OR level is selected
     if (!filters.schoolGender && !filters.schoolLevel) return [];
     if (!propertiesCenterLocation || allSchools.length === 0) return [];
-    
-    return allSchools.filter(school => {
-      // Filter by travel time
-      const distance = calculateDistance(
-        propertiesCenterLocation.lat,
-        propertiesCenterLocation.lon,
-        school.lat,
-        school.lon
+
+    return allSchools
+      .map((school) => {
+        const distance = calculateDistance(
+          propertiesCenterLocation.lat,
+          propertiesCenterLocation.lon,
+          school.lat,
+          school.lon,
+        );
+        const travelTime = calculateTravelTime(distance);
+
+        // [!! التعديل !!] إرجاع كائن المدرسة مع إضافة وقت السفر
+        return { ...school, travelTime };
+      })
+      .filter(
+        (school) =>
+          // الفلترة بناءً على الوقت
+          school.travelTime <= filters.maxSchoolTime,
       );
-      const travelTime = calculateTravelTime(distance);
-      const timeMatch = travelTime <= filters.maxSchoolTime;
-      
-      return timeMatch;
-    });
   }, [allSchools, propertiesCenterLocation, filters.maxSchoolTime, filters.schoolGender, filters.schoolLevel]);
 
   // Fetch all universities with custom search
   const { data: allUniversities = [] } = useQuery({
-    queryKey: ['universities', customSearchTerms.university],
+    queryKey: ["universities", customSearchTerms.university],
     queryFn: async () => {
       let query = supabase
-        .from('universities')
-        .select('*')
-        .not('lat', 'is', null)
-        .not('lon', 'is', null)
-        .not('name_ar', 'is', null)
-        .not('name_en', 'is', null);
+        .from("universities")
+        .select("*")
+        .not("lat", "is", null)
+        .not("lon", "is", null)
+        .not("name_ar", "is", null)
+        .not("name_en", "is", null);
 
       // If custom search term exists, filter by it
       if (customSearchTerms.university) {
-        query = query.or(`name_ar.ilike.%${customSearchTerms.university}%,name_en.ilike.%${customSearchTerms.university}%`);
+        query = query.or(
+          `name_ar.ilike.%${customSearchTerms.university}%,name_en.ilike.%${customSearchTerms.university}%`,
+        );
       }
-      
-      const { data, error } = await query.order('name_ar', { ascending: true });
-      
+
+      const { data, error } = await query.order("name_ar", { ascending: true });
+
       if (error) throw error;
       return data || [];
     },
@@ -549,33 +618,25 @@ const RealEstateSearch = () => {
     // Only show university if one is selected
     if (!filters.selectedUniversity) return [];
     if (!propertiesCenterLocation || allUniversities.length === 0) return [];
-    
-    return allUniversities.filter(uni => {
+
+    return allUniversities.filter((uni) => {
       // Match the selected university name
-      const nameMatch = (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
+      const nameMatch = (i18n.language === "ar" ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
       if (!nameMatch) return false;
-      
+
       // Check if it's within the time range
-      const distance = calculateDistance(
-        propertiesCenterLocation.lat,
-        propertiesCenterLocation.lon,
-        uni.lat,
-        uni.lon
-      );
+      const distance = calculateDistance(propertiesCenterLocation.lat, propertiesCenterLocation.lon, uni.lat, uni.lon);
       const travelTime = calculateTravelTime(distance);
       return travelTime <= filters.maxUniversityTime;
     });
   }, [allUniversities, propertiesCenterLocation, filters.maxUniversityTime, filters.selectedUniversity, i18n.language]);
-
-  // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
-  const baseProperties = showChatbotResults ? chatbotProperties : properties;
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
     return [...baseProperties];
   }, [baseProperties]);
 
-  const displayedFavorites = displayedProperties.filter(p => favorites.includes(p.id));
+  const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
 
   const handlePropertyClick = (property: any) => {
     setSelectedProperty(property);
@@ -585,28 +646,30 @@ const RealEstateSearch = () => {
   const handleToggleFavorite = (propertyId: string) => {
     toggleFavorite(propertyId);
     if (isFavorite(propertyId)) {
-      toast({ title: t('removedFromFavorites') });
+      toast({ title: t("removedFromFavorites") });
     } else {
-      toast({ title: t('addedToFavorites') });
+      toast({ title: t("addedToFavorites") });
     }
   };
 
   // توجيه الخريطة عند البحث من الشات
   useEffect(() => {
     if (!mapRef.current) return;
-    console.log('🗺️ Map useEffect triggered:', { showChatbotResults, chatbotPropertiesLength: chatbotProperties.length });
+    console.log("🗺️ Map useEffect triggered:", {
+      showChatbotResults,
+      chatbotPropertiesLength: chatbotProperties.length,
+    });
     if (showChatbotResults && chatbotProperties.length > 0) {
-      
       // ================================================
       // !! تعديل رقم 2: فلترة إحداثيات الشات بوت (استخدم lat/lon) !!
       // ================================================
-      const lats = chatbotProperties.map(p => Number(p.lat)).filter(lat => !isNaN(lat) && lat !== 0);
-      const lngs = chatbotProperties.map(p => Number(p.lon)).filter(lng => !isNaN(lng) && lng !== 0);
-      
+      const lats = chatbotProperties.map((p) => Number(p.lat)).filter((lat) => !isNaN(lat) && lat !== 0);
+      const lngs = chatbotProperties.map((p) => Number(p.lon)).filter((lng) => !isNaN(lng) && lng !== 0);
+
       if (lats.length > 0 && lngs.length > 0) {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
         const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-        console.log('🗺️ Moving map to:', { lat: avgLat, lng: avgLng, zoom: 13 });
+        console.log("🗺️ Moving map to:", { lat: avgLat, lng: avgLng, zoom: 13 });
         mapRef.current.setCenter({ lat: avgLat, lng: avgLng });
         mapRef.current.setZoom(13);
       }
@@ -616,13 +679,13 @@ const RealEstateSearch = () => {
   // توجيه الخريطة عند تغيير نتائج البحث العادية
   useEffect(() => {
     if (!mapRef.current || displayedProperties.length === 0 || !hasSearched) return;
-    
+
     const bounds = new google.maps.LatLngBounds();
-    displayedProperties.forEach(property => {
+    displayedProperties.forEach((property) => {
       // !! التوحيد: استخدم 'lat' و 'lon'
       const lat = Number(property.lat);
       const lng = Number(property.lon);
-      
+
       // ================================================
       // !! تعديل رقم 3: فلترة إحداثيات الزووم (استخدم lat/lon) !!
       // ================================================
@@ -630,7 +693,7 @@ const RealEstateSearch = () => {
         bounds.extend({ lat, lng });
       }
     });
-    
+
     // إضافة تحصين للتأكد أن الحدود ليست فارغة
     if (!bounds.isEmpty()) {
       mapRef.current.fitBounds(bounds);
@@ -648,20 +711,20 @@ const RealEstateSearch = () => {
 
   const resetFilters = () => {
     setFilters({
-      propertyType: '',
-      city: 'الرياض',
-      neighborhood: '',
+      propertyType: "",
+      city: "الرياض",
+      neighborhood: "",
       minPrice: 0,
       maxPrice: 0,
       areaMin: 0,
       areaMax: 0,
-      bedrooms: '',
-      livingRooms: '',
-      bathrooms: '',
-      schoolGender: '',
-      schoolLevel: '',
+      bedrooms: "",
+      livingRooms: "",
+      bathrooms: "",
+      schoolGender: "",
+      schoolLevel: "",
       maxSchoolTime: 15,
-      selectedUniversity: '',
+      selectedUniversity: "",
       maxUniversityTime: 30,
       nearMetro: false,
       minMetroTime: 1,
@@ -669,12 +732,12 @@ const RealEstateSearch = () => {
       nearMosques: false,
     });
     setCustomSearchTerms({
-      propertyType: '',
-      neighborhood: '',
-      school: '',
-      university: '',
-      schoolGender: '',
-      schoolLevel: '',
+      propertyType: "",
+      neighborhood: "",
+      school: "",
+      university: "",
+      schoolGender: "",
+      schoolLevel: "",
     });
     setHasSearched(false);
   };
@@ -692,7 +755,6 @@ const RealEstateSearch = () => {
           >
             <MapRefHandler mapRef={mapRef} />
             {displayedProperties.map((property) => {
-              
               // ================================================
               // !! تعديل رقم 1: فلترة الدبابيس (Markers) (استخدم lat/lon) !!
               // ================================================
@@ -701,7 +763,7 @@ const RealEstateSearch = () => {
               const lon = Number(property.lon);
               // !! الفلترة: تأكد أنها ليست 0,0
               if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return null;
-              
+
               return (
                 <AdvancedMarker
                   key={property.id}
@@ -711,13 +773,16 @@ const RealEstateSearch = () => {
                   <div className="relative group cursor-pointer">
                     <div className="transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-2">
                       <Pin
-                        background={transactionType === 'sale' ? '#15803d' : '#22c55e'}
-                        borderColor={transactionType === 'sale' ? '#14532d' : '#16a34a'}
-                        glyphColor={'#ffffff'}
+                        background={transactionType === "sale" ? "#15803d" : "#22c55e"}
+                        borderColor={transactionType === "sale" ? "#14532d" : "#16a34a"}
+                        glyphColor={"#ffffff"}
                       />
                     </div>
                     {/* Animated pulse ring on hover */}
-                    <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '1.5s' }} />
+                    <div
+                      className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100"
+                      style={{ animationDuration: "1.5s" }}
+                    />
                     {/* Favorite heart badge */}
                     {isFavorite(property.id) && (
                       <div className="absolute -top-2 -right-2 animate-pulse-glow">
@@ -729,49 +794,67 @@ const RealEstateSearch = () => {
               );
             })}
 
-            {hasSearched && nearbySchools.map((school) => (
-              <AdvancedMarker
-                key={`school-${school.id}`}
-                position={{ lat: school.lat, lng: school.lon }}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                      <div className="p-2 rounded-full shadow-elevated" style={{ backgroundColor: 'hsl(217 91% 60%)' }}>
-                        <School className="h-5 w-5 text-white" />
+            {hasSearched &&
+              nearbySchools.map((school) => (
+                <AdvancedMarker key={`school-${school.id}`} position={{ lat: school.lat, lng: school.lon }}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated"
+                          style={{ backgroundColor: "hsl(217 91% 60%)" }}
+                        >
+                          <School className="h-5 w-5 text-white" />
+                        </div>
+                        {/* Hover pulse effect */}
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(217 91% 60% / 0.3)", animationDuration: "1.5s" }}
+                        />
                       </div>
-                      {/* Hover pulse effect */}
-                      <div className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100" style={{ backgroundColor: 'hsl(217 91% 60% / 0.3)', animationDuration: '1.5s' }} />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="font-medium">{school.name}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </AdvancedMarker>
-            ))}
+                    </TooltipTrigger>
+                    {/* [!! تعديل 3 !!] : عرض وقت السفر في الـ Tooltip */}
+                    <TooltipContent>
+                      <p className="font-medium">{school.name}</p>
+                      {/* التأكد من وجود الوقت قبل عرضه */}
+                      {school.travelTime !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("maxTravelTime")}: {school.travelTime} {t("minutes")}
+                        </p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </AdvancedMarker>
+              ))}
 
-            {hasSearched && nearbyUniversities.map((university) => (
-              <AdvancedMarker
-                key={`university-${university.name_ar}`}
-                position={{ lat: university.lat, lng: university.lon }}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                      <div className="p-2 rounded-full shadow-elevated" style={{ backgroundColor: 'hsl(142 71% 45%)' }}>
-                        <GraduationCap className="h-5 w-5 text-white" />
+            {hasSearched &&
+              nearbyUniversities.map((university) => (
+                <AdvancedMarker
+                  key={`university-${university.name_ar}`}
+                  position={{ lat: university.lat, lng: university.lon }}
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated"
+                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
+                        >
+                          <GraduationCap className="h-5 w-5 text-white" />
+                        </div>
+                        {/* Hover pulse effect */}
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
+                        />
                       </div>
-                      {/* Hover pulse effect */}
-                      <div className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100" style={{ backgroundColor: 'hsl(142 71% 45% / 0.3)', animationDuration: '1.5s' }} />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="font-medium">{i18n.language === 'ar' ? university.name_ar : university.name_en}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </AdvancedMarker>
-            ))}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </AdvancedMarker>
+              ))}
           </Map>
         </div>
 
@@ -786,50 +869,40 @@ const RealEstateSearch = () => {
                   onClick={async () => {
                     try {
                       await supabase.auth.signOut();
-                      navigate('/', { replace: true });
-                      toast({ title: t('loggedOut') || 'Logged out successfully' });
+                      navigate("/", { replace: true });
+                      toast({ title: t("loggedOut") || "Logged out successfully" });
                     } catch (error) {
-                      console.error('Logout error:', error);
-                      navigate('/', { replace: true });
+                      console.error("Logout error:", error);
+                      navigate("/", { replace: true });
                     }
                   }}
                   className="hover:bg-primary/10"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <img 
-                  src={riyalEstateLogo} 
-                  alt="RiyalEstate" 
+                <img
+                  src={riyalEstateLogo}
+                  alt="RiyalEstate"
                   className="h-12 w-12 rounded-full object-cover ring-2 ring-primary/20"
                 />
                 <div className="flex-1">
                   <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    {t('riyalEstate')}
+                    {t("riyalEstate")}
                   </h1>
-                  <p className="text-xs text-muted-foreground">{t('propertySearch')}</p>
+                  <p className="text-xs text-muted-foreground">{t("propertySearch")}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowFavorites(true)}
-                    className="gap-2 relative"
-                  >
-                    <Heart className={`h-4 w-4 ${favorites.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                  <Button variant="outline" size="sm" onClick={() => setShowFavorites(true)} className="gap-2 relative">
+                    <Heart className={`h-4 w-4 ${favorites.length > 0 ? "fill-red-500 text-red-500" : ""}`} />
                     {favorites.length > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                         {favorites.length}
                       </span>
                     )}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleLanguage}
-                    className="gap-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={toggleLanguage} className="gap-2">
                     <Languages className="h-4 w-4" />
-                    {i18n.language === 'en' ? 'ع' : 'EN'}
+                    {i18n.language === "en" ? "ع" : "EN"}
                   </Button>
                   <Button
                     variant="outline"
@@ -844,60 +917,65 @@ const RealEstateSearch = () => {
 
               <div className="flex gap-2">
                 <Button
-                  variant={transactionType === 'sale' ? 'default' : 'outline'}
+                  variant={transactionType === "sale" ? "default" : "outline"}
                   className={`flex-1 transition-all duration-300 hover-lift ${
-                    transactionType === 'sale' 
-                      ? 'bg-gradient-to-r from-primary to-accent shadow-glow scale-105' 
-                      : 'hover:border-primary/50 hover:shadow-elegant'
+                    transactionType === "sale"
+                      ? "bg-gradient-to-r from-primary to-accent shadow-glow scale-105"
+                      : "hover:border-primary/50 hover:shadow-elegant"
                   }`}
-                  onClick={() => setTransactionType('sale')}
+                  onClick={() => setTransactionType("sale")}
                 >
-                  {t('forSale')}
+                  {t("forSale")}
                 </Button>
                 <Button
-                  variant={transactionType === 'rent' ? 'default' : 'outline'}
+                  variant={transactionType === "rent" ? "default" : "outline"}
                   className={`flex-1 transition-all duration-300 hover-lift ${
-                    transactionType === 'rent' 
-                      ? 'bg-gradient-to-r from-primary to-accent shadow-glow scale-105' 
-                      : 'hover:border-primary/50 hover:shadow-elegant'
+                    transactionType === "rent"
+                      ? "bg-gradient-to-r from-primary to-accent shadow-glow scale-105"
+                      : "hover:border-primary/50 hover:shadow-elegant"
                   }`}
-                  onClick={() => setTransactionType('rent')}
+                  onClick={() => setTransactionType("rent")}
                 >
-                  {t('forRent')}
+                  {t("forRent")}
                 </Button>
               </div>
 
               <div className="flex gap-2">
                 <div className="flex-1 relative group">
-                  <MapPin className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-all duration-300 group-hover:scale-110 ${i18n.language === 'ar' ? 'right-3' : 'left-3'}`} />
+                  <MapPin
+                    className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-all duration-300 group-hover:scale-110 ${i18n.language === "ar" ? "right-3" : "left-3"}`}
+                  />
                   <Input
-                    placeholder={t('searchLocation')}
+                    placeholder={t("searchLocation")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className={`bg-background/80 backdrop-blur-sm border-border focus-visible:ring-primary focus-visible:border-primary focus-visible:shadow-glow transition-all duration-300 ${i18n.language === 'ar' ? 'pr-10' : 'pl-10'}`}
+                    className={`bg-background/80 backdrop-blur-sm border-border focus-visible:ring-primary focus-visible:border-primary focus-visible:shadow-glow transition-all duration-300 ${i18n.language === "ar" ? "pr-10" : "pl-10"}`}
                   />
                 </div>
                 <Sheet open={showFilters} onOpenChange={setShowFilters}>
                   <SheetTrigger asChild>
-                    <Button 
+                    <Button
                       size="lg"
                       className="gap-3 px-6 py-6 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] text-primary-foreground font-bold text-base shadow-glow hover:bg-[position:100%_0] hover:scale-110 transition-all duration-500 border-2 border-primary-foreground/20 group relative overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                       <SlidersHorizontal className="h-6 w-6 group-hover:rotate-180 transition-transform duration-500 relative z-10" />
-                      <span className="relative z-10">{t('advancedFilters')}</span>
+                      <span className="relative z-10">{t("advancedFilters")}</span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto bg-background/98 backdrop-blur-md">
+                  <SheetContent
+                    side="right"
+                    className="w-full sm:max-w-2xl overflow-y-auto bg-background/98 backdrop-blur-md"
+                  >
                     <SheetHeader className="pb-6 border-b-2 border-primary/20">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-primary/10">
                           <SlidersHorizontal className="h-5 w-5 text-primary" />
                         </div>
-                        <SheetTitle className="text-2xl font-bold">{t('advancedFilters')}</SheetTitle>
+                        <SheetTitle className="text-2xl font-bold">{t("advancedFilters")}</SheetTitle>
                       </div>
                     </SheetHeader>
-                    
+
                     <div className="space-y-8 mt-6 pb-4">
                       {/* Property Details Section */}
                       <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
@@ -905,12 +983,12 @@ const RealEstateSearch = () => {
                           <div className="p-1.5 rounded-md bg-primary/15">
                             <MapPin className="h-4 w-4 text-primary" />
                           </div>
-                          {t('propertyDetails')}
+                          {t("propertyDetails")}
                         </h3>
-                        
+
                         <div className="space-y-3">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('propertyType')}</Label>
+                            <Label className="text-sm font-medium">{t("propertyType")}</Label>
                             <Popover open={openPropertyTypeCombobox} onOpenChange={setOpenPropertyTypeCombobox}>
                               <PopoverTrigger asChild>
                                 <Button
@@ -918,32 +996,37 @@ const RealEstateSearch = () => {
                                   role="combobox"
                                   className="w-full justify-between bg-background hover:bg-accent"
                                 >
-                                  {filters.propertyType || t('selectPropertyType')}
+                                  {filters.propertyType || t("selectPropertyType")}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
-                                  <CommandInput 
-                                    placeholder={t('propertyType')} 
+                                  <CommandInput
+                                    placeholder={t("propertyType")}
                                     onValueChange={(value) => {
                                       setCustomSearchTerms({ ...customSearchTerms, propertyType: value });
                                     }}
                                   />
                                   <CommandList>
                                     <CommandEmpty>
-                                      {allPropertyTypes.length === 0 ? t('notFound') : t('selectPropertyType')}
+                                      {allPropertyTypes.length === 0 ? t("notFound") : t("selectPropertyType")}
                                     </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
-                                          setFilters({ ...filters, propertyType: '' });
-                                          setCustomSearchTerms({ ...customSearchTerms, propertyType: '' });
+                                          setFilters({ ...filters, propertyType: "" });
+                                          setCustomSearchTerms({ ...customSearchTerms, propertyType: "" });
                                           setOpenPropertyTypeCombobox(false);
                                         }}
                                       >
-                                        <Check className={cn("mr-2 h-4 w-4", !filters.propertyType ? "opacity-100" : "opacity-0")} />
-                                        {t('none')}
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            !filters.propertyType ? "opacity-100" : "opacity-0",
+                                          )}
+                                        />
+                                        {t("none")}
                                       </CommandItem>
                                       {allPropertyTypes.map((type) => (
                                         <CommandItem
@@ -951,11 +1034,16 @@ const RealEstateSearch = () => {
                                           value={type}
                                           onSelect={() => {
                                             setFilters({ ...filters, propertyType: type });
-                                            setCustomSearchTerms({ ...customSearchTerms, propertyType: '' });
+                                            setCustomSearchTerms({ ...customSearchTerms, propertyType: "" });
                                             setOpenPropertyTypeCombobox(false);
                                           }}
                                         >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.propertyType === type ? "opacity-100" : "opacity-0")} />
+                                          <Check
+                                            className={cn(
+                                              "mr-2 h-4 w-4",
+                                              filters.propertyType === type ? "opacity-100" : "opacity-0",
+                                            )}
+                                          />
                                           {type}
                                         </CommandItem>
                                       ))}
@@ -967,7 +1055,7 @@ const RealEstateSearch = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('neighborhood')}</Label>
+                            <Label className="text-sm font-medium">{t("neighborhood")}</Label>
                             <Popover open={openNeighborhoodCombobox} onOpenChange={setOpenNeighborhoodCombobox}>
                               <PopoverTrigger asChild>
                                 <Button
@@ -975,32 +1063,37 @@ const RealEstateSearch = () => {
                                   role="combobox"
                                   className="w-full justify-between bg-background hover:bg-accent"
                                 >
-                                  {filters.neighborhood || t('selectNeighborhood')}
+                                  {filters.neighborhood || t("selectNeighborhood")}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
-                                  <CommandInput 
-                                    placeholder={t('searchNeighborhood')} 
+                                  <CommandInput
+                                    placeholder={t("searchNeighborhood")}
                                     onValueChange={(value) => {
                                       setCustomSearchTerms({ ...customSearchTerms, neighborhood: value });
                                     }}
                                   />
                                   <CommandList>
                                     <CommandEmpty>
-                                      {neighborhoods.length === 0 ? t('notFound') : t('noNeighborhoodFound')}
+                                      {neighborhoods.length === 0 ? t("notFound") : t("noNeighborhoodFound")}
                                     </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
-                                          setFilters({ ...filters, neighborhood: '' });
-                                          setCustomSearchTerms({ ...customSearchTerms, neighborhood: '' });
+                                          setFilters({ ...filters, neighborhood: "" });
+                                          setCustomSearchTerms({ ...customSearchTerms, neighborhood: "" });
                                           setOpenNeighborhoodCombobox(false);
                                         }}
                                       >
-                                        <Check className={cn("mr-2 h-4 w-4", !filters.neighborhood ? "opacity-100" : "opacity-0")} />
-                                        {t('none')}
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            !filters.neighborhood ? "opacity-100" : "opacity-0",
+                                          )}
+                                        />
+                                        {t("none")}
                                       </CommandItem>
                                       {neighborhoods.map((neighborhood) => (
                                         <CommandItem
@@ -1008,11 +1101,16 @@ const RealEstateSearch = () => {
                                           value={neighborhood}
                                           onSelect={() => {
                                             setFilters({ ...filters, neighborhood });
-                                            setCustomSearchTerms({ ...customSearchTerms, neighborhood: '' });
+                                            setCustomSearchTerms({ ...customSearchTerms, neighborhood: "" });
                                             setOpenNeighborhoodCombobox(false);
                                           }}
                                         >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.neighborhood === neighborhood ? "opacity-100" : "opacity-0")} />
+                                          <Check
+                                            className={cn(
+                                              "mr-2 h-4 w-4",
+                                              filters.neighborhood === neighborhood ? "opacity-100" : "opacity-0",
+                                            )}
+                                          />
                                           {neighborhood}
                                         </CommandItem>
                                       ))}
@@ -1031,22 +1129,22 @@ const RealEstateSearch = () => {
                           <div className="p-1.5 rounded-md bg-primary/15">
                             <Maximize className="h-4 w-4 text-primary" />
                           </div>
-                          {t('priceAndArea')}
+                          {t("priceAndArea")}
                         </h3>
-                        
+
                         <div className="space-y-3">
                           {/* Price Range */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('price')} (SAR)</Label>
+                            <Label className="text-sm font-medium">{t("price")} (SAR)</Label>
                             <div className="grid grid-cols-2 gap-2">
                               <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">{t('min')}</Label>
+                                <Label className="text-xs text-muted-foreground">{t("min")}</Label>
                                 <div className="flex gap-1">
                                   <Input
                                     type="number"
                                     min="0"
-                                    placeholder={t('min')}
-                                    value={filters.minPrice || ''}
+                                    placeholder={t("min")}
+                                    value={filters.minPrice || ""}
                                     onChange={(e) => setFilters({ ...filters, minPrice: Number(e.target.value) })}
                                     className="bg-background"
                                   />
@@ -1064,13 +1162,13 @@ const RealEstateSearch = () => {
                                 </div>
                               </div>
                               <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">{t('max')}</Label>
+                                <Label className="text-xs text-muted-foreground">{t("max")}</Label>
                                 <div className="flex gap-1">
                                   <Input
                                     type="number"
                                     min="0"
-                                    placeholder={t('max')}
-                                    value={filters.maxPrice || ''}
+                                    placeholder={t("max")}
+                                    value={filters.maxPrice || ""}
                                     onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
                                     className="bg-background"
                                   />
@@ -1092,16 +1190,16 @@ const RealEstateSearch = () => {
 
                           {/* Area Range */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('areaSize')} (م²)</Label>
+                            <Label className="text-sm font-medium">{t("areaSize")} (م²)</Label>
                             <div className="grid grid-cols-2 gap-2">
                               <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">{t('min')}</Label>
+                                <Label className="text-xs text-muted-foreground">{t("min")}</Label>
                                 <div className="flex gap-1">
                                   <Input
                                     type="number"
                                     min="0"
-                                    placeholder={t('min')}
-                                    value={filters.areaMin || ''}
+                                    placeholder={t("min")}
+                                    value={filters.areaMin || ""}
                                     onChange={(e) => setFilters({ ...filters, areaMin: Number(e.target.value) })}
                                     className="bg-background"
                                   />
@@ -1119,13 +1217,13 @@ const RealEstateSearch = () => {
                                 </div>
                               </div>
                               <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">{t('max')}</Label>
+                                <Label className="text-xs text-muted-foreground">{t("max")}</Label>
                                 <div className="flex gap-1">
                                   <Input
                                     type="number"
                                     min="0"
-                                    placeholder={t('max')}
-                                    value={filters.areaMax || ''}
+                                    placeholder={t("max")}
+                                    value={filters.areaMax || ""}
                                     onChange={(e) => setFilters({ ...filters, areaMax: Number(e.target.value) })}
                                     className="bg-background"
                                   />
@@ -1153,19 +1251,19 @@ const RealEstateSearch = () => {
                           <div className="p-1.5 rounded-md bg-primary/15">
                             <Bed className="h-4 w-4 text-primary" />
                           </div>
-                          {t('roomDetails')}
+                          {t("roomDetails")}
                         </h3>
-                        
+
                         <div className="space-y-3">
                           {/* Bedrooms */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('bedrooms')}</Label>
+                            <Label className="text-sm font-medium">{t("bedrooms")}</Label>
                             <div className="flex gap-2">
                               <Input
                                 type="number"
                                 min="0"
-                                placeholder={t('bedrooms')}
-                                value={filters.bedrooms || ''}
+                                placeholder={t("bedrooms")}
+                                value={filters.bedrooms || ""}
                                 onChange={(e) => setFilters({ ...filters, bedrooms: e.target.value })}
                                 className="bg-background flex-1"
                               />
@@ -1174,7 +1272,7 @@ const RealEstateSearch = () => {
                                   type="button"
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => setFilters({ ...filters, bedrooms: '' })}
+                                  onClick={() => setFilters({ ...filters, bedrooms: "" })}
                                   className="shrink-0"
                                 >
                                   <X className="h-4 w-4" />
@@ -1185,13 +1283,13 @@ const RealEstateSearch = () => {
 
                           {/* Living Rooms */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('livingRooms')}</Label>
+                            <Label className="text-sm font-medium">{t("livingRooms")}</Label>
                             <div className="flex gap-2">
                               <Input
                                 type="number"
                                 min="0"
-                                placeholder={t('livingRooms')}
-                                value={filters.livingRooms || ''}
+                                placeholder={t("livingRooms")}
+                                value={filters.livingRooms || ""}
                                 onChange={(e) => setFilters({ ...filters, livingRooms: e.target.value })}
                                 className="bg-background flex-1"
                               />
@@ -1200,7 +1298,7 @@ const RealEstateSearch = () => {
                                   type="button"
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => setFilters({ ...filters, livingRooms: '' })}
+                                  onClick={() => setFilters({ ...filters, livingRooms: "" })}
                                   className="shrink-0"
                                 >
                                   <X className="h-4 w-4" />
@@ -1211,13 +1309,13 @@ const RealEstateSearch = () => {
 
                           {/* Bathrooms */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('bathrooms')}</Label>
+                            <Label className="text-sm font-medium">{t("bathrooms")}</Label>
                             <div className="flex gap-2">
                               <Input
                                 type="number"
                                 min="0"
-                                placeholder={t('bathrooms')}
-                                value={filters.bathrooms || ''}
+                                placeholder={t("bathrooms")}
+                                value={filters.bathrooms || ""}
                                 onChange={(e) => setFilters({ ...filters, bathrooms: e.target.value })}
                                 className="bg-background flex-1"
                               />
@@ -1226,7 +1324,7 @@ const RealEstateSearch = () => {
                                   type="button"
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => setFilters({ ...filters, bathrooms: '' })}
+                                  onClick={() => setFilters({ ...filters, bathrooms: "" })}
                                   className="shrink-0"
                                 >
                                   <X className="h-4 w-4" />
@@ -1243,13 +1341,13 @@ const RealEstateSearch = () => {
                           <div className="p-1.5 rounded-md bg-primary/15">
                             <School className="h-4 w-4 text-primary" />
                           </div>
-                          {t('education')}
+                          {t("education")}
                         </h3>
-                        
+
                         <div className="space-y-3">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('schools')}</Label>
-                            
+                            <Label className="text-sm font-medium">{t("schools")}</Label>
+
                             {/* School Gender Filter */}
                             <Popover open={openSchoolGenderCombobox} onOpenChange={setOpenSchoolGenderCombobox}>
                               <PopoverTrigger asChild>
@@ -1258,32 +1356,41 @@ const RealEstateSearch = () => {
                                   role="combobox"
                                   className="w-full justify-between bg-background hover:bg-accent"
                                 >
-                                  {filters.schoolGender === 'Boys' ? t('boys') : filters.schoolGender === 'Girls' ? t('girls') : filters.schoolGender || t('gender')}
+                                  {filters.schoolGender === "Boys"
+                                    ? t("boys")
+                                    : filters.schoolGender === "Girls"
+                                      ? t("girls")
+                                      : filters.schoolGender || t("gender")}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
-                                  <CommandInput 
-                                    placeholder={t('gender')}
+                                  <CommandInput
+                                    placeholder={t("gender")}
                                     onValueChange={(value) => {
                                       setCustomSearchTerms({ ...customSearchTerms, schoolGender: value });
                                     }}
                                   />
                                   <CommandList>
                                     <CommandEmpty>
-                                      {allSchoolGenders.length === 0 ? t('notFound') : t('gender')}
+                                      {allSchoolGenders.length === 0 ? t("notFound") : t("gender")}
                                     </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
-                                          setFilters({ ...filters, schoolGender: '' });
-                                          setCustomSearchTerms({ ...customSearchTerms, schoolGender: '' });
+                                          setFilters({ ...filters, schoolGender: "" });
+                                          setCustomSearchTerms({ ...customSearchTerms, schoolGender: "" });
                                           setOpenSchoolGenderCombobox(false);
                                         }}
                                       >
-                                        <Check className={cn("mr-2 h-4 w-4", !filters.schoolGender ? "opacity-100" : "opacity-0")} />
-                                        {t('all')}
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            !filters.schoolGender ? "opacity-100" : "opacity-0",
+                                          )}
+                                        />
+                                        {t("all")}
                                       </CommandItem>
                                       {allSchoolGenders.map((gender) => (
                                         <CommandItem
@@ -1291,12 +1398,17 @@ const RealEstateSearch = () => {
                                           value={gender}
                                           onSelect={() => {
                                             setFilters({ ...filters, schoolGender: gender });
-                                            setCustomSearchTerms({ ...customSearchTerms, schoolGender: '' });
+                                            setCustomSearchTerms({ ...customSearchTerms, schoolGender: "" });
                                             setOpenSchoolGenderCombobox(false);
                                           }}
                                         >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.schoolGender === gender ? "opacity-100" : "opacity-0")} />
-                                          {gender === 'Boys' ? t('boys') : gender === 'Girls' ? t('girls') : gender}
+                                          <Check
+                                            className={cn(
+                                              "mr-2 h-4 w-4",
+                                              filters.schoolGender === gender ? "opacity-100" : "opacity-0",
+                                            )}
+                                          />
+                                          {gender === "Boys" ? t("boys") : gender === "Girls" ? t("girls") : gender}
                                         </CommandItem>
                                       ))}
                                     </CommandGroup>
@@ -1313,37 +1425,47 @@ const RealEstateSearch = () => {
                                   role="combobox"
                                   className="w-full justify-between bg-background hover:bg-accent"
                                 >
-                                  {filters.schoolLevel === 'nursery' ? t('nursery') :
-                                    filters.schoolLevel === 'kindergarten' ? t('kindergarten') :
-                                    filters.schoolLevel === 'elementary' ? t('elementary') :
-                                    filters.schoolLevel === 'middle' ? t('middle') :
-                                    filters.schoolLevel === 'high' ? t('high') :
-                                    filters.schoolLevel || t('schoolLevel')}
+                                  {filters.schoolLevel === "nursery"
+                                    ? t("nursery")
+                                    : filters.schoolLevel === "kindergarten"
+                                      ? t("kindergarten")
+                                      : filters.schoolLevel === "elementary"
+                                        ? t("elementary")
+                                        : filters.schoolLevel === "middle"
+                                          ? t("middle")
+                                          : filters.schoolLevel === "high"
+                                            ? t("high")
+                                            : filters.schoolLevel || t("schoolLevel")}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
-                                  <CommandInput 
-                                    placeholder={t('schoolLevel')}
+                                  <CommandInput
+                                    placeholder={t("schoolLevel")}
                                     onValueChange={(value) => {
                                       setCustomSearchTerms({ ...customSearchTerms, schoolLevel: value });
                                     }}
                                   />
                                   <CommandList>
                                     <CommandEmpty>
-                                      {allSchoolLevels.length === 0 ? t('notFound') : t('schoolLevel')}
+                                      {allSchoolLevels.length === 0 ? t("notFound") : t("schoolLevel")}
                                     </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
-                                          setFilters({ ...filters, schoolLevel: '' });
-                                          setCustomSearchTerms({ ...customSearchTerms, schoolLevel: '' });
+                                          setFilters({ ...filters, schoolLevel: "" });
+                                          setCustomSearchTerms({ ...customSearchTerms, schoolLevel: "" });
                                           setOpenSchoolLevelCombobox(false);
                                         }}
                                       >
-                                        <Check className={cn("mr-2 h-4 w-4", !filters.schoolLevel ? "opacity-100" : "opacity-0")} />
-                                        {t('combined')}
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            !filters.schoolLevel ? "opacity-100" : "opacity-0",
+                                          )}
+                                        />
+                                        {t("combined")}
                                       </CommandItem>
                                       {allSchoolLevels.map((level) => (
                                         <CommandItem
@@ -1351,17 +1473,27 @@ const RealEstateSearch = () => {
                                           value={level}
                                           onSelect={() => {
                                             setFilters({ ...filters, schoolLevel: level });
-                                            setCustomSearchTerms({ ...customSearchTerms, schoolLevel: '' });
+                                            setCustomSearchTerms({ ...customSearchTerms, schoolLevel: "" });
                                             setOpenSchoolLevelCombobox(false);
                                           }}
                                         >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.schoolLevel === level ? "opacity-100" : "opacity-0")} />
-                                          {level === 'nursery' ? t('nursery') :
-                                            level === 'kindergarten' ? t('kindergarten') :
-                                            level === 'elementary' ? t('elementary') :
-                                            level === 'middle' ? t('middle') :
-                                            level === 'high' ? t('high') :
-                                            level}
+                                          <Check
+                                            className={cn(
+                                              "mr-2 h-4 w-4",
+                                              filters.schoolLevel === level ? "opacity-100" : "opacity-0",
+                                            )}
+                                          />
+                                          {level === "nursery"
+                                            ? t("nursery")
+                                            : level === "kindergarten"
+                                              ? t("kindergarten")
+                                              : level === "elementary"
+                                                ? t("elementary")
+                                                : level === "middle"
+                                                  ? t("middle")
+                                                  : level === "high"
+                                                    ? t("high")
+                                                    : level}
                                         </CommandItem>
                                       ))}
                                     </CommandGroup>
@@ -1373,7 +1505,7 @@ const RealEstateSearch = () => {
                             {/* School Time Slider */}
                             <div className="space-y-2">
                               <Label className="text-xs font-medium">
-                                {t('maxTravelTime')}: {filters.maxSchoolTime} {t('minutes')}
+                                {t("maxTravelTime")}: {filters.maxSchoolTime} {t("minutes")}
                               </Label>
                               <Slider
                                 value={[filters.maxSchoolTime]}
@@ -1385,15 +1517,15 @@ const RealEstateSearch = () => {
                               />
                               {nearbySchools.length > 0 && (
                                 <p className="text-xs text-muted-foreground">
-                                  {nearbySchools.length} {t('schoolsFound')}
+                                  {nearbySchools.length} {t("schoolsFound")}
                                 </p>
                               )}
                             </div>
                           </div>
 
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">{t('universities')}</Label>
-                            
+                            <Label className="text-sm font-medium">{t("universities")}</Label>
+
                             {/* University Selection Dropdown */}
                             <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
                               <PopoverTrigger asChild>
@@ -1402,45 +1534,61 @@ const RealEstateSearch = () => {
                                   role="combobox"
                                   className="w-full justify-between bg-background hover:bg-accent"
                                 >
-                                  {filters.selectedUniversity || t('selectUniversity')}
+                                  {filters.selectedUniversity || t("selectUniversity")}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
-                                  <CommandInput 
-                                    placeholder={t('searchUniversity')}
+                                  <CommandInput
+                                    placeholder={t("searchUniversity")}
                                     onValueChange={(value) => {
                                       setCustomSearchTerms({ ...customSearchTerms, university: value });
                                     }}
                                   />
                                   <CommandList>
                                     <CommandEmpty>
-                                      {allUniversities.length === 0 ? t('notFound') : t('noResults')}
+                                      {allUniversities.length === 0 ? t("notFound") : t("noResults")}
                                     </CommandEmpty>
                                     <CommandGroup>
                                       <CommandItem
                                         onSelect={() => {
-                                          setFilters({ ...filters, selectedUniversity: '' });
-                                          setCustomSearchTerms({ ...customSearchTerms, university: '' });
+                                          setFilters({ ...filters, selectedUniversity: "" });
+                                          setCustomSearchTerms({ ...customSearchTerms, university: "" });
                                           setOpenUniversityCombobox(false);
                                         }}
                                       >
-                                        <Check className={cn("mr-2 h-4 w-4", !filters.selectedUniversity ? "opacity-100" : "opacity-0")} />
-                                        {t('all')}
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            !filters.selectedUniversity ? "opacity-100" : "opacity-0",
+                                          )}
+                                        />
+                                        {t("all")}
                                       </CommandItem>
                                       {allUniversities.map((uni) => (
                                         <CommandItem
                                           key={uni.name_ar}
-                                          value={i18n.language === 'ar' ? uni.name_ar : uni.name_en}
+                                          value={i18n.language === "ar" ? uni.name_ar : uni.name_en}
                                           onSelect={() => {
-                                            setFilters({ ...filters, selectedUniversity: i18n.language === 'ar' ? uni.name_ar : uni.name_en });
-                                            setCustomSearchTerms({ ...customSearchTerms, university: '' });
+                                            setFilters({
+                                              ...filters,
+                                              selectedUniversity: i18n.language === "ar" ? uni.name_ar : uni.name_en,
+                                            });
+                                            setCustomSearchTerms({ ...customSearchTerms, university: "" });
                                             setOpenUniversityCombobox(false);
                                           }}
                                         >
-                                          <Check className={cn("mr-2 h-4 w-4", filters.selectedUniversity === (i18n.language === 'ar' ? uni.name_ar : uni.name_en) ? "opacity-100" : "opacity-0")} />
-                                          {i18n.language === 'ar' ? uni.name_ar : uni.name_en}
+                                          <Check
+                                            className={cn(
+                                              "mr-2 h-4 w-4",
+                                              filters.selectedUniversity ===
+                                                (i18n.language === "ar" ? uni.name_ar : uni.name_en)
+                                                ? "opacity-100"
+                                                : "opacity-0",
+                                            )}
+                                          />
+                                          {i18n.language === "ar" ? uni.name_ar : uni.name_en}
                                         </CommandItem>
                                       ))}
                                     </CommandGroup>
@@ -1448,11 +1596,11 @@ const RealEstateSearch = () => {
                                 </Command>
                               </PopoverContent>
                             </Popover>
-                            
+
                             {/* University Time Slider */}
                             <div className="space-y-2">
                               <Label className="text-xs font-medium">
-                                {t('maxTravelTime')}: {filters.maxUniversityTime} {t('minutes')}
+                                {t("maxTravelTime")}: {filters.maxUniversityTime} {t("minutes")}
                               </Label>
                               <Slider
                                 value={[filters.maxUniversityTime]}
@@ -1464,7 +1612,7 @@ const RealEstateSearch = () => {
                               />
                               {nearbyUniversities.length > 0 && (
                                 <p className="text-xs text-muted-foreground">
-                                  {nearbyUniversities.length} {t('universitiesFound')}
+                                  {nearbyUniversities.length} {t("universitiesFound")}
                                 </p>
                               )}
                             </div>
@@ -1478,7 +1626,7 @@ const RealEstateSearch = () => {
                           <div className="p-1.5 rounded-md bg-primary/15">
                             <MapPin className="h-4 w-4 text-primary" />
                           </div>
-                          {t('proximityFilters')}
+                          {t("proximityFilters")}
                         </h3>
                         <div className="space-y-3">
                           <div className="flex items-center space-x-2">
@@ -1488,13 +1636,13 @@ const RealEstateSearch = () => {
                               onCheckedChange={(checked) => setFilters({ ...filters, nearMetro: checked as boolean })}
                             />
                             <label htmlFor="metro" className="text-sm cursor-pointer">
-                              {t('nearMetro')}
+                              {t("nearMetro")}
                             </label>
                           </div>
                           {filters.nearMetro && (
                             <div className="ml-6 space-y-2 p-3 bg-background/50 rounded-lg">
                               <Label className="text-xs font-medium">
-                                {t('maxWalkingTime')}: {filters.minMetroTime} {t('minutes')}
+                                {t("maxWalkingTime")}: {filters.minMetroTime} {t("minutes")}
                               </Label>
                               <Slider
                                 value={[filters.minMetroTime]}
@@ -1512,18 +1660,18 @@ const RealEstateSearch = () => {
                       {/* Apply/Reset Buttons */}
                       <div className="flex gap-2">
                         <Button variant="outline" className="flex-1" onClick={resetFilters}>
-                          <X className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
-                          {t('resetFilters')}
+                          <X className={`h-4 w-4 ${i18n.language === "ar" ? "ml-2" : "mr-2"}`} />
+                          {t("resetFilters")}
                         </Button>
-                        <Button 
-                          className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg" 
+                        <Button
+                          className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg"
                           onClick={() => {
                             setShowFilters(false);
                             setHasSearched(true);
                           }}
                         >
-                          <Search className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
-                          {t('applyFilters')}
+                          <Search className={`h-4 w-4 ${i18n.language === "ar" ? "ml-2" : "mr-2"}`} />
+                          {t("applyFilters")}
                         </Button>
                       </div>
                     </div>
@@ -1550,18 +1698,18 @@ const RealEstateSearch = () => {
 
         {/* Favorites Sheet */}
         <Sheet open={showFavorites} onOpenChange={setShowFavorites}>
-          <SheetContent side={i18n.language === 'ar' ? 'left' : 'right'} className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetContent side={i18n.language === "ar" ? "left" : "right"} className="w-full sm:max-w-lg overflow-y-auto">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <Heart className="h-5 w-5 text-red-500 fill-red-500" />
-                {t('favorites')} ({displayedFavorites.length})
+                {t("favorites")} ({displayedFavorites.length})
               </SheetTitle>
             </SheetHeader>
             <div className="mt-6 space-y-4">
               {displayedFavorites.length === 0 ? (
                 <div className="text-center py-12">
                   <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">{t('noFavorites')}</p>
+                  <p className="text-muted-foreground">{t("noFavorites")}</p>
                 </div>
               ) : (
                 displayedFavorites.map((property, index) => (
@@ -1630,19 +1778,26 @@ const RealEstateSearch = () => {
           </SheetContent>
         </Sheet>
 
-              {/* Clear Chatbot Results Button */}
+        {/* Clear Chatbot Results Button */}
         {showChatbotResults && (
           <div className="absolute bottom-24 right-4 z-10">
             <Button
               onClick={() => {
                 setShowChatbotResults(false);
                 setChatbotProperties([]);
+                // [!! إضافة !!] : إعادة تعيين فلاتر المدارس عند مسح النتائج
+                setFilters((prev) => ({
+                  ...prev,
+                  schoolGender: "",
+                  schoolLevel: "",
+                  maxSchoolTime: 15,
+                }));
               }}
               variant="outline"
               className="bg-white/95 backdrop-blur-sm shadow-lg"
             >
               <X className="h-4 w-4 mr-2" />
-              {i18n.language === 'ar' ? 'إلغاء نتائج المساعد' : 'Clear Assistant Results'}
+              {i18n.language === "ar" ? "إلغاء نتائج المساعد" : "Clear Assistant Results"}
             </Button>
           </div>
         )}
@@ -1654,7 +1809,7 @@ const RealEstateSearch = () => {
               <div className="p-3">
                 <div className="text-center">
                   <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    {isLoading ? t('loading') : `${displayedProperties.length} ${t('propertiesFound')}`}
+                    {isLoading ? t("loading") : `${displayedProperties.length} ${t("propertiesFound")}`}
                   </p>
                 </div>
               </div>
@@ -1683,7 +1838,10 @@ const RealEstateSearch = () => {
           <div className="fixed bottom-24 left-6 w-96 h-[500px] glass-effect rounded-2xl shadow-elevated z-50 flex flex-col animate-slide-up overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-2xl flex items-center justify-between relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"
+                style={{ backgroundSize: "200% 100%" }}
+              />
               <div className="flex items-center gap-2 relative z-10">
                 <Bot className="h-5 w-5 animate-float" />
                 <span className="font-semibold">المساعد العقاري الذكي</span>
@@ -1709,24 +1867,19 @@ const RealEstateSearch = () => {
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
                 {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
+                  <div key={msg.id} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-[80%] rounded-lg p-3 ${
-                        msg.type === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
+                        msg.type === "user" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      
+
                       {/* أزرار اختيار نمط البحث */}
-                      {msg.criteria && msg.type === 'assistant' && (
+                      {msg.criteria && msg.type === "assistant" && (
                         <div className="mt-3 space-y-2">
                           <Button
-                            onClick={() => handleSearchModeSelection('exact')}
+                            onClick={() => handleSearchModeSelection("exact")}
                             disabled={isChatLoading}
                             className="w-full bg-white text-blue-600 hover:bg-gray-50 border border-blue-600"
                             size="sm"
@@ -1734,7 +1887,7 @@ const RealEstateSearch = () => {
                             بس المطابق
                           </Button>
                           <Button
-                            onClick={() => handleSearchModeSelection('similar')}
+                            onClick={() => handleSearchModeSelection("similar")}
                             disabled={isChatLoading}
                             className="w-full bg-blue-600 text-white hover:bg-blue-700"
                             size="sm"
@@ -1746,7 +1899,7 @@ const RealEstateSearch = () => {
                     </div>
                   </div>
                 ))}
-                
+
                 {/* Loading indicator */}
                 {isChatLoading && (
                   <div className="flex justify-start">
@@ -1755,7 +1908,7 @@ const RealEstateSearch = () => {
                     </div>
                   </div>
                 )}
-                
+
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
@@ -1766,7 +1919,7 @@ const RealEstateSearch = () => {
                 <Input
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                   placeholder="اكتب طلبك هنا..."
                   disabled={isChatLoading || !isBackendOnline}
                   className="flex-1"
@@ -1777,11 +1930,7 @@ const RealEstateSearch = () => {
                   disabled={isChatLoading || !isBackendOnline || !chatInput.trim()}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
-                  {isChatLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
+                  {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
