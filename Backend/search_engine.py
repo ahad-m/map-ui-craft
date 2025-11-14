@@ -12,6 +12,21 @@ from embedding_generator import embedding_generator
 logger = logging.getLogger(__name__)
 
 
+def _minutes_to_meters(minutes: float, avg_speed_kmh: float = 30.0) -> float:
+    """
+    تحويل وقت القيادة بالدقائق إلى مسافة بالأمتار
+    بناءً على سرعة متوسطة
+    """
+    if minutes <= 0:
+        return 0
+    
+    # المسافة (كم) = السرعة (كم/ساعة) * (الدقائق / 60)
+    distance_km = avg_speed_kmh * (minutes / 60.0)
+    
+    # تحويل من كم إلى متر
+    return distance_km * 1000
+
+
 class SearchEngine:
     """محرك البحث الهجين للعقارات"""
     
@@ -47,11 +62,9 @@ class SearchEngine:
             query = self.db.client.table('properties').select('*')
             
             # !! -- تعديل: فلترة الإحداثيات الخاطئة من قاعدة البيانات -- !!
-            # (نستخدم final_lat لأنه الحقل الأساسي في الداتابيس)
             query = query.not_.is_('final_lat', 'null')
             query = query.not_.eq('final_lat', 0)
-            # !! -- نهاية التعديل -- !!
-
+            
             # الشروط الإلزامية
             query = query.eq('purpose', criteria.purpose.value)
             query = query.eq('property_type', criteria.property_type.value)
@@ -109,17 +122,72 @@ class SearchEngine:
                 query = query.not_.is_('time_to_metro_min', 'null')
                 query = query.lte('time_to_metro_min', criteria.metro_time_max)
             
-            # تنفيذ الاستعلام
-            result = query.order('price_num').limit(self.exact_limit).execute()
+            # تنفيذ الاستعلام الأولي
+            # [تعديل] زدنا الـ limit هنا ليتم الفلترة لاحقاً
+            result = query.order('price_num').limit(100).execute()
             
-            # معالجة النتائج
             properties_data = result.data if result.data else []
             
-            # تحويل النتائج إلى Property objects
-            properties = [self._row_to_property(row) for row in properties_data]
+            # ==========================================================
+            # [!! -- التعديل الجديد: فلترة المدارس -- !!]
+            # ==========================================================
+            final_properties_data = []
+            
+            # هل طلب المستخدم فلترة للمدارس؟
+            if criteria.school_requirements and criteria.school_requirements.required:
+                logger.info("البحث الدقيق: جاري تنفيذ فلترة المدارس...")
+                
+                # 1. تحضير معايير المدارس
+                school_reqs = criteria.school_requirements
+                distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0) # افتراضي 10 دقايق
+                school_gender = school_reqs.gender.value if school_reqs.gender else None
+                school_levels = school_reqs.levels if school_reqs.levels else None
+                
+                # 2. المرور على العقارات الأولية وفلترتها
+                for prop_row in properties_data:
+                    
+                    # (نستخدم الإحداثيات الصحيحة الموحدة)
+                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
+                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
+
+                    if not prop_lat or not prop_lon:
+                        continue # تخطي العقار إذا لم يكن له إحداثيات
+
+                    try:
+                        # 3. استدعاء دالة RPC في Supabase
+                        match_found = self.db.client.rpc(
+                            'check_school_proximity',
+                            {
+                                'p_lat': float(prop_lat),
+                                'p_lon': float(prop_lon),
+                                'p_distance_meters': distance_meters,
+                                'p_gender': school_gender,
+                                'p_levels': school_levels
+                            }
+                        ).execute()
+                        
+                        # 4. إذا رجعت الدالة "true"، أضف العقار للنتائج
+                        if match_found.data:
+                            final_properties_data.append(prop_row)
+                            
+                    except Exception as rpc_error:
+                        logger.error(f"خطأ في استدعاء RPC للعقار {prop_row.get('id')}: {rpc_error}")
+                        
+            else:
+                # إذا لم يطلب المستخدم فلترة مدارس، استخدم كل النتائج الأولية
+                final_properties_data = properties_data
+            # ==========================================================
+            # [!! -- نهاية التعديل -- !!]
+            # ==========================================================
+
+            # تحويل النتائج النهائية إلى Property objects
+            # [تعديل] نستخدم final_properties_data ونأخذ الـ limit النهائي
+            properties = [self._row_to_property(row) for row in final_properties_data]
             
             logger.info(f"البحث الدقيق (المحسّن): وجد {len(properties)} عقار")
-            return properties
+            
+            # تطبيق الـ limit النهائي بعد الفلترة
+            return properties[:self.exact_limit]
             
         except Exception as e:
             logger.error(f"خطأ في البحث الدقيق: {e}")

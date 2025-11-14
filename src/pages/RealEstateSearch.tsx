@@ -54,10 +54,13 @@ const RealEstateSearch = () => {
   const [showFavorites, setShowFavorites] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  
+  // [!! تعديل 1.1 !!] : إضافة currentCriteria
   const {
     messages,
     isLoading: isChatLoading,
     isBackendOnline,
+    currentCriteria, // <-- تمت إضافته
     searchResults: chatSearchResults,
     sendMessage,
     selectSearchMode,
@@ -84,6 +87,7 @@ const RealEstateSearch = () => {
     schoolGender: '',
     schoolLevel: '',
     maxSchoolTime: 15,
+    selectedUniversity: '', // <-- (تمت إضافة الحقل المفقود)
     maxUniversityTime: 30,
     nearMetro: false,
     minMetroTime: 1,
@@ -145,22 +149,55 @@ const RealEstateSearch = () => {
     }
   }, [searchQuery]);
 
-  // تحديث العقارات عند البحث من الـ chatbot
+  // [!! تعديل 1.2 !!] : استبدال useEffect لمزامنة فلاتر المدارس
   useEffect(() => {
     if (chatSearchResults.length > 0) {
-      // تحديث العقارات المعروضة على الخريطة
-      // ملاحظة: قد تحتاج تعديل اسم الدالة حسب الكود الموجود
-      // تحديث العقارات من Chatbot
       console.log('🎯 Chatbot Properties:', chatSearchResults);
-      console.log('🎯 Chatbot Properties Length:', chatSearchResults.length);
       setChatbotProperties(chatSearchResults);
       setShowChatbotResults(true);
-      setHasSearched(true);
-      
-      // إغلاق الـ chatbot
-      // setIsChatOpen(false); // تم تعطيل الإغلاق التلقائي
+      setHasSearched(true); // مهم لعرض الدبابيس
+
+      // [!! التعديل الجديد يبدأ هنا !!]
+      // مزامنة معايير المدارس من المساعد الذكي إلى فلتر الواجهة
+      if (currentCriteria && currentCriteria.school_requirements?.required) {
+        const schoolReqs = currentCriteria.school_requirements;
+
+        // 1. ترجمة جنس المدرسة
+        // الباك إند يرسل: 'بنات' أو 'بنين'
+        // الواجهة تستخدم: 'Girls' أو 'Boys'
+        let genderFilter = '';
+        if (schoolReqs.gender === 'بنات') genderFilter = 'Girls';
+        if (schoolReqs.gender === 'بنين') genderFilter = 'Boys';
+
+        // 2. ترجمة مستوى المدرسة
+        // الباك إند يرسل: ['ابتدائي', 'متوسط']
+        // الواجهة تستخدم: 'elementary', 'middle'
+        let levelFilter = '';
+        if (schoolReqs.levels && schoolReqs.levels.length > 0) {
+          const firstLevel = schoolReqs.levels[0];
+          
+          // (يمكن تحسين هذا المابينج لاحقاً)
+          if (firstLevel.includes('ابتدائي')) levelFilter = 'elementary';
+          else if (firstLevel.includes('متوسط')) levelFilter = 'middle';
+          else if (firstLevel.includes('ثانوي')) levelFilter = 'high';
+          else if (firstLevel.includes('روضة')) levelFilter = 'kindergarten';
+          else if (firstLevel.includes('حضانة')) levelFilter = 'nursery';
+          else levelFilter = firstLevel; // كخيار احتياطي
+        }
+
+        // 3. تحديث الفلتر
+        setFilters(prevFilters => ({
+          ...prevFilters,
+          schoolGender: genderFilter,
+          schoolLevel: levelFilter,
+          // تحديث السلايدر الخاص بالوقت
+          maxSchoolTime: schoolReqs.max_distance_minutes || 15 
+        }));
+      }
+      // [!! التعديل الجديد ينتهي هنا !!]
     }
-  }, [chatSearchResults]);
+  }, [chatSearchResults, currentCriteria]); // <-- أضفنا currentCriteria
+
 
   // دالة إرسال رسالة
   const handleSendMessage = async () => {
@@ -475,12 +512,17 @@ const RealEstateSearch = () => {
     return Math.round((distanceKm / avgSpeed) * 60); // تحويل إلى دقائق
   };
 
+  // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
+  const baseProperties = showChatbotResults ? chatbotProperties : properties;
+
+  // [!! تعديل 2.1 !!] : تغيير `propertiesCenterLocation`
   // حساب موقع مركز العقارات المفلترة
   const propertiesCenterLocation = useMemo(() => {
-    if (properties.length === 0) return null;
+    // [!! تعديل !!] : استخدم 'displayedProperties' بدلاً من 'properties'
+    if (baseProperties.length === 0) return null;
     
     // !! التوحيد: اقرأ من 'lat' و 'lon' (لأن الباك إند يوحدها)
-    const validProperties = properties.filter(p => 
+    const validProperties = baseProperties.filter(p => 
       p.lat && p.lon && 
       !isNaN(Number(p.lat)) && !isNaN(Number(p.lon)) &&
       Number(p.lat) !== 0 && Number(p.lon) !== 0
@@ -496,23 +538,33 @@ const RealEstateSearch = () => {
       lat: sumLat / validProperties.length,
       lon: sumLon / validProperties.length
     };
-  }, [properties]);
+  }, [baseProperties]); // [!! تعديل !!] : غير الاعتمادية
 
-  // تصفية المدارس لإظهار القريبة فقط (حسب الوقت المحدد من slider)
+  // [!! تعديل 2.2 !!] : استبدال nearbySchools لإضافة travelTime
   const nearbySchools = useMemo(() => {
+    // Only show schools if at least gender OR level is selected
+    if (!filters.schoolGender && !filters.schoolLevel) return [];
     if (!propertiesCenterLocation || allSchools.length === 0) return [];
     
-    return allSchools.filter(school => {
-      const distance = calculateDistance(
-        propertiesCenterLocation.lat,
-        propertiesCenterLocation.lon,
-        school.lat,
-        school.lon
+    return allSchools
+      .map(school => {
+        const distance = calculateDistance(
+          propertiesCenterLocation.lat,
+          propertiesCenterLocation.lon,
+          school.lat,
+          school.lon
+        );
+        const travelTime = calculateTravelTime(distance);
+        
+        // [!! التعديل !!] إرجاع كائن المدرسة مع إضافة وقت السفر
+        return { ...school, travelTime }; 
+      })
+      .filter(school => 
+        // الفلترة بناءً على الوقت
+        school.travelTime <= filters.maxSchoolTime
       );
-      const travelTime = calculateTravelTime(distance);
-      return travelTime <= filters.maxSchoolTime;
-    });
-  }, [allSchools, propertiesCenterLocation, filters.maxSchoolTime]);
+  }, [allSchools, propertiesCenterLocation, filters.maxSchoolTime, filters.schoolGender, filters.schoolLevel]);
+
 
   // Fetch all universities with custom search
   const { data: allUniversities = [] } = useQuery({
@@ -538,11 +590,18 @@ const RealEstateSearch = () => {
     },
   });
 
-  // تصفية الجامعات لإظهار القريبة فقط (حسب الوقت المحدد من slider)
+  // تصفية الجامعات لإظهار الجامعة المختارة فقط (إذا كانت ضمن الوقت المحدد)
   const nearbyUniversities = useMemo(() => {
+    // Only show university if one is selected
+    if (!filters.selectedUniversity) return [];
     if (!propertiesCenterLocation || allUniversities.length === 0) return [];
     
     return allUniversities.filter(uni => {
+      // Match the selected university name
+      const nameMatch = (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
+      if (!nameMatch) return false;
+      
+      // Check if it's within the time range
       const distance = calculateDistance(
         propertiesCenterLocation.lat,
         propertiesCenterLocation.lon,
@@ -552,10 +611,7 @@ const RealEstateSearch = () => {
       const travelTime = calculateTravelTime(distance);
       return travelTime <= filters.maxUniversityTime;
     });
-  }, [allUniversities, propertiesCenterLocation, filters.maxUniversityTime]);
-
-  // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
-  const baseProperties = showChatbotResults ? chatbotProperties : properties;
+  }, [allUniversities, propertiesCenterLocation, filters.maxUniversityTime, filters.selectedUniversity, i18n.language]);
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
@@ -644,12 +700,13 @@ const RealEstateSearch = () => {
       areaMax: 0,
       bedrooms: '',
       livingRooms: '',
-    bathrooms: '',
-    schoolGender: '',
-    schoolLevel: '',
-    maxSchoolTime: 15,
-    maxUniversityTime: 30,
-    nearMetro: false,
+      bathrooms: '',
+      schoolGender: '',
+      schoolLevel: '',
+      maxSchoolTime: 15,
+      selectedUniversity: '',
+      maxUniversityTime: 30,
+      nearMetro: false,
       minMetroTime: 1,
       nearHospitals: false,
       nearMosques: false,
@@ -722,10 +779,23 @@ const RealEstateSearch = () => {
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-...
+                    <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                      <div className="p-2 rounded-full shadow-elevated" style={{ backgroundColor: 'hsl(217 91% 60%)' }}>
+                        <School className="h-5 w-5 text-white" />
+                      </div>
+                      {/* Hover pulse effect */}
+                      <div className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100" style={{ backgroundColor: 'hsl(217 91% 60% / 0.3)', animationDuration: '1.5s' }} />
+                    </div>
                   </TooltipTrigger>
+                  {/* [!! تعديل 3 !!] : عرض وقت السفر في الـ Tooltip */}
                   <TooltipContent>
                     <p className="font-medium">{school.name}</p>
+                    {/* التأكد من وجود الوقت قبل عرضه */}
+                    {school.travelTime !== undefined && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('maxTravelTime')}: {school.travelTime} {t('minutes')}
+                      </p>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               </AdvancedMarker>
@@ -739,11 +809,11 @@ const RealEstateSearch = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                      <div className="p-2 rounded-full shadow-elevated bg-green-600">
+                      <div className="p-2 rounded-full shadow-elevated" style={{ backgroundColor: 'hsl(142 71% 45%)' }}>
                         <GraduationCap className="h-5 w-5 text-white" />
                       </div>
                       {/* Hover pulse effect */}
-                      <div className="absolute inset-0 rounded-full bg-green-600/30 animate-ping opacity-0 group-hover:opacity-100" style={{ animationDuration: '1.5s' }} />
+                      <div className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100" style={{ backgroundColor: 'hsl(142 71% 45% / 0.3)', animationDuration: '1.5s' }} />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -1374,6 +1444,61 @@ const RealEstateSearch = () => {
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('universities')}</Label>
                             
+                            {/* University Selection Dropdown */}
+                            <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between bg-background hover:bg-accent"
+                                >
+                                  {filters.selectedUniversity || t('selectUniversity')}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[400px] p-0 z-[100]">
+                                <Command>
+                                  <CommandInput 
+                                    placeholder={t('searchUniversity')}
+                                    onValueChange={(value) => {
+                                      setCustomSearchTerms({ ...customSearchTerms, university: value });
+                                    }}
+                                  />
+                                  <CommandList>
+                                    <CommandEmpty>
+                                      {allUniversities.length === 0 ? t('notFound') : t('noResults')}
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                      <CommandItem
+                                        onSelect={() => {
+                                          setFilters({ ...filters, selectedUniversity: '' });
+                                          setCustomSearchTerms({ ...customSearchTerms, university: '' });
+                                          setOpenUniversityCombobox(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", !filters.selectedUniversity ? "opacity-100" : "opacity-0")} />
+                                        {t('all')}
+                                      </CommandItem>
+                                      {allUniversities.map((uni) => (
+                                        <CommandItem
+                                          key={uni.name_ar}
+                                          value={i18n.language === 'ar' ? uni.name_ar : uni.name_en}
+                                          onSelect={() => {
+                                            setFilters({ ...filters, selectedUniversity: i18n.language === 'ar' ? uni.name_ar : uni.name_en });
+                                            setCustomSearchTerms({ ...customSearchTerms, university: '' });
+                                            setOpenUniversityCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.selectedUniversity === (i18n.language === 'ar' ? uni.name_ar : uni.name_en) ? "opacity-100" : "opacity-0")} />
+                                          {i18n.language === 'ar' ? uni.name_ar : uni.name_en}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            
                             {/* University Time Slider */}
                             <div className="space-y-2">
                               <Label className="text-xs font-medium">
@@ -1562,6 +1687,13 @@ const RealEstateSearch = () => {
               onClick={() => {
                 setShowChatbotResults(false);
                 setChatbotProperties([]);
+                // [!! إضافة !!] : إعادة تعيين فلاتر المدارس عند مسح النتائج
+                setFilters(prev => ({
+                  ...prev,
+                  schoolGender: '',
+                  schoolLevel: '',
+                  maxSchoolTime: 15
+                }));
               }}
               variant="outline"
               className="bg-white/95 backdrop-blur-sm shadow-lg"
