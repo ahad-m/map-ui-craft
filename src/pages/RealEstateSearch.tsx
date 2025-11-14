@@ -84,6 +84,7 @@ const RealEstateSearch = () => {
     schoolGender: '',
     schoolLevel: '',
     maxSchoolTime: 15,
+    selectedUniversity: '',
     maxUniversityTime: 30,
     nearMetro: false,
     minMetroTime: 1,
@@ -543,11 +544,18 @@ const RealEstateSearch = () => {
     },
   });
 
-  // تصفية الجامعات لإظهار القريبة فقط (حسب الوقت المحدد من slider)
+  // تصفية الجامعات لإظهار الجامعة المختارة فقط (إذا كانت ضمن الوقت المحدد)
   const nearbyUniversities = useMemo(() => {
+    // Only show university if one is selected
+    if (!filters.selectedUniversity) return [];
     if (!propertiesCenterLocation || allUniversities.length === 0) return [];
     
     return allUniversities.filter(uni => {
+      // Match the selected university name
+      const nameMatch = (i18n.language === 'ar' ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
+      if (!nameMatch) return false;
+      
+      // Check if it's within the time range
       const distance = calculateDistance(
         propertiesCenterLocation.lat,
         propertiesCenterLocation.lon,
@@ -557,7 +565,7 @@ const RealEstateSearch = () => {
       const travelTime = calculateTravelTime(distance);
       return travelTime <= filters.maxUniversityTime;
     });
-  }, [allUniversities, propertiesCenterLocation, filters.maxUniversityTime]);
+  }, [allUniversities, propertiesCenterLocation, filters.maxUniversityTime, filters.selectedUniversity, i18n.language]);
 
   // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
   const baseProperties = showChatbotResults ? chatbotProperties : properties;
@@ -649,12 +657,13 @@ const RealEstateSearch = () => {
       areaMax: 0,
       bedrooms: '',
       livingRooms: '',
-    bathrooms: '',
-    schoolGender: '',
-    schoolLevel: '',
-    maxSchoolTime: 15,
-    maxUniversityTime: 30,
-    nearMetro: false,
+      bathrooms: '',
+      schoolGender: '',
+      schoolLevel: '',
+      maxSchoolTime: 15,
+      selectedUniversity: '',
+      maxUniversityTime: 30,
+      nearMetro: false,
       minMetroTime: 1,
       nearHospitals: false,
       nearMosques: false,
@@ -1384,6 +1393,61 @@ const RealEstateSearch = () => {
 
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t('universities')}</Label>
+                            
+                            {/* University Selection Dropdown */}
+                            <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between bg-background hover:bg-accent"
+                                >
+                                  {filters.selectedUniversity || t('selectUniversity')}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[400px] p-0 z-[100]">
+                                <Command>
+                                  <CommandInput 
+                                    placeholder={t('searchUniversity')}
+                                    onValueChange={(value) => {
+                                      setCustomSearchTerms({ ...customSearchTerms, university: value });
+                                    }}
+                                  />
+                                  <CommandList>
+                                    <CommandEmpty>
+                                      {allUniversities.length === 0 ? t('notFound') : t('noResults')}
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                      <CommandItem
+                                        onSelect={() => {
+                                          setFilters({ ...filters, selectedUniversity: '' });
+                                          setCustomSearchTerms({ ...customSearchTerms, university: '' });
+                                          setOpenUniversityCombobox(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", !filters.selectedUniversity ? "opacity-100" : "opacity-0")} />
+                                        {t('all')}
+                                      </CommandItem>
+                                      {allUniversities.map((uni) => (
+                                        <CommandItem
+                                          key={uni.name_ar}
+                                          value={i18n.language === 'ar' ? uni.name_ar : uni.name_en}
+                                          onSelect={() => {
+                                            setFilters({ ...filters, selectedUniversity: i18n.language === 'ar' ? uni.name_ar : uni.name_en });
+                                            setCustomSearchTerms({ ...customSearchTerms, university: '' });
+                                            setOpenUniversityCombobox(false);
+                                          }}
+                                        >
+                                          <Check className={cn("mr-2 h-4 w-4", filters.selectedUniversity === (i18n.language === 'ar' ? uni.name_ar : uni.name_en) ? "opacity-100" : "opacity-0")} />
+                                          {i18n.language === 'ar' ? uni.name_ar : uni.name_en}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                             
                             {/* University Time Slider */}
                             <div className="space-y-2">

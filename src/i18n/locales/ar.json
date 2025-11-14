@@ -123,6 +123,7 @@
   "schoolsFound": "مدرسة في النطاق",
   "universitiesFound": "جامعة في النطاق",
   "notFound": "غير موجود",
+  "noResults": "لا توجد نتائج",
   "enterCustomNumber": "أدخل الرقم المخصص",
   "useCustomValue": "استخدم القيمة المخصصة",
   "welcomeBack": "مرحباً بعودتك",
