@@ -734,10 +734,12 @@ const RealEstateSearch = () => {
 
   // Calculate nearby mosques
   const nearbyMosques = useMemo(() => {
-    if (!hasSearched || !propertiesCenterLocation || allMosques.length === 0) return [];
+    // Only show mosques if user has enabled the mosque filter
+    if (!hasSearched || !filters.nearMosques || !propertiesCenterLocation || allMosques.length === 0) return [];
 
     console.log("Calculating nearby mosques:", {
       hasSearched,
+      nearMosquesFilter: filters.nearMosques,
       propertiesCenterLocation,
       mosquesCount: allMosques.length,
       maxTime: filters.maxMosqueTime
@@ -759,7 +761,7 @@ const RealEstateSearch = () => {
     
     console.log("Nearby mosques found:", nearby.length);
     return nearby;
-  }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, hasSearched]);
+  }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, filters.nearMosques, hasSearched]);
 
   // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
   const displayedProperties = useMemo(() => {
