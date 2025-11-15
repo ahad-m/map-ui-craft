@@ -1889,21 +1889,31 @@ const RealEstateSearch = () => {
                           {t("proximityFilters")}
                         </h3>
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium">{t("nearMosques")}</Label>
-                          
-                          <div className="space-y-2 p-3 bg-background/50 rounded-lg">
-                            <Label className="text-xs font-medium">
-                              {t("maxTravelTime")}: {filters.maxMosqueTime} {t("minutes")}
-                            </Label>
-                            <Slider
-                              value={[filters.maxMosqueTime]}
-                              onValueChange={(value) => setFilters({ ...filters, maxMosqueTime: value[0], nearMosques: true })}
-                              min={1}
-                              max={30}
-                              step={1}
-                              className="w-full"
+                          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                            <Checkbox
+                              id="nearMosques"
+                              checked={filters.nearMosques}
+                              onCheckedChange={(checked) => setFilters({ ...filters, nearMosques: checked as boolean })}
                             />
+                            <label htmlFor="nearMosques" className="text-sm cursor-pointer">
+                              {t("nearMosques")}
+                            </label>
                           </div>
+                          {filters.nearMosques && (
+                            <div className="ml-6 space-y-2 p-3 bg-background/50 rounded-lg rtl:mr-6 rtl:ml-0">
+                              <Label className="text-xs font-medium">
+                                {t("maxTravelTime")}: {filters.maxMosqueTime} {t("minutes")}
+                              </Label>
+                              <Slider
+                                value={[filters.maxMosqueTime]}
+                                onValueChange={(value) => setFilters({ ...filters, maxMosqueTime: value[0] })}
+                                min={1}
+                                max={30}
+                                step={1}
+                                className="w-full"
+                              />
+                            </div>
+                          )}
 
                           <div className="flex items-center space-x-2">
                             <Checkbox
