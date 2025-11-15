@@ -737,7 +737,7 @@ const RealEstateSearch = () => {
           uni.lon,
         );
         const travelTime = calculateTravelTime(distance);
-        return { ...uni, travelTime };
+        return { ...uni, travelTime }; // <-- إضافة وقت السفر
       })
       .filter((uni) => {
         // الفلترة بالاسم المحدد
@@ -1905,6 +1905,7 @@ const RealEstateSearch = () => {
                               {/* [!! تعديل !!] : تم إصلاح هذا العداد ليعمل بشكل صحيح */}
                               {filters.selectedUniversity && nearbyUniversities.length > 0 && (
                                 <p className="text-xs text-muted-foreground">
+                                  {/* هذا سيعرض 1 دائماً، ولكنه صحيح */}
                                   {nearbyUniversities.length} {t("universitiesFound")}
                                 </p>
                               )}
