@@ -21,9 +21,7 @@ import {
   Send,
   Loader2,
   LogOut,
-  Mic,
-  MicOff,
-  Volume2, // [!! تعديل 1 !!] : إضافة أيقونة المايكروفون
+  Mic, // [!! تعديل 1 !!] : إضافة أيقونة المايكروفون
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -47,8 +45,6 @@ import riyalEstateLogo from "@/assets/riyal-estate-logo.jpg";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
-import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
-import { VoiceIndicator, VoiceControlButton } from "@/components/VoiceIndicator";
 
 // Component to save map reference - MUST be defined outside to avoid React hook errors
 const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.Map | null> }) => {
@@ -81,43 +77,23 @@ const RealEstateSearch = () => {
   const mapRef = useRef<google.maps.Map | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
-  // استخدام المساعد العقاري مع دعم الصوت
+  // [!! تعديل 1.1 !!] : إضافة currentCriteria
   const {
     messages,
     isLoading: isChatLoading,
     isBackendOnline,
-    currentCriteria,
+    currentCriteria, // <-- تمت إضافته
     searchResults: chatSearchResults,
     sendMessage,
     selectSearchMode,
-    // خصائص الصوت الجديدة
-    isListening: voiceListening,
-    isSpeaking,
-    voiceTranscript,
-    voiceEnabled,
-    startListening: startVoiceListening,
-    stopListening: stopVoiceListening,
-    toggleVoice,
-    speak: speakMessage,
   } = useRealEstateAssistant();
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
+  const [isListening, setIsListening] = useState(false); // [!! تعديل 2 !!] : إضافة حالة الاستماع
   const [hasSearched, setHasSearched] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [authChecked, setAuthChecked] = useState(false);
-
-  // مراقبة التغييرات في transcript الصوتي
-  useEffect(() => {
-    if (voiceTranscript && !voiceListening) {
-      // عندما ينتهي المستخدم من الكلام، أرسل النص
-      setChatInput(voiceTranscript);
-      // إرسال تلقائي بعد انتهاء الكلام
-      if (voiceTranscript.trim()) {
-        handleSendMessage();
-      }
-    }
-  }, [voiceTranscript, voiceListening]);
 
   // Filter states - MUST be before early return
   const [filters, setFilters] = useState({
@@ -243,17 +219,6 @@ const RealEstateSearch = () => {
   }, [chatSearchResults, currentCriteria]); // <-- أضفنا currentCriteria
 
   // دالة إرسال رسالة
-  // دالة معالجة المايكروفون المحدثة
-  const handleVoiceInput = () => {
-    if (voiceListening) {
-      stopVoiceListening();
-    } else {
-      // مسح النص السابق عند بدء استماع جديد
-      setChatInput("");
-      startVoiceListening();
-    }
-  };
-
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isChatLoading) return;
     await sendMessage(chatInput);
@@ -774,7 +739,7 @@ const RealEstateSearch = () => {
       hasSearched,
       propertiesCenterLocation,
       mosquesCount: allMosques.length,
-      maxTime: filters.maxMosqueTime,
+      maxTime: filters.maxMosqueTime
     });
 
     const nearby = allMosques
@@ -790,7 +755,7 @@ const RealEstateSearch = () => {
         return { ...mosque, travelTime };
       })
       .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
-
+    
     console.log("Nearby mosques found:", nearby.length);
     return nearby;
   }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, hasSearched]);
@@ -804,7 +769,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-
+        
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if there's at least one school within the time range
@@ -821,7 +786,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-
+        
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if the selected university is within the time range
@@ -838,7 +803,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-
+        
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if there's at least one mosque within the time range
@@ -869,7 +834,7 @@ const RealEstateSearch = () => {
   const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
 
   // Check if user has applied any filters
-  const hasActiveFilters =
+  const hasActiveFilters = 
     filters.propertyType ||
     filters.neighborhood ||
     filters.minPrice > 0 ||
@@ -1922,16 +1887,14 @@ const RealEstateSearch = () => {
                         </h3>
                         <div className="space-y-3">
                           <Label className="text-sm font-medium">{t("nearMosques")}</Label>
-
+                          
                           <div className="space-y-2 p-3 bg-background/50 rounded-lg">
                             <Label className="text-xs font-medium">
                               {t("maxTravelTime")}: {filters.maxMosqueTime} {t("minutes")}
                             </Label>
                             <Slider
                               value={[filters.maxMosqueTime]}
-                              onValueChange={(value) =>
-                                setFilters({ ...filters, maxMosqueTime: value[0], nearMosques: true })
-                              }
+                              onValueChange={(value) => setFilters({ ...filters, maxMosqueTime: value[0], nearMosques: true })}
                               min={1}
                               max={30}
                               step={1}
@@ -2124,8 +2087,12 @@ const RealEstateSearch = () => {
                     </p>
                   ) : displayedProperties.length === 0 ? (
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-destructive">{t("noPropertiesFound")}</p>
-                      <p className="text-xs text-muted-foreground">{t("tryAdjustingFilters")}</p>
+                      <p className="text-sm font-semibold text-destructive">
+                        {t("noPropertiesFound")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("tryAdjustingFilters")}
+                      </p>
                     </div>
                   ) : (
                     <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -2234,42 +2201,35 @@ const RealEstateSearch = () => {
               </div>
             </ScrollArea>
 
-            {/* منطقة الإدخال مع دعم الصوت الكامل */}
+            {/* [!! تعديل 4 !!] : إضافة زر المايكروفون وتعديل التعطيل */}
             <div className="p-4 border-t">
               <div className="flex gap-2">
                 <Input
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                  placeholder={voiceListening ? "...جاري الاستماع" : "اكتب طلبك هنا..."}
-                  disabled={isChatLoading || !isBackendOnline || voiceListening}
+                  placeholder={isListening ? "...جاري الاستماع" : "اكتب طلبك هنا..."}
+                  disabled={isChatLoading || !isBackendOnline || isListening} // تعطيل أثناء الاستماع
                   className="flex-1"
                   dir="rtl"
                 />
-
-                {/* زر المايكروفون المحدث */}
+                {/* --- زر المايكروفون (الجديد) --- */}
                 <Button
                   onClick={handleVoiceInput}
-                  disabled={isChatLoading || !isBackendOnline}
+                  disabled={isChatLoading || !isBackendOnline || isListening}
                   variant="outline"
                   size="icon"
                   className={cn(
-                    "h-10 w-10 transition-all",
-                    voiceListening && "bg-red-100 border-red-300 text-red-700 animate-pulse",
-                    !voiceListening && "hover:bg-blue-50",
+                    "h-10 w-10", // حجم موحد
+                    isListening && "animate-pulse bg-blue-100 border-blue-300 text-blue-700",
                   )}
-                  title={voiceListening ? "إيقاف الاستماع" : "بدء المحادثة الصوتية"}
                 >
-                  {voiceListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  <Mic className="h-4 w-4" />
                 </Button>
-
-                {/* زر التحكم بالصوت */}
-                <VoiceControlButton voiceEnabled={voiceEnabled} onToggle={toggleVoice} />
-
-                {/* زر الإرسال */}
+                {/* --- زر الإرسال --- */}
                 <Button
                   onClick={handleSendMessage}
-                  disabled={isChatLoading || !isBackendOnline || !chatInput.trim() || voiceListening}
+                  disabled={isChatLoading || !isBackendOnline || !chatInput.trim() || isListening} // تعطيل أثناء الاستماع
                   className="bg-blue-600 hover:bg-blue-700"
                   size="icon" // حجم موحد
                 >
@@ -2279,9 +2239,6 @@ const RealEstateSearch = () => {
             </div>
           </div>
         )}
-
-        {/* مؤشر الصوت البصري */}
-        <VoiceIndicator isListening={voiceListening} isSpeaking={isSpeaking} voiceEnabled={voiceEnabled} />
       </div>
     </APIProvider>
   );
