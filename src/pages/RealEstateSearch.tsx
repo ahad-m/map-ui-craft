@@ -169,7 +169,7 @@ const RealEstateSearch = () => {
     }
   }, [searchQuery]);
 
-  // [!! تعديل 1.2 !!] : استبدال useEffect لمزامنة فلاتر المدارس
+  // [!! تعديل 1.2 !!] : استبدال useEffect لمزامنة فلاتر المدارس والجامعات
   useEffect(() => {
     if (chatSearchResults.length > 0) {
       console.log("🎯 Chatbot Properties:", chatSearchResults);
@@ -177,45 +177,35 @@ const RealEstateSearch = () => {
       setShowChatbotResults(true);
       setHasSearched(true); // مهم لعرض الدبابيس
 
-      // [!! التعديل الجديد يبدأ هنا !!]
       // مزامنة معايير المدارس من المساعد الذكي إلى فلتر الواجهة
       if (currentCriteria && currentCriteria.school_requirements?.required) {
         const schoolReqs = currentCriteria.school_requirements;
 
-        // 1. ترجمة جنس المدرسة
-        // الباك إند يرسل: 'بنات' أو 'بنين'
-        // الواجهة تستخدم: 'Girls' أو 'Boys'
         let genderFilter = "";
         if (schoolReqs.gender === "بنات") genderFilter = "Girls";
         if (schoolReqs.gender === "بنين") genderFilter = "Boys";
 
-        // 2. ترجمة مستوى المدرسة
-        // الباك إند يرسل: ['ابتدائي', 'متوسط']
-        // الواجهة تستخدم: 'elementary', 'middle'
         let levelFilter = "";
         if (schoolReqs.levels && schoolReqs.levels.length > 0) {
           const firstLevel = schoolReqs.levels[0];
-
-          // (يمكن تحسين هذا المابينج لاحقاً)
           if (firstLevel.includes("ابتدائي")) levelFilter = "elementary";
           else if (firstLevel.includes("متوسط")) levelFilter = "middle";
           else if (firstLevel.includes("ثانوي")) levelFilter = "high";
           else if (firstLevel.includes("روضة")) levelFilter = "kindergarten";
           else if (firstLevel.includes("حضانة")) levelFilter = "nursery";
-          else levelFilter = firstLevel; // كخيار احتياطي
+          else levelFilter = firstLevel;
         }
 
-        // 3. تحديث الفلتر
         setFilters((prevFilters) => ({
           ...prevFilters,
           schoolGender: genderFilter,
           schoolLevel: levelFilter,
-          // تحديث السلايدر الخاص بالوقت
           maxSchoolTime: schoolReqs.max_distance_minutes || 15,
         }));
       }
 
-      // [!! تعديل الجامعات !!] : مزامنة معايير الجامعة
+      // [!! هذا هو الكود الجديد !!]
+      // مزامنة معايير الجامعة من المساعد الذكي إلى فلتر الواجهة
       if (currentCriteria && currentCriteria.university_requirements?.required) {
         const uniReqs = currentCriteria.university_requirements;
 
@@ -728,19 +718,43 @@ const RealEstateSearch = () => {
     },
   });
 
-  // تصفية الجامعات لإظهار الجامعة المختارة فقط
+  // [!! تعديل 6 !!] : إصلاح منطق `nearbyUniversities`
   const nearbyUniversities = useMemo(() => {
-    // Only show university if one is selected
-    if (!filters.selectedUniversity) return [];
-    if (allUniversities.length === 0) return [];
+    // لا تظهر الدبابيس إلا إذا بحث المستخدم (عبر الشات أو يدوياً)
+    if (!hasSearched) return [];
 
-    // Return the selected university without distance filtering
-    // Distance filtering will be done per property in displayedProperties
-    return allUniversities.filter((uni) => {
-      const nameMatch = (i18n.language === "ar" ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
-      return nameMatch;
-    });
-  }, [allUniversities, filters.selectedUniversity, i18n.language]);
+    // لا تظهر الدبابيس إذا لم يتم تحديد جامعة (يدوياً أو عبر AI)
+    if (!filters.selectedUniversity) return [];
+
+    if (!propertiesCenterLocation || allUniversities.length === 0) return [];
+
+    return allUniversities
+      .map((uni) => {
+        const distance = calculateDistance(
+          propertiesCenterLocation.lat,
+          propertiesCenterLocation.lon,
+          uni.lat,
+          uni.lon,
+        );
+        const travelTime = calculateTravelTime(distance);
+        return { ...uni, travelTime };
+      })
+      .filter((uni) => {
+        // الفلترة بالاسم المحدد
+        const nameMatch = (i18n.language === "ar" ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
+        if (!nameMatch) return false;
+
+        // الفلترة بالوقت
+        return uni.travelTime <= filters.maxUniversityTime;
+      });
+  }, [
+    allUniversities,
+    propertiesCenterLocation,
+    filters.selectedUniversity,
+    filters.maxUniversityTime,
+    hasSearched,
+    i18n.language,
+  ]);
 
   // Calculate nearby mosques
   const nearbyMosques = useMemo(() => {
@@ -771,7 +785,7 @@ const RealEstateSearch = () => {
     return nearby;
   }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, hasSearched]);
 
-  // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
+  // [!! تعديل 7 !!] : إصلاح منطق `displayedProperties`
   const displayedProperties = useMemo(() => {
     let filtered = [...baseProperties];
 
@@ -794,6 +808,10 @@ const RealEstateSearch = () => {
 
     // Filter by university proximity if university is selected
     if (filters.selectedUniversity && nearbyUniversities.length > 0) {
+      // بما أن nearbyUniversities تحتوي فقط على الجامعة المختارة، يمكننا استخدامها مباشرة
+      const selectedUni = nearbyUniversities[0];
+      if (!selectedUni) return filtered;
+
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
@@ -801,11 +819,9 @@ const RealEstateSearch = () => {
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if the selected university is within the time range
-        return nearbyUniversities.some((uni) => {
-          const distance = calculateDistance(lat, lon, uni.lat, uni.lon);
-          const travelTime = calculateTravelTime(distance);
-          return travelTime <= filters.maxUniversityTime;
-        });
+        const distance = calculateDistance(lat, lon, selectedUni.lat, selectedUni.lon);
+        const travelTime = calculateTravelTime(distance);
+        return travelTime <= filters.maxUniversityTime;
       });
     }
 
@@ -907,7 +923,7 @@ const RealEstateSearch = () => {
     displayedProperties.forEach((property) => {
       // !! التوحيد: استخدم 'lat' و 'lon'
       const lat = Number(property.lat);
-      const lng = Number(property.lon);
+      const lon = Number(property.lon);
 
       // ================================================
       // !! تعديل رقم 3: فلترة إحداثيات الزووم (استخدم lat/lon) !!
@@ -932,6 +948,7 @@ const RealEstateSearch = () => {
     );
   }
 
+  // [!! تعديل 8 !!] : إضافة `selectedUniversity` إلى دالة الريسيت
   const resetFilters = () => {
     setFilters({
       propertyType: "",
@@ -947,7 +964,7 @@ const RealEstateSearch = () => {
       schoolGender: "",
       schoolLevel: "",
       maxSchoolTime: 15,
-      selectedUniversity: "",
+      selectedUniversity: "", // <-- إضافة
       maxUniversityTime: 30,
       nearMetro: false,
       minMetroTime: 1,
@@ -1051,6 +1068,7 @@ const RealEstateSearch = () => {
                 </AdvancedMarker>
               ))}
 
+            {/* [!! تعديل 9 !!] : تعديل عرض دبابيس الجامعات */}
             {hasSearched &&
               nearbyUniversities.map((university) => (
                 <AdvancedMarker
@@ -1062,19 +1080,25 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
+                          style={{ backgroundColor: "hsl(262 83% 58%)" }} // لون بنفسجي للجامعات
                         >
                           <GraduationCap className="h-5 w-5 text-white" />
                         </div>
                         {/* Hover pulse effect */}
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
+                          style={{ backgroundColor: "hsl(262 83% 58% / 0.3)", animationDuration: "1.5s" }}
                         />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
+                      {/* [!! إضافة !!] : إضافة عرض الوقت */}
+                      {(university as any).travelTime !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("maxTravelTime")}: {(university as any).travelTime} {t("minutes")}
+                        </p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 </AdvancedMarker>
@@ -1878,7 +1902,8 @@ const RealEstateSearch = () => {
                                 step={1}
                                 className="w-full"
                               />
-                              {nearbyUniversities.length > 0 && (
+                              {/* [!! تعديل !!] : تم إصلاح هذا العداد ليعمل بشكل صحيح */}
+                              {filters.selectedUniversity && nearbyUniversities.length > 0 && (
                                 <p className="text-xs text-muted-foreground">
                                   {nearbyUniversities.length} {t("universitiesFound")}
                                 </p>
@@ -2071,7 +2096,7 @@ const RealEstateSearch = () => {
               onClick={() => {
                 setShowChatbotResults(false);
                 setChatbotProperties([]);
-                // [!! تعديل 4 !!] : إضافة إعادة تعيين فلاتر المدارس والجامعات
+                // [!! تعديل 8 !!] : إضافة إعادة تعيين فلاتر المدارس والجامعات
                 setFilters((prev) => ({
                   ...prev,
                   schoolGender: "",
