@@ -21,7 +21,8 @@ import {
   Send,
   Loader2,
   LogOut,
-  Mic, // [!! تعديل 1 !!] : إضافة أيقونة المايكروفون
+  Mic,
+  Church, // Mosque icon
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -1078,14 +1079,14 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(280 65% 55%)" }}
+                          style={{ backgroundColor: "hsl(142 76% 36%)" }}
                         >
-                          <MapPin className="h-5 w-5 text-white" />
+                          <Church className="h-5 w-5 text-white" />
                         </div>
                         {/* Hover pulse effect */}
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(280 65% 55% / 0.3)", animationDuration: "1.5s" }}
+                          style={{ backgroundColor: "hsl(142 76% 36% / 0.3)", animationDuration: "1.5s" }}
                         />
                       </div>
                     </TooltipTrigger>
