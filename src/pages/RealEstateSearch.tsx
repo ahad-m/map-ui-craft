@@ -1108,9 +1108,9 @@ const RealEstateSearch = () => {
 
         {/* Top Search Bar */}
         <div className="absolute top-4 left-4 right-4 z-10">
-          <Card className="p-6 bg-card/98 backdrop-blur-md shadow-elegant border-primary/10 animate-fade-in">
+          <Card className="p-6 glass-effect shadow-elevated border-primary/20 animate-fade-in">
             <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3 pb-3 border-b border-border">
+              <div className="flex items-center gap-3 pb-4 border-b border-border/50">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -1131,13 +1131,13 @@ const RealEstateSearch = () => {
                 <img
                   src={riyalEstateLogo}
                   alt="RiyalEstate"
-                  className="h-12 w-12 rounded-full object-cover ring-2 ring-primary/20"
+                  className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/30 shadow-elegant"
                 />
                 <div className="flex-1">
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                     {t("riyalEstate")}
                   </h1>
-                  <p className="text-xs text-muted-foreground">{t("propertySearch")}</p>
+                  <p className="text-sm text-muted-foreground font-medium">{t("propertySearch")}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => setShowFavorites(true)} className="gap-2 relative">
@@ -1163,13 +1163,14 @@ const RealEstateSearch = () => {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Button
                   variant={transactionType === "sale" ? "default" : "outline"}
-                  className={`flex-1 transition-all duration-300 hover-lift ${
+                  size="lg"
+                  className={`flex-1 transition-all duration-300 font-semibold ${
                     transactionType === "sale"
-                      ? "bg-gradient-to-r from-primary to-accent shadow-glow scale-105"
-                      : "hover:border-primary/50 hover:shadow-elegant"
+                      ? "bg-gradient-to-r from-primary to-accent shadow-glow hover:shadow-elevated hover:scale-105"
+                      : "hover:border-primary/50 hover:bg-primary/5"
                   }`}
                   onClick={() => setTransactionType("sale")}
                 >
@@ -1177,10 +1178,11 @@ const RealEstateSearch = () => {
                 </Button>
                 <Button
                   variant={transactionType === "rent" ? "default" : "outline"}
-                  className={`flex-1 transition-all duration-300 hover-lift ${
+                  size="lg"
+                  className={`flex-1 transition-all duration-300 font-semibold ${
                     transactionType === "rent"
-                      ? "bg-gradient-to-r from-primary to-accent shadow-glow scale-105"
-                      : "hover:border-primary/50 hover:shadow-elegant"
+                      ? "bg-gradient-to-r from-primary to-accent shadow-glow hover:shadow-elevated hover:scale-105"
+                      : "hover:border-primary/50 hover:bg-primary/5"
                   }`}
                   onClick={() => setTransactionType("rent")}
                 >
@@ -1226,10 +1228,10 @@ const RealEstateSearch = () => {
 
                     <div className="space-y-8 mt-6 pb-4">
                       {/* Property Details Section */}
-                      <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
-                        <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
-                          <div className="p-1.5 rounded-md bg-primary/15">
-                            <MapPin className="h-4 w-4 text-primary" />
+                      <div className="space-y-4 p-5 rounded-xl border border-primary/20 bg-gradient-to-br from-card to-card/50 shadow-elegant">
+                        <h3 className="font-bold text-lg flex items-center gap-3 text-foreground">
+                          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/10">
+                            <MapPin className="h-5 w-5 text-primary" />
                           </div>
                           {t("propertyDetails")}
                         </h3>
@@ -1372,10 +1374,10 @@ const RealEstateSearch = () => {
                       </div>
 
                       {/* Price & Area Section */}
-                      <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
-                        <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
-                          <div className="p-1.5 rounded-md bg-primary/15">
-                            <Maximize className="h-4 w-4 text-primary" />
+                      <div className="space-y-4 p-5 rounded-xl border border-primary/20 bg-gradient-to-br from-card to-card/50 shadow-elegant">
+                        <h3 className="font-bold text-lg flex items-center gap-3 text-foreground">
+                          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/10">
+                            <Maximize className="h-5 w-5 text-primary" />
                           </div>
                           {t("priceAndArea")}
                         </h3>
@@ -1494,10 +1496,10 @@ const RealEstateSearch = () => {
                       </div>
 
                       {/* Room Details Section */}
-                      <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
-                        <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
-                          <div className="p-1.5 rounded-md bg-primary/15">
-                            <Bed className="h-4 w-4 text-primary" />
+                      <div className="space-y-4 p-5 rounded-xl border border-primary/20 bg-gradient-to-br from-card to-card/50 shadow-elegant">
+                        <h3 className="font-bold text-lg flex items-center gap-3 text-foreground">
+                          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/10">
+                            <Bed className="h-5 w-5 text-primary" />
                           </div>
                           {t("roomDetails")}
                         </h3>
@@ -1584,10 +1586,10 @@ const RealEstateSearch = () => {
                       </div>
 
                       {/* Education Section */}
-                      <div className="space-y-4 p-4 rounded-lg border border-border bg-card/50">
-                        <h3 className="font-bold text-base flex items-center gap-2 text-foreground">
-                          <div className="p-1.5 rounded-md bg-primary/15">
-                            <School className="h-4 w-4 text-primary" />
+                      <div className="space-y-4 p-5 rounded-xl border border-primary/20 bg-gradient-to-br from-card to-card/50 shadow-elegant">
+                        <h3 className="font-bold text-lg flex items-center gap-3 text-foreground">
+                          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/10">
+                            <School className="h-5 w-5 text-primary" />
                           </div>
                           {t("education")}
                         </h3>
@@ -1944,13 +1946,19 @@ const RealEstateSearch = () => {
                       </div>
 
                       {/* Apply/Reset Buttons */}
-                      <div className="flex gap-2">
-                        <Button variant="outline" className="flex-1" onClick={resetFilters}>
-                          <X className={`h-4 w-4 ${i18n.language === "ar" ? "ml-2" : "mr-2"}`} />
+                      <div className="flex gap-3 mt-8 pt-6 border-t border-border/50">
+                        <Button 
+                          variant="outline" 
+                          size="lg"
+                          className="flex-1 h-12 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all" 
+                          onClick={resetFilters}
+                        >
+                          <X className={`h-5 w-5 ${i18n.language === "ar" ? "ml-2" : "mr-2"}`} />
                           {t("resetFilters")}
                         </Button>
                         <Button
-                          className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-lg"
+                          size="lg"
+                          className="flex-1 h-12 bg-gradient-to-r from-primary to-accent shadow-glow hover:shadow-elevated hover:scale-105 transition-all duration-300 font-bold"
                           onClick={() => {
                             setShowFilters(false);
                             setHasSearched(true);
@@ -2037,24 +2045,29 @@ const RealEstateSearch = () => {
                         </p>
                         <div className="flex items-center gap-2 text-xs mb-2">
                           {property.rooms && (
-                            <span className="flex items-center gap-1">
-                              <Bed className="h-3 w-3" /> {property.rooms}
+                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
+                              <Bed className="h-4 w-4 text-primary" /> 
+                              <span className="font-medium">{property.rooms}</span>
                             </span>
                           )}
                           {property.baths && (
-                            <span className="flex items-center gap-1">
-                              <Bath className="h-3 w-3" /> {property.baths}
+                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
+                              <Bath className="h-4 w-4 text-primary" /> 
+                              <span className="font-medium">{property.baths}</span>
                             </span>
                           )}
                           {property.area_m2 && (
-                            <span className="flex items-center gap-1">
-                              <Maximize className="h-3 w-3" /> {property.area_m2} m²
+                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
+                              <Maximize className="h-4 w-4 text-primary" /> 
+                              <span className="font-medium">{property.area_m2} m²</span>
                             </span>
                           )}
                         </div>
-                        <p className="text-primary font-bold">
-                          {property.price_num} {property.price_currency}
-                        </p>
+                        <div className="pt-3 border-t border-border/50">
+                          <p className="text-primary font-bold text-xl">
+                            {property.price_num} {property.price_currency}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -2091,8 +2104,8 @@ const RealEstateSearch = () => {
         {/* Results Count - Enhanced */}
         {!selectedProperty && hasSearched && (
           <div className="absolute bottom-24 left-4 right-4 z-10 animate-slide-up">
-            <Card className="glass-effect shadow-elegant border-primary/20">
-              <div className="p-3">
+            <Card className="glass-effect shadow-elevated border-primary/30">
+              <div className="p-4">
                 <div className="text-center">
                   {isLoading ? (
                     <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
