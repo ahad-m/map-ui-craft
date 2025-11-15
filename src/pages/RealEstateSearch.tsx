@@ -214,7 +214,18 @@ const RealEstateSearch = () => {
           maxSchoolTime: schoolReqs.max_distance_minutes || 15,
         }));
       }
-      // [!! التعديل الجديد ينتهي هنا !!]
+
+      // [!! تعديل الجامعات !!] : مزامنة معايير الجامعة
+      if (currentCriteria && currentCriteria.university_requirements?.required) {
+        const uniReqs = currentCriteria.university_requirements;
+
+        setFilters((prevFilters) => ({
+          ...prevFilters,
+          // ملاحظة: يجب أن يتطابق الاسم (مثل: "جامعة الملك سعود") تماماً مع ما هو مخزن في الداتابيس
+          selectedUniversity: uniReqs.name || "",
+          maxUniversityTime: uniReqs.max_distance_minutes || 30, // 30 دقيقة افتراضي
+        }));
+      }
     }
   }, [chatSearchResults, currentCriteria]); // <-- أضفنا currentCriteria
 
@@ -739,7 +750,7 @@ const RealEstateSearch = () => {
       hasSearched,
       propertiesCenterLocation,
       mosquesCount: allMosques.length,
-      maxTime: filters.maxMosqueTime
+      maxTime: filters.maxMosqueTime,
     });
 
     const nearby = allMosques
@@ -755,7 +766,7 @@ const RealEstateSearch = () => {
         return { ...mosque, travelTime };
       })
       .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
-    
+
     console.log("Nearby mosques found:", nearby.length);
     return nearby;
   }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, hasSearched]);
@@ -769,7 +780,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-        
+
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if there's at least one school within the time range
@@ -786,7 +797,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-        
+
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if the selected university is within the time range
@@ -803,7 +814,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-        
+
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if there's at least one mosque within the time range
@@ -834,7 +845,7 @@ const RealEstateSearch = () => {
   const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
 
   // Check if user has applied any filters
-  const hasActiveFilters = 
+  const hasActiveFilters =
     filters.propertyType ||
     filters.neighborhood ||
     filters.minPrice > 0 ||
@@ -1016,7 +1027,7 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
+                          style={{ backgroundColor: "hsl(142 71% 45%)" }} // لون أخضر للمدارس
                         >
                           <School className="h-5 w-5 text-white" />
                         </div>
@@ -1078,7 +1089,7 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(280 65% 55%)" }}
+                          style={{ backgroundColor: "hsl(280 65% 55%)" }} // لون بنفسجي للمساجد
                         >
                           <MapPin className="h-5 w-5 text-white" />
                         </div>
@@ -1887,14 +1898,16 @@ const RealEstateSearch = () => {
                         </h3>
                         <div className="space-y-3">
                           <Label className="text-sm font-medium">{t("nearMosques")}</Label>
-                          
+
                           <div className="space-y-2 p-3 bg-background/50 rounded-lg">
                             <Label className="text-xs font-medium">
                               {t("maxTravelTime")}: {filters.maxMosqueTime} {t("minutes")}
                             </Label>
                             <Slider
                               value={[filters.maxMosqueTime]}
-                              onValueChange={(value) => setFilters({ ...filters, maxMosqueTime: value[0], nearMosques: true })}
+                              onValueChange={(value) =>
+                                setFilters({ ...filters, maxMosqueTime: value[0], nearMosques: true })
+                              }
                               min={1}
                               max={30}
                               step={1}
@@ -2058,12 +2071,14 @@ const RealEstateSearch = () => {
               onClick={() => {
                 setShowChatbotResults(false);
                 setChatbotProperties([]);
-                // [!! إضافة !!] : إعادة تعيين فلاتر المدارس عند مسح النتائج
+                // [!! تعديل 4 !!] : إضافة إعادة تعيين فلاتر المدارس والجامعات
                 setFilters((prev) => ({
                   ...prev,
                   schoolGender: "",
                   schoolLevel: "",
                   maxSchoolTime: 15,
+                  selectedUniversity: "", // <-- إضافة
+                  maxUniversityTime: 30, // <-- إضافة
                 }));
               }}
               variant="outline"
@@ -2087,12 +2102,8 @@ const RealEstateSearch = () => {
                     </p>
                   ) : displayedProperties.length === 0 ? (
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-destructive">
-                        {t("noPropertiesFound")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("tryAdjustingFilters")}
-                      </p>
+                      <p className="text-sm font-semibold text-destructive">{t("noPropertiesFound")}</p>
+                      <p className="text-xs text-muted-foreground">{t("tryAdjustingFilters")}</p>
                     </div>
                   ) : (
                     <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
