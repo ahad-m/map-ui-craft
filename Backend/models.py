@@ -2,7 +2,7 @@
 نماذج البيانات (Pydantic Models) للمساعد العقاري الذكي
 """
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal, Dict, Any
+from typing import Optional, List, Literal, Dict, Any # [!! تعديل !!] : إضافة Dict و Any
 from enum import Enum
 
 
@@ -135,7 +135,7 @@ class Property(BaseModel):
     baths: Optional[int] = None
     halls: Optional[int] = None
     
-    # [!! تعديل 3 !!] : إضافة قائمة المدارس المطابقة (من التعديل السابق الذي طلبته)
+    # [!! تعديل 3 !!] : هذا الحقل مطلوب للتعديلات القادمة (إن وجدت)
     matched_schools: Optional[List[Dict[str, Any]]] = None 
     
     # نقاط التطابق (للبحث المشابه)
