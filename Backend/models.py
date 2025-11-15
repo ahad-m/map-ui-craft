@@ -2,7 +2,7 @@
 نماذج البيانات (Pydantic Models) للمساعد العقاري الذكي
 """
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal, Dict, Any # [!! تعديل !!] : إضافة Dict و Any
+from typing import Optional, List, Literal
 from enum import Enum
 
 
@@ -68,14 +68,6 @@ class SchoolRequirements(BaseModel):
     max_distance_minutes: Optional[float] = None  # بالدقائق (بالسيارة)
 
 
-# [!! تعديل 1 !!] : إضافة نموذج خاص بمتطلبات الجامعة
-class UniversityRequirements(BaseModel):
-    """متطلبات الجامعات"""
-    required: bool = False
-    name: Optional[str] = None # (مثل: جامعة الملك سعود)
-    max_distance_minutes: Optional[float] = None # بالدقائق (بالسيارة)
-
-
 class PropertyCriteria(BaseModel):
     """معايير البحث عن العقار المستخرجة من طلب المستخدم"""
     
@@ -97,9 +89,6 @@ class PropertyCriteria(BaseModel):
     # القرب من الخدمات
     metro_time_max: Optional[float] = Field(None, description="أقصى وقت للوصول لمحطة المترو بالدقائق")
     school_requirements: Optional[SchoolRequirements] = Field(None, description="متطلبات المدارس")
-    
-    # [!! تعديل 2 !!] : إضافة حقل متطلبات الجامعة
-    university_requirements: Optional[UniversityRequirements] = Field(None, description="متطلبات القرب من جامعة")
     
     # النص الأصلي للطلب (للبحث الدلالي)
     original_query: Optional[str] = Field(None, description="النص الأصلي لطلب المستخدم")
@@ -134,9 +123,6 @@ class Property(BaseModel):
     rooms: Optional[int] = None
     baths: Optional[int] = None
     halls: Optional[int] = None
-    
-    # [!! تعديل 3 !!] : هذا الحقل مطلوب للتعديلات القادمة (إن وجدت)
-    matched_schools: Optional[List[Dict[str, Any]]] = None 
     
     # نقاط التطابق (للبحث المشابه)
     match_score: Optional[float] = None

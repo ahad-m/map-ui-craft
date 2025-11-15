@@ -6,8 +6,7 @@ from config import settings
 from models import (
     PropertyCriteria, PropertyPurpose, PropertyType, PricePeriod,
     RangeFilter, IntRangeFilter, PriceFilter, SchoolRequirements,
-    CriteriaExtractionResponse,
-    UniversityRequirements  # [!! تعديل 1 !!] : استيراد النموذج الجديد
+    CriteriaExtractionResponse
 )
 import json
 import logging
@@ -23,7 +22,7 @@ class LLMParser:
         self.client = OpenAI()  # API key موجود في البيئة
         self.model = settings.LLM_MODEL
         
-        # [!! تعديل 2 !!] : إضافة ملاحظات الجامعات إلى الـ Prompt
+        # System prompt متخصص لفهم اللهجة السعودية
         self.system_prompt = """أنت مساعد عقاري ذكي متخصص في فهم اللهجة السعودية والعربية الفصحى.
 مهمتك استخراج معايير البحث عن العقارات من طلبات المستخدمين بدقة عالية.
 
@@ -55,14 +54,6 @@ class LLMParser:
 - شهري / بالشهر / شهرياً → "شهري"
 - يومي / باليوم / يومياً → "يومي"
 
-## [!! تعديل !!] ملاحظات الجامعات:
-- إذا ذكر المستخدم "جامعة" مع اسم، استخرجه.
-- مثال 1: "قريب من جامعة الملك سعود"
-  "university_requirements": { "required": true, "name": "جامعة الملك سعود" }
-- مثال 2: "ابي شي عند جامعة نورة 10 دقايق"
-  "university_requirements": { "required": true, "name": "جامعة الأميرة نورة بنت عبد الرحمن", "max_distance_minutes": 10 }
-- ملاحظة: "جامعة نورة" هي "جامعة الأميرة نورة بنت عبد الرحمن". "جامعة سعود" هي "جامعة الملك سعود". "جامعة الإمام" هي "جامعة الإمام محمد بن سعود الإسلامية".
-
 ## ملاحظات مهمة:
 1. إذا ذكر المستخدم رقم واحد للغرف/الحمامات/الصالات، ضعه في "exact"
 2. إذا ذكر "اقل شي X"، ضع X في "min" فقط
@@ -79,9 +70,15 @@ class LLMParser:
     def extract_criteria(self, user_query: str) -> CriteriaExtractionResponse:
         """
         استخراج معايير البحث من طلب المستخدم
+        
+        Args:
+            user_query: طلب المستخدم النصي
+        
+        Returns:
+            CriteriaExtractionResponse يحتوي على المعايير المستخرجة
         """
         try:
-            # [!! تعديل 3 !!] : إضافة "university_requirements" إلى الدالة
+            # تعريف function للاستخراج المنظم
             functions = [{
                 "name": "extract_property_criteria",
                 "description": "استخراج معايير البحث عن العقار من طلب المستخدم",
@@ -105,9 +102,9 @@ class LLMParser:
                         "rooms": {
                             "type": "object",
                             "properties": {
-                                "min": {"type": "integer"},
-                                "max": {"type": "integer"},
-                                "exact": {"type": "integer"}
+                                "min": {"type": "integer", "description": "الحد الأدنى لعدد الغرف"},
+                                "max": {"type": "integer", "description": "الحد الأقصى لعدد الغرف"},
+                                "exact": {"type": "integer", "description": "عدد الغرف المحدد"}
                             }
                         },
                         "baths": {
@@ -129,15 +126,15 @@ class LLMParser:
                         "area_m2": {
                             "type": "object",
                             "properties": {
-                                "min": {"type": "number"},
-                                "max": {"type": "number"}
+                                "min": {"type": "number", "description": "الحد الأدنى للمساحة بالمتر المربع"},
+                                "max": {"type": "number", "description": "الحد الأقصى للمساحة بالمتر المربع"}
                             }
                         },
                         "price": {
                             "type": "object",
                             "properties": {
-                                "min": {"type": "number"},
-                                "max": {"type": "number"},
+                                "min": {"type": "number", "description": "الحد الأدنى للسعر"},
+                                "max": {"type": "number", "description": "الحد الأقصى للسعر"},
                                 "currency": {"type": "string", "default": "SAR"},
                                 "period": {"type": "string", "enum": ["سنوي", "شهري", "يومي"]}
                             }
@@ -153,16 +150,6 @@ class LLMParser:
                                 "levels": {"type": "array", "items": {"type": "string"}},
                                 "gender": {"type": "string", "enum": ["بنين", "بنات", "مختلط"]},
                                 "max_distance_minutes": {"type": "number"}
-                            }
-                        },
-                        # [!! هذا هو التعريف الجديد !!]
-                        "university_requirements": {
-                            "type": "object",
-                            "description": "متطلبات القرب من جامعة معينة",
-                            "properties": {
-                                "required": {"type": "boolean", "default": True},
-                                "name": {"type": "string", "description": "اسم الجامعة (مثال: جامعة الملك سعود)"},
-                                "max_distance_minutes": {"type": "number", "description": "أقصى وقت بالدقائق للوصول للجامعة"}
                             }
                         }
                     },
@@ -184,7 +171,7 @@ class LLMParser:
                 timeout=30.0
             )
             
-            # (الكود الباقي لاستخراج النتيجة كما هو)
+            # استخراج النتيجة
             function_call = response.choices[0].message.function_call
             if not function_call:
                 return CriteriaExtractionResponse(
@@ -197,9 +184,13 @@ class LLMParser:
                     ]
                 )
             
+            # تحويل النتيجة إلى dict
             criteria_dict = json.loads(function_call.arguments)
+            
+            # تحويل الـ dict إلى PropertyCriteria
             criteria = self._dict_to_criteria(criteria_dict, user_query)
             
+            # التحقق من اكتمال المعايير الأساسية
             if not criteria.purpose or not criteria.property_type:
                 return CriteriaExtractionResponse(
                     success=False,
@@ -209,6 +200,7 @@ class LLMParser:
                     clarification_questions=self._generate_clarification_questions(criteria)
                 )
             
+            # نجح الاستخراج
             return CriteriaExtractionResponse(
                 success=True,
                 message=self._generate_confirmation_message(criteria),
@@ -224,10 +216,10 @@ class LLMParser:
                 needs_clarification=True
             )
     
-    # [!! تعديل 4 !!] : تحديث دالة `_dict_to_criteria`
     def _dict_to_criteria(self, data: dict, original_query: str) -> PropertyCriteria:
         """تحويل dict إلى PropertyCriteria"""
         
+        # معالجة الحقول المعقدة
         rooms = None
         if data.get('rooms'):
             rooms = IntRangeFilter(**data['rooms'])
@@ -252,11 +244,6 @@ class LLMParser:
         if data.get('school_requirements'):
             school_requirements = SchoolRequirements(**data['school_requirements'])
         
-        # [!! هذا هو الكود الجديد !!]
-        university_requirements = None
-        if data.get('university_requirements'):
-            university_requirements = UniversityRequirements(**data['university_requirements'])
-        
         return PropertyCriteria(
             purpose=PropertyPurpose(data['purpose']),
             property_type=PropertyType(data['property_type']),
@@ -268,44 +255,67 @@ class LLMParser:
             price=price,
             metro_time_max=data.get('metro_time_max'),
             school_requirements=school_requirements,
-            university_requirements=university_requirements, # [!! إضافة !!]
             original_query=original_query
         )
     
-    # [!! تعديل 5 !!] : تحديث رسالة التأكيد
     def _generate_confirmation_message(self, criteria: PropertyCriteria) -> str:
         """توليد رسالة تأكيد المعايير المستخرجة"""
         
         message = "فهمت طلبك! 👍\n\nتبحث عن:\n"
         
-        # (الكود الخاص بنوع العقار، الحي، المواصفات، السعر، المترو... كما هو)
+        # نوع العقار والغرض
         message += f"• {criteria.property_type.value} {criteria.purpose.value}\n"
+        
+        # الحي
         if criteria.district:
             message += f"• حي {criteria.district}\n"
         
+        # الغرف والحمامات والصالات
         specs = []
         if criteria.rooms:
-            if criteria.rooms.exact: specs.append(f"{criteria.rooms.exact} غرف")
-            elif criteria.rooms.min: specs.append(f"≥{criteria.rooms.min} غرف")
+            if criteria.rooms.exact:
+                specs.append(f"{criteria.rooms.exact} غرف")
+            elif criteria.rooms.min and criteria.rooms.max:
+                specs.append(f"{criteria.rooms.min}-{criteria.rooms.max} غرف")
+            elif criteria.rooms.min:
+                specs.append(f"≥{criteria.rooms.min} غرف")
+        
         if criteria.baths:
-            if criteria.baths.exact: specs.append(f"{criteria.baths.exact} حمامات")
-            elif criteria.baths.min: specs.append(f"≥{criteria.baths.min} حمامات")
+            if criteria.baths.exact:
+                specs.append(f"{criteria.baths.exact} حمامات")
+            elif criteria.baths.min and criteria.baths.max:
+                specs.append(f"{criteria.baths.min}-{criteria.baths.max} حمامات")
+            elif criteria.baths.min:
+                specs.append(f"≥{criteria.baths.min} حمامات")
+        
         if criteria.halls:
-            if criteria.halls.exact: specs.append(f"{criteria.halls.exact} صالة")
-            elif criteria.halls.min: specs.append(f"≥{criteria.halls.min} صالة")
+            if criteria.halls.exact:
+                specs.append(f"{criteria.halls.exact} صالة")
+            elif criteria.halls.min:
+                specs.append(f"≥{criteria.halls.min} صالة")
+        
         if specs:
             message += f"• {', '.join(specs)}\n"
-
-        if criteria.area_m2:
-            if criteria.area_m2.min and criteria.area_m2.max: message += f"• المساحة: {criteria.area_m2.min:.0f}-{criteria.area_m2.max:.0f} م²\n"
-            elif criteria.area_m2.min: message += f"• المساحة: ≥{criteria.area_m2.min:.0f} م²\n"
-            elif criteria.area_m2.max: message += f"• المساحة: ≤{criteria.area_m2.max:.0f} م²\n"
         
+        # المساحة
+        if criteria.area_m2:
+            if criteria.area_m2.min and criteria.area_m2.max:
+                message += f"• المساحة: {criteria.area_m2.min:.0f}-{criteria.area_m2.max:.0f} م²\n"
+            elif criteria.area_m2.min:
+                message += f"• المساحة: ≥{criteria.area_m2.min:.0f} م²\n"
+            elif criteria.area_m2.max:
+                message += f"• المساحة: ≤{criteria.area_m2.max:.0f} م²\n"
+        
+        # السعر
         if criteria.price:
-            period_text = f" {criteria.price.period.value}" if criteria.price.period else ""
-            if criteria.price.min and criteria.price.max: message += f"• الميزانية: {criteria.price.min:,.0f}-{criteria.price.max:,.0f} ريال{period_text}\n"
-            elif criteria.price.max: message += f"• الميزانية: ≤{criteria.price.max:,.0f} ريال{period_text}\n"
-
+            if criteria.price.min and criteria.price.max:
+                period_text = f" {criteria.price.period.value}" if criteria.price.period else ""
+                message += f"• الميزانية: {criteria.price.min:,.0f}-{criteria.price.max:,.0f} ريال{period_text}\n"
+            elif criteria.price.max:
+                period_text = f" {criteria.price.period.value}" if criteria.price.period else ""
+                message += f"• الميزانية: ≤{criteria.price.max:,.0f} ريال{period_text}\n"
+        
+        # القرب من المترو
         if criteria.metro_time_max:
             message += f"• قريب من محطة مترو (≤{criteria.metro_time_max:.0f} دقيقة)\n"
         
@@ -319,14 +329,6 @@ class LLMParser:
             if criteria.school_requirements.max_distance_minutes:
                 school_text += f" (≤{criteria.school_requirements.max_distance_minutes:.0f} دقيقة)"
             message += school_text + "\n"
-        
-        # [!! هذا هو الكود الجديد !!]
-        # الجامعات
-        if criteria.university_requirements and criteria.university_requirements.required:
-            uni_text = f"• قريب من جامعة: {criteria.university_requirements.name}"
-            if criteria.university_requirements.max_distance_minutes:
-                uni_text += f" (≤{criteria.university_requirements.max_distance_minutes:.0f} دقيقة)"
-            message += uni_text + "\n"
         
         message += "\nتبي بس المطابق لطلبك ولا عادي نقترح لك اللي يشبهه؟\nمتأكدين بيعجبك! 😊"
         

@@ -28,7 +28,6 @@ export interface PropertyCriteria {
   price?: RangeFilter;
   metro_time_max?: number;
   school_requirements?: any;
-  university_requirements?: any; // [!! هذا هو السطر الجديد !!]
   original_query: string;
 }
 
