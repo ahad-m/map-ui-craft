@@ -923,7 +923,7 @@ const RealEstateSearch = () => {
     displayedProperties.forEach((property) => {
       // !! التوحيد: استخدم 'lat' و 'lon'
       const lat = Number(property.lat);
-      const lon = Number(property.lon);
+      const lng = Number(property.lon);
 
       // ================================================
       // !! تعديل رقم 3: فلترة إحداثيات الزووم (استخدم lat/lon) !!
