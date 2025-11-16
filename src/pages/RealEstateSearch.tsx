@@ -22,7 +22,7 @@ import {
   Loader2,
   LogOut,
   Mic,
-  Church, // Mosque icon
+  Moon, // Mosque icon
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -1083,7 +1083,7 @@ const RealEstateSearch = () => {
                           className="p-2 rounded-full shadow-elevated"
                           style={{ backgroundColor: "hsl(142 76% 36%)" }}
                         >
-                          <Church className="h-5 w-5 text-white" />
+                          <Moon className="h-5 w-5 text-white" />
                         </div>
                         {/* Hover pulse effect */}
                         <div
