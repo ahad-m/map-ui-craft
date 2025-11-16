@@ -16,6 +16,12 @@ export interface AssistantMessage {
   clarification_questions?: string[];
 }
 
+// واجهة رسالة المحادثة المستخدمة في الـ API
+export interface APIChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface PropertyCriteria {
   purpose: string;
   property_type: string;
@@ -133,14 +139,14 @@ export async function getWelcomeMessage(): Promise<AssistantMessage> {
 /**
  * إرسال طلب المستخدم واستخراج المعايير
  */
-export async function sendUserQuery(message: string): Promise<AssistantMessage> {
+export async function sendUserQuery(message: string, history: APIChatMessage[] = []): Promise<AssistantMessage> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/chat/query`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, history }),
     });
 
     if (!response.ok) {
