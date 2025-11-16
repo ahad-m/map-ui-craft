@@ -70,7 +70,7 @@ class LLMParser:
 9. احفظ النص الأصلي في original_query
 
 استخرج المعايير بدقة وحول جميع القيم إلى الصيغة المعيارية."""
-        
+    
     def extract_criteria(self, user_query: str) -> CriteriaExtractionResponse:
         """
         استخراج معايير البحث من طلب المستخدم
@@ -258,7 +258,11 @@ class LLMParser:
         
         university_requirements = None
         if data.get('university_requirements'):
-            university_requirements = UniversityRequirements(**data['university_requirements'])
+            uni_data = data['university_requirements']
+            # ضمان تعيين required=True إذا تم ذكر اسم الجامعة ولكن لم يتم تعيين required صراحة
+            if uni_data.get('university_name') and uni_data.get('required') is None:
+                uni_data['required'] = True
+            university_requirements = UniversityRequirements(**uni_data)
         
         return PropertyCriteria(
             purpose=PropertyPurpose(data['purpose']),
