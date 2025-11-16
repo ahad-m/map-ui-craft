@@ -10,6 +10,7 @@ import {
   type AssistantMessage,
   type Property,
   type PropertyCriteria,
+  type APIChatMessage, // استيراد الواجهة الجديدة
 } from "../api/realEstateAssistant";
 
 export interface ChatMessage {
@@ -95,8 +96,16 @@ export function useRealEstateAssistant(): UseRealEstateAssistantReturn {
       addUserMessage(message);
 
       try {
-        // إرسال الطلب للـ Backend
-        const response: AssistantMessage = await sendUserQuery(message);
+        // تحويل سجل المحادثة إلى تنسيق API (role/content)
+        const apiHistory: APIChatMessage[] = messages
+          .filter((msg) => msg.type !== "assistant" || msg.criteria) // تصفية رسائل المساعد التي لا تحتوي على معايير
+          .map((msg) => ({
+            role: msg.type,
+            content: msg.content,
+          }));
+
+        // إرسال الطلب للـ Backend مع سجل المحادثة
+        const response: AssistantMessage = await sendUserQuery(message, apiHistory);
 
         if (response.success) {
           // حفظ المعايير
