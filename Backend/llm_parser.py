@@ -5,7 +5,7 @@ from openai import OpenAI
 from config import settings
 from models import (
     PropertyCriteria, PropertyPurpose, PropertyType, PricePeriod,
-    RangeFilter, IntRangeFilter, PriceFilter, SchoolRequirements,
+    RangeFilter, IntRangeFilter, PriceFilter, SchoolRequirements, UniversityRequirements,
     CriteriaExtractionResponse
 )
 import json
@@ -30,9 +30,13 @@ class LLMParser:
 - "ابي" / "ابغى" / "ودي" = أريد
 - "اقصى شي" = الحد الأقصى
 - "اقل شي" = الحد الأدنى
-- "بحدود" = تقريباً / حوالي
-- "تتراوح بين" / "من ... إلى" = نطاق
-- "k" = ألف (1000)
+    - "بحدود" = تقريباً / حوالي
+    - "تتراوح بين" / "من ... إلى" = نطاق
+    - "k" = ألف (1000)
+    
+    ## القرب من الخدمات:
+    - "قرب جامعة X" / "بجانب جامعة X" = UniversityRequirements (university_name=X, required=true)
+    - "قرب مدرسة" = SchoolRequirements (required=true)
 - "م" / "متر" = متر مربع
 
 ## أنواع العقارات (مع المرادفات):
@@ -151,6 +155,14 @@ class LLMParser:
                                 "gender": {"type": "string", "enum": ["بنين", "بنات", "مختلط"]},
                                 "max_distance_minutes": {"type": "number"}
                             }
+                        },
+                        "university_requirements": {
+                            "type": "object",
+                            "properties": {
+                                "required": {"type": "boolean"},
+                                "university_name": {"type": "string", "description": "اسم الجامعة المطلوب القرب منها"},
+                                "max_distance_minutes": {"type": "number"}
+                            }
                         }
                     },
                     "required": ["purpose", "property_type"]
@@ -244,6 +256,10 @@ class LLMParser:
         if data.get('school_requirements'):
             school_requirements = SchoolRequirements(**data['school_requirements'])
         
+        university_requirements = None
+        if data.get('university_requirements'):
+            university_requirements = UniversityRequirements(**data['university_requirements'])
+        
         return PropertyCriteria(
             purpose=PropertyPurpose(data['purpose']),
             property_type=PropertyType(data['property_type']),
@@ -255,6 +271,7 @@ class LLMParser:
             price=price,
             metro_time_max=data.get('metro_time_max'),
             school_requirements=school_requirements,
+            university_requirements=university_requirements,
             original_query=original_query
         )
     
@@ -329,6 +346,15 @@ class LLMParser:
             if criteria.school_requirements.max_distance_minutes:
                 school_text += f" (≤{criteria.school_requirements.max_distance_minutes:.0f} دقيقة)"
             message += school_text + "\n"
+        
+        # الجامعات (التعديل الجديد)
+        if criteria.university_requirements and criteria.university_requirements.required:
+            uni_text = "• قريب من جامعة"
+            if criteria.university_requirements.university_name:
+                uni_text += f" ({criteria.university_requirements.university_name})"
+            if criteria.university_requirements.max_distance_minutes:
+                uni_text += f" (≤{criteria.university_requirements.max_distance_minutes:.0f} دقيقة)"
+            message += uni_text + "\n"
         
         message += "\nتبي بس المطابق لطلبك ولا عادي نقترح لك اللي يشبهه؟\nمتأكدين بيعجبك! 😊"
         
