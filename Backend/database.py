@@ -12,21 +12,6 @@ logger = logging.getLogger(__name__)
 class Database:
     """مدير قاعدة البيانات"""
     
-    def get_university_location(self, university_name: str) -> dict | None:
-        """
-        تسترجع إحداثيات (lat, lon) لجامعة معينة من جدول 'universities'.
-        """
-        try:
-            # نفترض وجود جدول 'universities' يحتوي على 'name', 'lat', 'lon'
-            result = self.client.from_('universities').select('lat, lon, name_ar, name_en').or_(f"name_ar.eq.{university_name},name_en.eq.{university_name}").limit(1).execute()
-
-            if result.data:
-                return result.data[0]
-            return None
-        except Exception as e:
-            logger.error(f"خطأ في استعلام موقع الجامعة: {e}")
-            return None
-    
     def __init__(self):
         """تهيئة الاتصال بـ Supabase"""
         try:

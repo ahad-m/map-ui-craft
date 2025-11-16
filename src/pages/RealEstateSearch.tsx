@@ -742,7 +742,7 @@ const RealEstateSearch = () => {
       nearMosquesFilter: filters.nearMosques,
       propertiesCenterLocation,
       mosquesCount: allMosques.length,
-      maxTime: filters.maxMosqueTime,
+      maxTime: filters.maxMosqueTime
     });
 
     const nearby = allMosques
@@ -758,7 +758,7 @@ const RealEstateSearch = () => {
         return { ...mosque, travelTime };
       })
       .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
-
+    
     console.log("Nearby mosques found:", nearby.length);
     return nearby;
   }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, filters.nearMosques, hasSearched]);
@@ -772,7 +772,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-
+        
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if there's at least one school within the time range
@@ -789,7 +789,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-
+        
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if the selected university is within the time range
@@ -806,7 +806,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-
+        
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if there's at least one mosque within the time range
@@ -837,7 +837,7 @@ const RealEstateSearch = () => {
   const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
 
   // Check if user has applied any filters
-  const hasActiveFilters =
+  const hasActiveFilters = 
     filters.propertyType ||
     filters.neighborhood ||
     filters.minPrice > 0 ||
@@ -1947,10 +1947,10 @@ const RealEstateSearch = () => {
 
                       {/* Apply/Reset Buttons */}
                       <div className="flex gap-3 mt-8 pt-6 border-t border-border/50">
-                        <Button
-                          variant="outline"
+                        <Button 
+                          variant="outline" 
                           size="lg"
-                          className="flex-1 h-12 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all"
+                          className="flex-1 h-12 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all" 
                           onClick={resetFilters}
                         >
                           <X className={`h-5 w-5 ${i18n.language === "ar" ? "ml-2" : "mr-2"}`} />
@@ -2046,19 +2046,19 @@ const RealEstateSearch = () => {
                         <div className="flex items-center gap-2 text-xs mb-2">
                           {property.rooms && (
                             <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
-                              <Bed className="h-4 w-4 text-primary" />
+                              <Bed className="h-4 w-4 text-primary" /> 
                               <span className="font-medium">{property.rooms}</span>
                             </span>
                           )}
                           {property.baths && (
                             <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
-                              <Bath className="h-4 w-4 text-primary" />
+                              <Bath className="h-4 w-4 text-primary" /> 
                               <span className="font-medium">{property.baths}</span>
                             </span>
                           )}
                           {property.area_m2 && (
                             <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
-                              <Maximize className="h-4 w-4 text-primary" />
+                              <Maximize className="h-4 w-4 text-primary" /> 
                               <span className="font-medium">{property.area_m2} m²</span>
                             </span>
                           )}
@@ -2113,8 +2113,12 @@ const RealEstateSearch = () => {
                     </p>
                   ) : displayedProperties.length === 0 ? (
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-destructive">{t("noPropertiesFound")}</p>
-                      <p className="text-xs text-muted-foreground">{t("tryAdjustingFilters")}</p>
+                      <p className="text-sm font-semibold text-destructive">
+                        {t("noPropertiesFound")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("tryAdjustingFilters")}
+                      </p>
                     </div>
                   ) : (
                     <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">

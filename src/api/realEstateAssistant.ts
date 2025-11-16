@@ -16,12 +16,6 @@ export interface AssistantMessage {
   clarification_questions?: string[];
 }
 
-// واجهة رسالة المحادثة المستخدمة في الـ API
-export interface APIChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
 export interface PropertyCriteria {
   purpose: string;
   property_type: string;
@@ -58,18 +52,12 @@ export interface School {
   district?: string;
 }
 
-export interface SchoolProximity {
-  name: string;
-  distance_minutes: number;
+export interface University {
+  name_ar?: string;
+  name_en?: string;
   lat: number;
   lon: number;
-}
-
-export interface UniversityProximity {
-  name: string;
-  distance_minutes: number;
-  lat: number;
-  lon: number;
+  drive_minutes?: number;
 }
 
 export interface Property {
@@ -94,8 +82,8 @@ export interface Property {
   rooms?: number;
   baths?: number;
   halls?: number;
-  schools_proximity?: SchoolProximity[];
-  university_proximity?: UniversityProximity;
+  nearby_schools?: School[];
+  nearby_universities?: University[];
 }
 
 export interface SearchResponse {
@@ -139,14 +127,14 @@ export async function getWelcomeMessage(): Promise<AssistantMessage> {
 /**
  * إرسال طلب المستخدم واستخراج المعايير
  */
-export async function sendUserQuery(message: string, history: APIChatMessage[] = []): Promise<AssistantMessage> {
+export async function sendUserQuery(message: string): Promise<AssistantMessage> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/chat/query`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({ message }),
     });
 
     if (!response.ok) {

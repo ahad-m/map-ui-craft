@@ -5,7 +5,7 @@ from openai import OpenAI
 from config import settings
 from models import (
     PropertyCriteria, PropertyPurpose, PropertyType, PricePeriod,
-    RangeFilter, IntRangeFilter, PriceFilter, SchoolRequirements, UniversityRequirements,
+    RangeFilter, IntRangeFilter, PriceFilter, SchoolRequirements,
     CriteriaExtractionResponse
 )
 import json
@@ -25,21 +25,14 @@ class LLMParser:
         # System prompt متخصص لفهم اللهجة السعودية
         self.system_prompt = """أنت مساعد عقاري ذكي متخصص في فهم اللهجة السعودية والعربية الفصحى.
 مهمتك استخراج معايير البحث عن العقارات من طلبات المستخدمين بدقة عالية.
-يجب عليك دمج المعايير المستخلصة من سجل المحادثة (History) مع المعايير الجديدة من طلب المستخدم الحالي.
-إذا لم يحدد المستخدم الغرض (بيع/إيجار) أو نوع العقار (شقة/فيلا)، يجب عليك محاولة استنتاجها من سياق المحادثة أو تركها فارغة إذا لم يكن هناك سياق واضح.
-لا تختر قيمة افتراضية إلا إذا كانت واضحة جداً من السياق.
 
 ## قاموس اللهجة السعودية:
 - "ابي" / "ابغى" / "ودي" = أريد
 - "اقصى شي" = الحد الأقصى
 - "اقل شي" = الحد الأدنى
-    - "بحدود" = تقريباً / حوالي
-    - "تتراوح بين" / "من ... إلى" = نطاق
-    - "k" = ألف (1000)
-    
-    ## القرب من الخدمات:
-    - "قرب جامعة X" / "بجانب جامعة X" = UniversityRequirements (university_name=X, required=true)
-    - "قرب مدرسة" = SchoolRequirements (required=true)
+- "بحدود" = تقريباً / حوالي
+- "تتراوح بين" / "من ... إلى" = نطاق
+- "k" = ألف (1000)
 - "م" / "متر" = متر مربع
 
 ## أنواع العقارات (مع المرادفات):
@@ -74,7 +67,7 @@ class LLMParser:
 
 استخرج المعايير بدقة وحول جميع القيم إلى الصيغة المعيارية."""
     
-    def extract_criteria(self, user_query: str, history: list = None) -> CriteriaExtractionResponse:
+    def extract_criteria(self, user_query: str) -> CriteriaExtractionResponse:
         """
         استخراج معايير البحث من طلب المستخدم
         
@@ -158,30 +151,19 @@ class LLMParser:
                                 "gender": {"type": "string", "enum": ["بنين", "بنات", "مختلط"]},
                                 "max_distance_minutes": {"type": "number"}
                             }
-                        },
-                        "university_requirements": {
-                            "type": "object",
-                            "properties": {
-                                "required": {"type": "boolean"},
-                                "university_name": {"type": "string", "description": "اسم الجامعة المطلوب القرب منها"},
-                                "max_distance_minutes": {"type": "number"}
-                            }
                         }
                     },
                     "required": ["purpose", "property_type"]
                 }
             }]
             
-            # بناء سجل المحادثة للنموذج اللغوي
-            messages = [{"role": "system", "content": self.system_prompt}]
-            if history:
-                messages.extend(history)
-            messages.append({"role": "user", "content": user_query})
-
             # استدعاء النموذج اللغوي
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=messages,
+                messages=[
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": user_query}
+                ],
                 functions=functions,
                 function_call={"name": "extract_property_criteria"},
                 temperature=settings.LLM_TEMPERATURE,
@@ -262,14 +244,6 @@ class LLMParser:
         if data.get('school_requirements'):
             school_requirements = SchoolRequirements(**data['school_requirements'])
         
-        university_requirements = None
-        if data.get('university_requirements'):
-            uni_data = data['university_requirements']
-            # ضمان تعيين required=True إذا تم ذكر اسم الجامعة ولكن لم يتم تعيين required صراحة
-            if uni_data.get('university_name') and uni_data.get('required') is None:
-                uni_data['required'] = True
-            university_requirements = UniversityRequirements(**uni_data)
-        
         return PropertyCriteria(
             purpose=PropertyPurpose(data['purpose']),
             property_type=PropertyType(data['property_type']),
@@ -281,7 +255,6 @@ class LLMParser:
             price=price,
             metro_time_max=data.get('metro_time_max'),
             school_requirements=school_requirements,
-            university_requirements=university_requirements,
             original_query=original_query
         )
     
@@ -290,13 +263,8 @@ class LLMParser:
         
         message = "فهمت طلبك! 👍\n\nتبحث عن:\n"
         
-            # نوع العقار والغرض
-            if criteria.property_type and criteria.purpose:
-                message += f"• {criteria.property_type.value} {criteria.purpose.value}\n"
-            elif criteria.property_type:
-                message += f"• {criteria.property_type.value}\n"
-            elif criteria.purpose:
-                message += f"• {criteria.purpose.value}\n"
+        # نوع العقار والغرض
+        message += f"• {criteria.property_type.value} {criteria.purpose.value}\n"
         
         # الحي
         if criteria.district:
@@ -361,15 +329,6 @@ class LLMParser:
             if criteria.school_requirements.max_distance_minutes:
                 school_text += f" (≤{criteria.school_requirements.max_distance_minutes:.0f} دقيقة)"
             message += school_text + "\n"
-        
-        # الجامعات
-        if criteria.university_requirements and criteria.university_requirements.required:
-            uni_text = "• قريب من جامعة"
-            if criteria.university_requirements.university_name:
-                uni_text += f" ({criteria.university_requirements.university_name})"
-            if criteria.university_requirements.max_distance_minutes:
-                uni_text += f" (≤{criteria.university_requirements.max_distance_minutes:.0f} دقيقة)"
-            message += uni_text + "\n"
         
         message += "\nتبي بس المطابق لطلبك ولا عادي نقترح لك اللي يشبهه؟\nمتأكدين بيعجبك! 😊"
         
