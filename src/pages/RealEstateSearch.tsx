@@ -22,7 +22,6 @@ import {
   Loader2,
   LogOut,
   Mic,
-  Building2, // Mosque icon
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -43,6 +42,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import riyalEstateLogo from "@/assets/riyal-estate-logo.jpg";
+import mosqueIcon from "@/assets/mosque-icon.png";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
@@ -1083,7 +1083,7 @@ const RealEstateSearch = () => {
                           className="p-2 rounded-full shadow-elevated"
                           style={{ backgroundColor: "hsl(142 76% 36%)" }}
                         >
-                          <Building2 className="h-5 w-5 text-white" />
+                          <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
                         </div>
                         {/* Hover pulse effect */}
                         <div
