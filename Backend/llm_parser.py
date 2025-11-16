@@ -25,6 +25,9 @@ class LLMParser:
         # System prompt متخصص لفهم اللهجة السعودية
         self.system_prompt = """أنت مساعد عقاري ذكي متخصص في فهم اللهجة السعودية والعربية الفصحى.
 مهمتك استخراج معايير البحث عن العقارات من طلبات المستخدمين بدقة عالية.
+يجب عليك دمج المعايير المستخلصة من سجل المحادثة (History) مع المعايير الجديدة من طلب المستخدم الحالي.
+إذا لم يحدد المستخدم الغرض (بيع/إيجار) أو نوع العقار (شقة/فيلا)، يجب عليك محاولة استنتاجها من سياق المحادثة أو تركها فارغة إذا لم يكن هناك سياق واضح.
+لا تختر قيمة افتراضية إلا إذا كانت واضحة جداً من السياق.
 
 ## قاموس اللهجة السعودية:
 - "ابي" / "ابغى" / "ودي" = أريد
@@ -71,7 +74,7 @@ class LLMParser:
 
 استخرج المعايير بدقة وحول جميع القيم إلى الصيغة المعيارية."""
     
-    def extract_criteria(self, user_query: str) -> CriteriaExtractionResponse:
+    def extract_criteria(self, user_query: str, history: list = None) -> CriteriaExtractionResponse:
         """
         استخراج معايير البحث من طلب المستخدم
         
@@ -169,13 +172,16 @@ class LLMParser:
                 }
             }]
             
+            # بناء سجل المحادثة للنموذج اللغوي
+            messages = [{"role": "system", "content": self.system_prompt}]
+            if history:
+                messages.extend(history)
+            messages.append({"role": "user", "content": user_query})
+
             # استدعاء النموذج اللغوي
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": user_query}
-                ],
+                messages=messages,
                 functions=functions,
                 function_call={"name": "extract_property_criteria"},
                 temperature=settings.LLM_TEMPERATURE,
@@ -284,8 +290,13 @@ class LLMParser:
         
         message = "فهمت طلبك! 👍\n\nتبحث عن:\n"
         
-        # نوع العقار والغرض
-        message += f"• {criteria.property_type.value} {criteria.purpose.value}\n"
+            # نوع العقار والغرض
+            if criteria.property_type and criteria.purpose:
+                message += f"• {criteria.property_type.value} {criteria.purpose.value}\n"
+            elif criteria.property_type:
+                message += f"• {criteria.property_type.value}\n"
+            elif criteria.purpose:
+                message += f"• {criteria.purpose.value}\n"
         
         # الحي
         if criteria.district:
