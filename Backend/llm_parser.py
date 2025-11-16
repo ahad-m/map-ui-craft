@@ -70,7 +70,7 @@ class LLMParser:
 9. احفظ النص الأصلي في original_query
 
 استخرج المعايير بدقة وحول جميع القيم إلى الصيغة المعيارية."""
-    
+        
     def extract_criteria(self, user_query: str) -> CriteriaExtractionResponse:
         """
         استخراج معايير البحث من طلب المستخدم
@@ -347,7 +347,7 @@ class LLMParser:
                 school_text += f" (≤{criteria.school_requirements.max_distance_minutes:.0f} دقيقة)"
             message += school_text + "\n"
         
-        # الجامعات (التعديل الجديد)
+        # الجامعات
         if criteria.university_requirements and criteria.university_requirements.required:
             uni_text = "• قريب من جامعة"
             if criteria.university_requirements.university_name:
