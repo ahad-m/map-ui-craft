@@ -1080,7 +1080,7 @@ const RealEstateSearch = () => {
                     <TooltipTrigger asChild>
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
-                          className="p-2 rounded-full shadow-elevated"
+                          className="p-2 rounded-full shadow-elevated border-2 border-white"
                           style={{ backgroundColor: "hsl(142 76% 36%)" }}
                         >
                           <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
