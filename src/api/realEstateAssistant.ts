@@ -52,12 +52,18 @@ export interface School {
   district?: string;
 }
 
-export interface University {
-  name_ar?: string;
-  name_en?: string;
+export interface SchoolProximity {
+  name: string;
+  distance_minutes: number;
   lat: number;
   lon: number;
-  drive_minutes?: number;
+}
+
+export interface UniversityProximity {
+  name: string;
+  distance_minutes: number;
+  lat: number;
+  lon: number;
 }
 
 export interface Property {
@@ -82,8 +88,8 @@ export interface Property {
   rooms?: number;
   baths?: number;
   halls?: number;
-  nearby_schools?: School[];
-  nearby_universities?: University[];
+  schools_proximity?: SchoolProximity[];
+  university_proximity?: UniversityProximity;
 }
 
 export interface SearchResponse {
