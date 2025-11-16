@@ -136,13 +136,114 @@ class SearchEngine:
             properties_data = result.data if result.data else []
             
             # ==========================================================
-            # [!! -- فلترة المدارس (البحث الدقيق) -- !!]
+            # [!! -- فلترة المدارس والجامعات (البحث الدقيق) -- !!]
             # ==========================================================
             final_properties_data = []
             
-            # هل طلب المستخدم فلترة للمدارس؟
-            if criteria.school_requirements and criteria.school_requirements.required:
-                logger.info("البحث الدقيق: جاري تنفيذ فلترة المدارس...")
+            # هل طلب المستخدم فلترة للمدارس أو الجامعات؟
+            if (criteria.school_requirements and criteria.school_requirements.required) or \
+               (criteria.university_requirements and criteria.university_requirements.required):
+                # 1. تهيئة معايير المدارس (إذا طلبت)
+                school_filter_enabled = criteria.school_requirements and criteria.school_requirements.required
+                school_reqs = criteria.school_requirements
+                school_distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0) if school_filter_enabled else 0
+                school_gender_english = None
+                school_levels_english = None
+                if school_filter_enabled:
+                    logger.info("البحث الدقيق: جاري تهيئة فلترة المدارس...")
+                    if school_reqs.gender:
+                        if school_reqs.gender.value == "بنات":
+                            school_gender_english = "girls"
+                        elif school_reqs.gender.value == "بنين":
+                            school_gender_english = "boys"
+                    if school_reqs.levels:
+                        school_levels_english = [LEVELS_TRANSLATION_MAP.get(level, level) for level in school_reqs.levels]
+
+                # 2. تهيئة معايير الجامعات (إذا طلبت)
+                uni_filter_enabled = criteria.university_requirements and criteria.university_requirements.required
+                uni_reqs = criteria.university_requirements
+                uni_distance_meters = _minutes_to_meters(uni_reqs.max_distance_minutes or 10.0) if uni_filter_enabled else 0
+                uni_lat, uni_lon = None, None
+                
+                if uni_filter_enabled and uni_reqs.university_name:
+                    logger.info(f"البحث الدقيق: جاري تحديد موقع جامعة {uni_reqs.university_name}...")
+                    
+                    uni_location = self.db.get_university_location(uni_reqs.university_name)
+                    if uni_location:
+                        uni_lat, uni_lon = uni_location['lat'], uni_location['lon']
+                        logger.info(f"البحث الدقيق: تم تحديد موقع الجامعة ({uni_lat}, {uni_lon})")
+                    else:
+                        logger.warning(f"البحث الدقيق: لم يتم العثور على موقع لجامعة {uni_reqs.university_name}. سيتم تجاهل الفلتر.")
+                        uni_filter_enabled = False # تعطيل الفلتر إذا لم نجد الموقع
+
+                # 3. المرور على العقارات الأولية وفلترتها
+                for prop_row in properties_data:
+                    
+                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
+                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
+
+                    if not prop_lat or not prop_lon:
+                        continue 
+                    
+                    is_school_match = True
+                    is_uni_match = True
+
+                    try:
+                        # أ. فلترة المدارس
+                        if school_filter_enabled:
+                            match_found = self.db.client.rpc(
+                                'check_school_proximity',
+                                {
+                                    'p_lat': float(prop_lat),
+                                    'p_lon': float(prop_lon),
+                                    'p_distance_meters': school_distance_meters,
+                                    'p_gender': school_gender_english,
+                                    'p_levels': school_levels_english
+                                }
+                            ).execute()
+                            is_school_match = bool(match_found.data)
+                        
+                        # ب. فلترة الجامعات
+                        if uni_filter_enabled and uni_lat and uni_lon:
+                            # 1. حساب المسافة (للتأكد من الفلترة)
+                            match_found = self.db.client.rpc(
+                                'check_university_proximity', 
+                                {
+                                    'p_prop_lat': float(prop_lat),
+                                    'p_prop_lon': float(prop_lon),
+                                    'p_uni_lat': float(uni_lat),
+                                    'p_uni_lon': float(uni_lon),
+                                    'p_distance_meters': uni_distance_meters
+                                }
+                            ).execute()
+                            is_uni_match = bool(match_found.data)
+                            
+                            # 2. إذا طابقت، قم بحساب وقت الوصول بالسيارة وتضمينه في الصف
+                            if is_uni_match:
+                                # [!! ملاحظة !!] : تم استخدام دالة _calculate_distance الموجودة في database.py
+                                # يجب التأكد من أن دالة _calculate_distance متاحة في SearchEngine
+                                # بما أن SearchEngine تستخدم self.db، سنستخدمها مباشرة
+                                distance_km = self.db._calculate_distance(float(prop_lat), float(prop_lon), float(uni_lat), float(uni_lon))
+                                # تقدير تقريبي: 1.5 دقيقة لكل 1 كم (لتمثيل وقت القيادة)
+                                estimated_time_min = round(distance_km * 1.5, 1)
+                                
+                                prop_row['university_proximity'] = {
+                                    'name': uni_reqs.university_name,
+                                    'distance_minutes': estimated_time_min,
+                                    'lat': uni_lat,
+                                    'lon': uni_lon
+                                }
+                            
+                        # 4. إذا طابقت جميع الشروط المطلوبة، أضف العقار للنتائج
+                        if is_school_match and is_uni_match:
+                            final_properties_data.append(prop_row)
+                            
+                    except Exception as rpc_error:
+                        logger.error(f"خطأ في استدعاء RPC للعقار {prop_row.get('id')}: {rpc_error}")
+                        
+            else:
+                # إذا لم يطلب المستخدم فلترة مدارس أو جامعات، استخدم كل النتائج الأولية
+                final_properties_data = properties_data
                 
                 # 1. تحضير معايير المدارس
                 school_reqs = criteria.school_requirements
@@ -292,9 +393,109 @@ class SearchEngine:
             # ==========================================================
             final_properties_data = []
             
-            # هل طلب المستخدم فلترة للمدارس؟
-            if criteria.school_requirements and criteria.school_requirements.required:
-                logger.info("البحث المرن: جاري تنفيذ فلترة المدارس...")
+            # هل طلب المستخدم فلترة للمدارس أو الجامعات؟
+            if (criteria.school_requirements and criteria.school_requirements.required) or \
+               (criteria.university_requirements and criteria.university_requirements.required):
+                # 1. تهيئة معايير المدارس (إذا طلبت)
+                school_filter_enabled = criteria.school_requirements and criteria.school_requirements.required
+                school_reqs = criteria.school_requirements
+                school_distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0) if school_filter_enabled else 0
+                school_gender_english = None
+                school_levels_english = None
+                if school_filter_enabled:
+                    logger.info("البحث المرن: جاري تهيئة فلترة المدارس...")
+                    if school_reqs.gender:
+                        if school_reqs.gender.value == "بنات":
+                            school_gender_english = "girls"
+                        elif school_reqs.gender.value == "بنين":
+                            school_gender_english = "boys"
+                    if school_reqs.levels:
+                        school_levels_english = [LEVELS_TRANSLATION_MAP.get(level, level) for level in school_reqs.levels]
+
+                # 2. تهيئة معايير الجامعات (إذا طلبت)
+                uni_filter_enabled = criteria.university_requirements and criteria.university_requirements.required
+                uni_reqs = criteria.university_requirements
+                uni_distance_meters = _minutes_to_meters(uni_reqs.max_distance_minutes or 10.0) if uni_filter_enabled else 0
+                uni_lat, uni_lon = None, None
+                
+                if uni_filter_enabled and uni_reqs.university_name:
+                    logger.info(f"البحث المرن: جاري تحديد موقع جامعة {uni_reqs.university_name}...")
+                    
+                    uni_location = self.db.get_university_location(uni_reqs.university_name)
+                    if uni_location:
+                        uni_lat, uni_lon = uni_location['lat'], uni_location['lon']
+                    else:
+                        logger.warning(f"البحث المرن: لم يتم العثور على موقع لجامعة {uni_reqs.university_name}. سيتم تجاهل الفلتر.")
+                        uni_filter_enabled = False # تعطيل الفلتر إذا لم نجد الموقع
+
+                # 3. المرور على العقارات الأولية وفلترتها
+                for prop_row in properties_data:
+                    
+                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
+                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
+
+                    if not prop_lat or not prop_lon:
+                        continue 
+                    
+                    is_school_match = True
+                    is_uni_match = True
+
+                    try:
+                        # أ. فلترة المدارس
+                        if school_filter_enabled:
+                            match_found = self.db.client.rpc(
+                                'check_school_proximity',
+                                {
+                                    'p_lat': float(prop_lat),
+                                    'p_lon': float(prop_lon),
+                                    'p_distance_meters': school_distance_meters,
+                                    'p_gender': school_gender_english,
+                                    'p_levels': school_levels_english
+                                }
+                            ).execute()
+                            is_school_match = bool(match_found.data)
+                        
+                        # ب. فلترة الجامعات
+                        if uni_filter_enabled and uni_lat and uni_lon:
+                            # 1. حساب المسافة (للتأكد من الفلترة)
+                            match_found = self.db.client.rpc(
+                                'check_university_proximity', 
+                                {
+                                    'p_prop_lat': float(prop_lat),
+                                    'p_prop_lon': float(prop_lon),
+                                    'p_uni_lat': float(uni_lat),
+                                    'p_uni_lon': float(uni_lon),
+                                    'p_distance_meters': uni_distance_meters
+                                }
+                            ).execute()
+                            is_uni_match = bool(match_found.data)
+                            
+                            # 2. إذا طابقت، قم بحساب وقت الوصول بالسيارة وتضمينه في الصف
+                            if is_uni_match:
+                                # [!! ملاحظة !!] : تم استخدام دالة _calculate_distance الموجودة في database.py
+                                # يجب التأكد من أن دالة _calculate_distance متاحة في SearchEngine
+                                # بما أن SearchEngine تستخدم self.db، سنستخدمها مباشرة
+                                distance_km = self.db._calculate_distance(float(prop_lat), float(prop_lon), float(uni_lat), float(uni_lon))
+                                # تقدير تقريبي: 1.5 دقيقة لكل 1 كم (لتمثيل وقت القيادة)
+                                estimated_time_min = round(distance_km * 1.5, 1)
+                                
+                                prop_row['university_proximity'] = {
+                                    'name': uni_reqs.university_name,
+                                    'distance_minutes': estimated_time_min,
+                                    'lat': uni_lat,
+                                    'lon': uni_lon
+                                }
+                            
+                        # 4. إذا طابقت جميع الشروط المطلوبة، أضف العقار للنتائج
+                        if is_school_match and is_uni_match:
+                            final_properties_data.append(prop_row)
+                            
+                    except Exception as rpc_error:
+                        logger.error(f"خطأ في استدعاء RPC (مرن) للعقار {prop_row.get('id')}: {rpc_error}")
+                        
+            else:
+                # إذا لم يطلب المستخدم فلترة مدارس أو جامعات، استخدم كل النتائج الأولية
+                final_properties_data = properties_data
                 
                 # 1. تحضير معايير المدارس
                 school_reqs = criteria.school_requirements
