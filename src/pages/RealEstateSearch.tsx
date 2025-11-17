@@ -78,12 +78,12 @@ const RealEstateSearch = () => {
   const mapRef = useRef<google.maps.Map | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
-  // [!! تعديل 1.1 !!] : إضافة currentCriteria
+  // إضافة currentCriteria
   const {
     messages,
     isLoading: isChatLoading,
     isBackendOnline,
-    currentCriteria, // <-- تمت إضافته
+    currentCriteria,
     searchResults: chatSearchResults,
     sendMessage,
     selectSearchMode,
@@ -91,12 +91,12 @@ const RealEstateSearch = () => {
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
-  const [isListening, setIsListening] = useState(false); // [!! تعديل 2 !!] : إضافة حالة الاستماع
+  const [isListening, setIsListening] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Filter states - MUST be before early return
+  // Filter states
   const [filters, setFilters] = useState({
     propertyType: "",
     city: "الرياض",
@@ -111,7 +111,7 @@ const RealEstateSearch = () => {
     schoolGender: "",
     schoolLevel: "",
     maxSchoolTime: 15,
-    selectedUniversity: "", // <-- (تمت إضافة الحقل المفقود)
+    selectedUniversity: "",
     maxUniversityTime: 30,
     nearMetro: false,
     minMetroTime: 1,
@@ -138,7 +138,7 @@ const RealEstateSearch = () => {
   const [chatbotProperties, setChatbotProperties] = useState<any[]>([]);
   const [showChatbotResults, setShowChatbotResults] = useState(false);
 
-  // Check authentication (optional - allow unauthenticated access)
+  // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
       const {
@@ -170,54 +170,56 @@ const RealEstateSearch = () => {
     }
   }, [searchQuery]);
 
-  // [!! تعديل 1.2 !!] : استبدال useEffect لمزامنة فلاتر المدارس
+  // مزامنة معايير المدارس والجامعات من الشات
   useEffect(() => {
     if (chatSearchResults.length > 0) {
       console.log("🎯 Chatbot Properties:", chatSearchResults);
       setChatbotProperties(chatSearchResults);
       setShowChatbotResults(true);
-      setHasSearched(true); // مهم لعرض الدبابيس
+      setHasSearched(true);
 
-      // [!! التعديل الجديد يبدأ هنا !!]
-      // مزامنة معايير المدارس من المساعد الذكي إلى فلتر الواجهة
-      if (currentCriteria && currentCriteria.school_requirements?.required) {
-        const schoolReqs = currentCriteria.school_requirements;
+      // مزامنة معايير المدارس والجامعات من المساعد الذكي إلى فلتر الواجهة
+      if (currentCriteria) {
+        // 1. مزامنة معايير المدارس
+        if (currentCriteria.school_requirements?.required) {
+          const schoolReqs = currentCriteria.school_requirements;
 
-        // 1. ترجمة جنس المدرسة
-        // الباك إند يرسل: 'بنات' أو 'بنين'
-        // الواجهة تستخدم: 'Girls' أو 'Boys'
-        let genderFilter = "";
-        if (schoolReqs.gender === "بنات") genderFilter = "Girls";
-        if (schoolReqs.gender === "بنين") genderFilter = "Boys";
+          let genderFilter = "";
+          if (schoolReqs.gender === "بنات") genderFilter = "Girls";
+          if (schoolReqs.gender === "بنين") genderFilter = "Boys";
 
-        // 2. ترجمة مستوى المدرسة
-        // الباك إند يرسل: ['ابتدائي', 'متوسط']
-        // الواجهة تستخدم: 'elementary', 'middle'
-        let levelFilter = "";
-        if (schoolReqs.levels && schoolReqs.levels.length > 0) {
-          const firstLevel = schoolReqs.levels[0];
+          let levelFilter = "";
+          if (schoolReqs.levels && schoolReqs.levels.length > 0) {
+            const firstLevel = schoolReqs.levels[0];
+            if (firstLevel.includes("ابتدائي")) levelFilter = "elementary";
+            else if (firstLevel.includes("متوسط")) levelFilter = "middle";
+            else if (firstLevel.includes("ثانوي")) levelFilter = "high";
+            else if (firstLevel.includes("روضة")) levelFilter = "kindergarten";
+            else if (firstLevel.includes("حضانة")) levelFilter = "nursery";
+            else levelFilter = firstLevel;
+          }
 
-          // (يمكن تحسين هذا المابينج لاحقاً)
-          if (firstLevel.includes("ابتدائي")) levelFilter = "elementary";
-          else if (firstLevel.includes("متوسط")) levelFilter = "middle";
-          else if (firstLevel.includes("ثانوي")) levelFilter = "high";
-          else if (firstLevel.includes("روضة")) levelFilter = "kindergarten";
-          else if (firstLevel.includes("حضانة")) levelFilter = "nursery";
-          else levelFilter = firstLevel; // كخيار احتياطي
+          setFilters((prevFilters) => ({
+            ...prevFilters,
+            schoolGender: genderFilter,
+            schoolLevel: levelFilter,
+            maxSchoolTime: schoolReqs.max_distance_minutes || 15,
+          }));
         }
 
-        // 3. تحديث الفلتر
-        setFilters((prevFilters) => ({
-          ...prevFilters,
-          schoolGender: genderFilter,
-          schoolLevel: levelFilter,
-          // تحديث السلايدر الخاص بالوقت
-          maxSchoolTime: schoolReqs.max_distance_minutes || 15,
-        }));
+        // 2. مزامنة معايير الجامعات
+        if (currentCriteria.university_requirements?.required) {
+          const universityReqs = currentCriteria.university_requirements;
+
+          setFilters((prevFilters) => ({
+            ...prevFilters,
+            selectedUniversity: universityReqs.university_names?.[0] || "",
+            maxUniversityTime: universityReqs.max_distance_minutes || 30,
+          }));
+        }
       }
-      // [!! التعديل الجديد ينتهي هنا !!]
     }
-  }, [chatSearchResults, currentCriteria]); // <-- أضفنا currentCriteria
+  }, [chatSearchResults, currentCriteria]);
 
   // دالة إرسال رسالة
   const handleSendMessage = async () => {
@@ -257,7 +259,7 @@ const RealEstateSearch = () => {
     }
   };
 
-  // [!! تعديل 3 !!] : إضافة دالة معالجة الإدخال الصوتي (نسخة محسّنة)
+  // دالة معالجة الإدخال الصوتي
   const handleVoiceInput = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -270,11 +272,11 @@ const RealEstateSearch = () => {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "ar-SA"; // تحديد اللغة العربية (السعودية)
+    recognition.lang = "ar-SA";
     recognition.continuous = false;
     recognition.interimResults = false;
 
-    let finalTranscript = ""; // متغير مؤقت لتجنب race condition
+    let finalTranscript = "";
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -283,11 +285,10 @@ const RealEstateSearch = () => {
 
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      finalTranscript = transcript; // تخزين النتيجة
-      setChatInput(transcript); // تحديث الواجهة فوراً
+      finalTranscript = transcript;
+      setChatInput(transcript);
     };
 
-    // (جديد) للتعامل مع عدم التطابق
     recognition.onnomatch = () => {
       toast({
         title: "لم يتم التعرف على الكلام",
@@ -297,7 +298,6 @@ const RealEstateSearch = () => {
     };
 
     recognition.onerror = (event: any) => {
-      // (جديد) معالجة خطأ حظر المايكروفون
       if (event.error === "not-allowed") {
         toast({
           title: "المايكروفون محجوب",
@@ -313,17 +313,15 @@ const RealEstateSearch = () => {
       }
     };
 
-    // (جديد) تبسيط onend
     recognition.onend = () => {
       setIsListening(false);
-      // إذا انتهى الاستماع ولم يتم تسجيل أي نص
       if (finalTranscript === "") {
-        setChatInput(""); // تنظيف "...جاري الاستماع"
+        setChatInput("");
       }
     };
 
     try {
-      recognition.start(); // بدء الاستماع
+      recognition.start();
     } catch (e) {
       setIsListening(false);
       setChatInput("");
@@ -342,7 +340,6 @@ const RealEstateSearch = () => {
   const { data: additionalPropertyTypes = [] } = useQuery({
     queryKey: ["propertyTypes", customSearchTerms.propertyType],
     queryFn: async () => {
-      // Only search database if user has typed something
       if (!customSearchTerms.propertyType) {
         return [];
       }
@@ -358,7 +355,6 @@ const RealEstateSearch = () => {
 
       if (error) throw error;
 
-      // Get unique property types, filter out predefined ones and empty values
       const uniquePropertyTypes = [
         ...new Set(
           data
@@ -379,7 +375,6 @@ const RealEstateSearch = () => {
     queryFn: async () => {
       let query = supabase.from("properties").select("district").not("district", "is", null).not("district", "eq", "");
 
-      // If custom search term exists, filter by it
       if (customSearchTerms.neighborhood) {
         query = query.ilike("district", `%${customSearchTerms.neighborhood}%`);
       }
@@ -388,7 +383,6 @@ const RealEstateSearch = () => {
 
       if (error) throw error;
 
-      // Get unique neighborhoods, filter out empty/null values, and sort
       const uniqueNeighborhoods = [...new Set(data?.map((p) => p.district?.trim()).filter((n) => n && n !== "") || [])];
       return uniqueNeighborhoods.sort((a, b) => a.localeCompare(b, "ar"));
     },
@@ -402,7 +396,7 @@ const RealEstateSearch = () => {
         .from("properties")
         .select("*")
         .eq("purpose", transactionType === "sale" ? "للبيع" : "للايجار")
-        .not("final_lat", "is", null) // <-- الفلترة تتم بالـ final_lat في الباك إند
+        .not("final_lat", "is", null)
         .not("final_lon", "is", null);
 
       if (filters.propertyType) {
@@ -446,42 +440,32 @@ const RealEstateSearch = () => {
       if (error) throw error;
 
       return (data || []).filter((property) => {
-        // Handle numeric types (can be number or string depending on data)
         const priceValue = property.price_num as any;
         const price =
           typeof priceValue === "string" ? parseFloat(priceValue.replace(/,/g, "")) : Number(priceValue) || 0;
         const areaValue = property.area_m2 as any;
         const area = typeof areaValue === "string" ? parseFloat(areaValue.replace(/,/g, "")) : Number(areaValue) || 0;
 
-        // Price matching logic: exact range match only
         let priceMatch = true;
         if (filters.minPrice > 0 && filters.maxPrice > 0) {
-          // Both filled: strict range match
           priceMatch = price >= filters.minPrice && price <= filters.maxPrice;
         } else if (filters.minPrice > 0) {
-          // Only min filled: must be at least this price
           priceMatch = price >= filters.minPrice;
         } else if (filters.maxPrice > 0) {
-          // Only max filled: must be at most this price
           priceMatch = price <= filters.maxPrice;
         }
 
-        // Area matching logic: exact range match only
         let areaMatch = true;
         if (filters.areaMin > 0 && filters.areaMax > 0) {
-          // Both filled: strict range match
           areaMatch = area >= filters.areaMin && area <= filters.areaMax;
         } else if (filters.areaMin > 0) {
-          // Only min filled: must be at least this area
           areaMatch = area >= filters.areaMin;
         } else if (filters.areaMax > 0) {
-          // Only max filled: must be at most this area
           areaMatch = area <= filters.areaMax;
         }
 
         let metroMatch = true;
         if (filters.nearMetro) {
-          // When metro filter is enabled, only show properties with metro data within the time range
           if (!property.time_to_metro_min) {
             metroMatch = false;
           } else {
@@ -581,7 +565,6 @@ const RealEstateSearch = () => {
         query = query.eq("primary_level", filters.schoolLevel);
       }
 
-      // If custom search term exists, filter by it
       if (customSearchTerms.school) {
         query = query.or(`name.ilike.%${customSearchTerms.school}%,district.ilike.%${customSearchTerms.school}%`);
       }
@@ -592,28 +575,27 @@ const RealEstateSearch = () => {
     },
   });
 
-  // حساب المسافة بين نقطتين (Haversine formula)
+  // حساب المسافة بين نقطتين
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // نصف قطر الأرض بالكيلومتر
+    const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // المسافة بالكيلومتر
+    return R * c;
   };
 
-  // حساب وقت السفر (بافتراض سرعة متوسطة 30 كم/ساعة في المدينة)
+  // حساب وقت السفر
   const calculateTravelTime = (distanceKm: number): number => {
-    const avgSpeed = 30; // km/h in city traffic
-    return Math.round((distanceKm / avgSpeed) * 60); // تحويل إلى دقائق
+    const avgSpeed = 30;
+    return Math.round((distanceKm / avgSpeed) * 60);
   };
 
-  // دمج العقارات: إذا فيه نتائج من Chatbot، استخدمها، وإلا استخدم البحث العادي
+  // دمج العقارات
   const baseProperties = showChatbotResults ? chatbotProperties : properties;
 
-  // [!! تعديل 4 !!] : إعادة `propertiesCenterLocation`
   const propertiesCenterLocation = useMemo(() => {
     if (baseProperties.length === 0) return null;
 
@@ -633,15 +615,10 @@ const RealEstateSearch = () => {
     };
   }, [baseProperties]);
 
-  // [!! تعديل 5 !!] : إعادة `nearbySchools` (النسخة البسيطة)
+  // المدارس القريبة
   const nearbySchools = useMemo(() => {
-    // لا تظهر دبابيس المدارس إلا إذا بحث المستخدم (عبر الشات أو يدوياً)
     if (!hasSearched) return [];
-
-    // لا تظهر الدبابيس إذا لم يحدد فلتر (للبحث اليدوي) أو لا يوجد معايير (للبحث بالشات)
-    // (ملاحظة: currentCriteria يتم تحديثه في useEffect)
     if (!filters.schoolGender && !filters.schoolLevel && !currentCriteria?.school_requirements) return [];
-
     if (!propertiesCenterLocation || allSchools.length === 0) return [];
 
     return allSchools
@@ -653,15 +630,9 @@ const RealEstateSearch = () => {
           school.lon,
         );
         const travelTime = calculateTravelTime(distance);
-
-        // إرجاع كائن المدرسة مع إضافة وقت السفر
         return { ...school, travelTime };
       })
-      .filter(
-        (school) =>
-          // الفلترة بناءً على الوقت
-          school.travelTime <= filters.maxSchoolTime,
-      );
+      .filter((school) => school.travelTime <= filters.maxSchoolTime);
   }, [
     allSchools,
     propertiesCenterLocation,
@@ -684,7 +655,6 @@ const RealEstateSearch = () => {
         .not("name_ar", "is", null)
         .not("name_en", "is", null);
 
-      // If custom search term exists, filter by it
       if (customSearchTerms.university) {
         query = query.or(
           `name_ar.ilike.%${customSearchTerms.university}%,name_en.ilike.%${customSearchTerms.university}%`,
@@ -697,6 +667,39 @@ const RealEstateSearch = () => {
       return data || [];
     },
   });
+
+  // الجامعات القريبة
+  const nearbyUniversities = useMemo(() => {
+    if (!hasSearched) return [];
+    if (!filters.selectedUniversity && !currentCriteria?.university_requirements) return [];
+    if (!propertiesCenterLocation || allUniversities.length === 0) return [];
+
+    return allUniversities
+      .map((university) => {
+        const distance = calculateDistance(
+          propertiesCenterLocation.lat,
+          propertiesCenterLocation.lon,
+          university.lat,
+          university.lon,
+        );
+        const travelTime = calculateTravelTime(distance);
+        return { ...university, travelTime };
+      })
+      .filter(
+        (university) =>
+          university.travelTime <= filters.maxUniversityTime &&
+          (!filters.selectedUniversity ||
+            (i18n.language === "ar" ? university.name_ar : university.name_en) === filters.selectedUniversity),
+      );
+  }, [
+    allUniversities,
+    propertiesCenterLocation,
+    filters.maxUniversityTime,
+    filters.selectedUniversity,
+    hasSearched,
+    currentCriteria,
+    i18n.language,
+  ]);
 
   // Fetch all mosques
   const { data: allMosques = [] } = useQuery({
@@ -713,37 +716,13 @@ const RealEstateSearch = () => {
         console.error("Error fetching mosques:", error);
         throw error;
       }
-      console.log("Fetched mosques:", data?.length);
       return data || [];
     },
   });
 
-  // تصفية الجامعات لإظهار الجامعة المختارة فقط
-  const nearbyUniversities = useMemo(() => {
-    // Only show university if one is selected
-    if (!filters.selectedUniversity) return [];
-    if (allUniversities.length === 0) return [];
-
-    // Return the selected university without distance filtering
-    // Distance filtering will be done per property in displayedProperties
-    return allUniversities.filter((uni) => {
-      const nameMatch = (i18n.language === "ar" ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
-      return nameMatch;
-    });
-  }, [allUniversities, filters.selectedUniversity, i18n.language]);
-
-  // Calculate nearby mosques
+  // المساجد القريبة
   const nearbyMosques = useMemo(() => {
-    // Only show mosques if user has enabled the mosque filter
     if (!hasSearched || !filters.nearMosques || !propertiesCenterLocation || allMosques.length === 0) return [];
-
-    console.log("Calculating nearby mosques:", {
-      hasSearched,
-      nearMosquesFilter: filters.nearMosques,
-      propertiesCenterLocation,
-      mosquesCount: allMosques.length,
-      maxTime: filters.maxMosqueTime
-    });
 
     const nearby = allMosques
       .map((mosque) => {
@@ -754,28 +733,25 @@ const RealEstateSearch = () => {
           mosque.lon,
         );
         const travelTime = calculateTravelTime(distance);
-
         return { ...mosque, travelTime };
       })
       .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
-    
-    console.log("Nearby mosques found:", nearby.length);
+
     return nearby;
   }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, filters.nearMosques, hasSearched]);
 
-  // ترتيب العقارات بناءً على وقت السفر من المدرسة أو الجامعة المختارة
+  // ترتيب العقارات بناءً على وقت السفر
   const displayedProperties = useMemo(() => {
     let filtered = [...baseProperties];
 
-    // Filter by school proximity if school filters are active
+    // Filter by school proximity
     if (hasSearched && (filters.schoolGender || filters.schoolLevel) && nearbySchools.length > 0) {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-        
+
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
-        // Check if there's at least one school within the time range
         return nearbySchools.some((school) => {
           const distance = calculateDistance(lat, lon, school.lat, school.lon);
           const travelTime = calculateTravelTime(distance);
@@ -784,15 +760,14 @@ const RealEstateSearch = () => {
       });
     }
 
-    // Filter by university proximity if university is selected
-    if (filters.selectedUniversity && nearbyUniversities.length > 0) {
+    // Filter by university proximity
+    if (hasSearched && filters.selectedUniversity && nearbyUniversities.length > 0) {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-        
+
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
-        // Check if the selected university is within the time range
         return nearbyUniversities.some((uni) => {
           const distance = calculateDistance(lat, lon, uni.lat, uni.lon);
           const travelTime = calculateTravelTime(distance);
@@ -801,15 +776,14 @@ const RealEstateSearch = () => {
       });
     }
 
-    // Filter by mosque proximity if mosques filter is active
+    // Filter by mosque proximity
     if (filters.nearMosques && nearbyMosques.length > 0) {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-        
+
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
-        // Check if there's at least one mosque within the time range
         return nearbyMosques.some((mosque) => {
           const distance = calculateDistance(lat, lon, mosque.lat, mosque.lon);
           const travelTime = calculateTravelTime(distance);
@@ -837,7 +811,7 @@ const RealEstateSearch = () => {
   const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
 
   // Check if user has applied any filters
-  const hasActiveFilters = 
+  const hasActiveFilters =
     filters.propertyType ||
     filters.neighborhood ||
     filters.minPrice > 0 ||
@@ -870,21 +844,13 @@ const RealEstateSearch = () => {
   // توجيه الخريطة عند البحث من الشات
   useEffect(() => {
     if (!mapRef.current) return;
-    console.log("🗺️ Map useEffect triggered:", {
-      showChatbotResults,
-      chatbotPropertiesLength: chatbotProperties.length,
-    });
     if (showChatbotResults && chatbotProperties.length > 0) {
-      // ================================================
-      // !! تعديل رقم 2: فلترة إحداثيات الشات بوت (استخدم lat/lon) !!
-      // ================================================
       const lats = chatbotProperties.map((p) => Number(p.lat)).filter((lat) => !isNaN(lat) && lat !== 0);
       const lngs = chatbotProperties.map((p) => Number(p.lon)).filter((lng) => !isNaN(lng) && lng !== 0);
 
       if (lats.length > 0 && lngs.length > 0) {
         const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
         const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-        console.log("🗺️ Moving map to:", { lat: avgLat, lng: avgLng, zoom: 13 });
         mapRef.current.setCenter({ lat: avgLat, lng: avgLng });
         mapRef.current.setZoom(13);
       }
@@ -897,25 +863,20 @@ const RealEstateSearch = () => {
 
     const bounds = new google.maps.LatLngBounds();
     displayedProperties.forEach((property) => {
-      // !! التوحيد: استخدم 'lat' و 'lon'
       const lat = Number(property.lat);
       const lng = Number(property.lon);
 
-      // ================================================
-      // !! تعديل رقم 3: فلترة إحداثيات الزووم (استخدم lat/lon) !!
-      // ================================================
       if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
         bounds.extend({ lat, lng });
       }
     });
 
-    // إضافة تحصين للتأكد أن الحدود ليست فارغة
     if (!bounds.isEmpty()) {
       mapRef.current.fitBounds(bounds);
     }
   }, [displayedProperties, hasSearched]);
 
-  // Don't render until auth is checked - MUST be after all hooks
+  // Don't render until auth is checked
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -970,14 +931,11 @@ const RealEstateSearch = () => {
             disableDefaultUI={false}
           >
             <MapRefHandler mapRef={mapRef} />
+
+            {/* دبابيس العقارات */}
             {displayedProperties.map((property) => {
-              // ================================================
-              // !! تعديل رقم 1: فلترة الدبابيس (Markers) (استخدم lat/lon) !!
-              // ================================================
-              // !! التوحيد: استخدم 'lat' و 'lon'
               const lat = Number(property.lat);
               const lon = Number(property.lon);
-              // !! الفلترة: تأكد أنها ليست 0,0
               if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return null;
 
               return (
@@ -994,12 +952,10 @@ const RealEstateSearch = () => {
                         glyphColor={"#ffffff"}
                       />
                     </div>
-                    {/* Animated pulse ring on hover */}
                     <div
                       className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100"
                       style={{ animationDuration: "1.5s" }}
                     />
-                    {/* Favorite heart badge */}
                     {isFavorite(property.id) && (
                       <div className="absolute -top-2 -right-2 animate-pulse-glow">
                         <Heart className="h-4 w-4 fill-red-500 text-red-500 drop-shadow-lg" />
@@ -1010,7 +966,7 @@ const RealEstateSearch = () => {
               );
             })}
 
-            {/* [!! تعديل 6 !!] : العودة إلى `nearbySchools` لعرض الدبابيس */}
+            {/* دبابيس المدارس */}
             {hasSearched &&
               nearbySchools.map((school) => (
                 <AdvancedMarker key={`school-${school.id}`} position={{ lat: school.lat, lng: school.lon }}>
@@ -1023,14 +979,12 @@ const RealEstateSearch = () => {
                         >
                           <School className="h-5 w-5 text-white" />
                         </div>
-                        {/* Hover pulse effect */}
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
                           style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
                         />
                       </div>
                     </TooltipTrigger>
-                    {/* [!! تعديل 7 !!] : إعادة عرض الوقت */}
                     <TooltipContent>
                       <p className="font-medium">{school.name}</p>
                       {school.travelTime !== undefined && (
@@ -1043,10 +997,11 @@ const RealEstateSearch = () => {
                 </AdvancedMarker>
               ))}
 
+            {/* دبابيس الجامعات */}
             {hasSearched &&
               nearbyUniversities.map((university) => (
                 <AdvancedMarker
-                  key={`university-${university.name_ar}`}
+                  key={`university-${university.name_ar || university.name_en}`}
                   position={{ lat: university.lat, lng: university.lon }}
                 >
                   <Tooltip>
@@ -1054,25 +1009,29 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
+                          style={{ backgroundColor: "hsl(271 81% 56%)" }}
                         >
                           <GraduationCap className="h-5 w-5 text-white" />
                         </div>
-                        {/* Hover pulse effect */}
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
+                          style={{ backgroundColor: "hsl(271 81% 56% / 0.3)", animationDuration: "1.5s" }}
                         />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
+                      {university.travelTime !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("maxTravelTime")}: {university.travelTime} {t("minutes")}
+                        </p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 </AdvancedMarker>
               ))}
 
-            {/* Mosque markers */}
+            {/* دبابيس المساجد */}
             {hasSearched &&
               nearbyMosques.map((mosque) => (
                 <AdvancedMarker key={`mosque-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }}>
@@ -1085,7 +1044,6 @@ const RealEstateSearch = () => {
                         >
                           <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
                         </div>
-                        {/* Hover pulse effect */}
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
                           style={{ backgroundColor: "hsl(142 76% 36% / 0.3)", animationDuration: "1.5s" }}
@@ -1947,10 +1905,10 @@ const RealEstateSearch = () => {
 
                       {/* Apply/Reset Buttons */}
                       <div className="flex gap-3 mt-8 pt-6 border-t border-border/50">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="lg"
-                          className="flex-1 h-12 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all" 
+                          className="flex-1 h-12 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all"
                           onClick={resetFilters}
                         >
                           <X className={`h-5 w-5 ${i18n.language === "ar" ? "ml-2" : "mr-2"}`} />
@@ -2046,19 +2004,19 @@ const RealEstateSearch = () => {
                         <div className="flex items-center gap-2 text-xs mb-2">
                           {property.rooms && (
                             <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
-                              <Bed className="h-4 w-4 text-primary" /> 
+                              <Bed className="h-4 w-4 text-primary" />
                               <span className="font-medium">{property.rooms}</span>
                             </span>
                           )}
                           {property.baths && (
                             <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
-                              <Bath className="h-4 w-4 text-primary" /> 
+                              <Bath className="h-4 w-4 text-primary" />
                               <span className="font-medium">{property.baths}</span>
                             </span>
                           )}
                           {property.area_m2 && (
                             <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
-                              <Maximize className="h-4 w-4 text-primary" /> 
+                              <Maximize className="h-4 w-4 text-primary" />
                               <span className="font-medium">{property.area_m2} m²</span>
                             </span>
                           )}
@@ -2084,12 +2042,13 @@ const RealEstateSearch = () => {
               onClick={() => {
                 setShowChatbotResults(false);
                 setChatbotProperties([]);
-                // [!! إضافة !!] : إعادة تعيين فلاتر المدارس عند مسح النتائج
                 setFilters((prev) => ({
                   ...prev,
                   schoolGender: "",
                   schoolLevel: "",
                   maxSchoolTime: 15,
+                  selectedUniversity: "",
+                  maxUniversityTime: 30,
                 }));
               }}
               variant="outline"
@@ -2113,12 +2072,8 @@ const RealEstateSearch = () => {
                     </p>
                   ) : displayedProperties.length === 0 ? (
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-destructive">
-                        {t("noPropertiesFound")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("tryAdjustingFilters")}
-                      </p>
+                      <p className="text-sm font-semibold text-destructive">{t("noPropertiesFound")}</p>
+                      <p className="text-xs text-muted-foreground">{t("tryAdjustingFilters")}</p>
                     </div>
                   ) : (
                     <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -2227,7 +2182,7 @@ const RealEstateSearch = () => {
               </div>
             </ScrollArea>
 
-            {/* [!! تعديل 4 !!] : إضافة زر المايكروفون وتعديل التعطيل */}
+            {/* Chat Input with Voice */}
             <div className="p-4 border-t">
               <div className="flex gap-2">
                 <Input
@@ -2235,29 +2190,24 @@ const RealEstateSearch = () => {
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                   placeholder={isListening ? "...جاري الاستماع" : "اكتب طلبك هنا..."}
-                  disabled={isChatLoading || !isBackendOnline || isListening} // تعطيل أثناء الاستماع
+                  disabled={isChatLoading || !isBackendOnline || isListening}
                   className="flex-1"
                   dir="rtl"
                 />
-                {/* --- زر المايكروفون (الجديد) --- */}
                 <Button
                   onClick={handleVoiceInput}
                   disabled={isChatLoading || !isBackendOnline || isListening}
                   variant="outline"
                   size="icon"
-                  className={cn(
-                    "h-10 w-10", // حجم موحد
-                    isListening && "animate-pulse bg-blue-100 border-blue-300 text-blue-700",
-                  )}
+                  className={cn("h-10 w-10", isListening && "animate-pulse bg-blue-100 border-blue-300 text-blue-700")}
                 >
                   <Mic className="h-4 w-4" />
                 </Button>
-                {/* --- زر الإرسال --- */}
                 <Button
                   onClick={handleSendMessage}
-                  disabled={isChatLoading || !isBackendOnline || !chatInput.trim() || isListening} // تعطيل أثناء الاستماع
+                  disabled={isChatLoading || !isBackendOnline || !chatInput.trim() || isListening}
                   className="bg-blue-600 hover:bg-blue-700"
-                  size="icon" // حجم موحد
+                  size="icon"
                 >
                   {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
