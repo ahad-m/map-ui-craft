@@ -58,6 +58,11 @@ const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.
   return null;
 };
 
+// Type guard للتحقق من وجود university_requirements
+const hasUniversityRequirements = (criteria: any): criteria is { university_requirements: any } => {
+  return criteria && criteria.university_requirements !== undefined;
+};
+
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -207,8 +212,8 @@ const RealEstateSearch = () => {
           }));
         }
 
-        // 2. مزامنة معايير الجامعات
-        if (currentCriteria.university_requirements?.required) {
+        // 2. مزامنة معايير الجامعات - باستخدام type guard
+        if (hasUniversityRequirements(currentCriteria) && currentCriteria.university_requirements?.required) {
           const universityReqs = currentCriteria.university_requirements;
 
           setFilters((prevFilters) => ({
@@ -668,10 +673,15 @@ const RealEstateSearch = () => {
     },
   });
 
-  // الجامعات القريبة
+  // الجامعات القريبة - إصلاح الخطأ باستخدام type guard
   const nearbyUniversities = useMemo(() => {
     if (!hasSearched) return [];
-    if (!filters.selectedUniversity && !currentCriteria?.university_requirements) return [];
+
+    // استخدام type guard للتحقق من وجود university_requirements
+    const hasUniReqs =
+      currentCriteria && hasUniversityRequirements(currentCriteria) && currentCriteria.university_requirements;
+    if (!filters.selectedUniversity && !hasUniReqs) return [];
+
     if (!propertiesCenterLocation || allUniversities.length === 0) return [];
 
     return allUniversities
