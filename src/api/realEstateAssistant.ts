@@ -16,6 +16,25 @@ export interface AssistantMessage {
   clarification_questions?: string[];
 }
 
+export interface RangeFilter {
+  exact?: number;
+  min?: number;
+  max?: number;
+}
+
+export interface SchoolRequirements {
+  required: boolean;
+  levels?: string[];
+  gender?: string;
+  max_distance_minutes?: number;
+}
+
+export interface UniversityRequirements {
+  required: boolean;
+  university_names?: string[];
+  max_distance_minutes?: number;
+}
+
 export interface PropertyCriteria {
   purpose: string;
   property_type: string;
@@ -25,16 +44,18 @@ export interface PropertyCriteria {
   baths?: RangeFilter;
   halls?: RangeFilter;
   area_m2?: RangeFilter;
-  price?: RangeFilter;
+  price?: PriceFilter;
   metro_time_max?: number;
-  school_requirements?: any;
+  school_requirements?: SchoolRequirements;
+  university_requirements?: UniversityRequirements; // <-- أضفنا هذا الحقل
   original_query: string;
 }
 
-export interface RangeFilter {
-  exact?: number;
+export interface PriceFilter {
   min?: number;
   max?: number;
+  currency?: string;
+  period?: string;
 }
 
 export interface SearchRequest {
@@ -96,6 +117,7 @@ export interface SearchResponse {
 
 // إعدادات API
 const API_BASE_URL = "https://riyal-estate-56q6.onrender.com";
+
 /**
  * الحصول على رسالة الترحيب من المساعد
  */
