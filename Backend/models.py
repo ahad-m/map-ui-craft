@@ -68,6 +68,13 @@ class SchoolRequirements(BaseModel):
     max_distance_minutes: Optional[float] = None  # بالدقائق (بالسيارة)
 
 
+class UniversityRequirements(BaseModel):
+    """متطلبات الجامعات"""
+    required: bool = False
+    university_names: Optional[List[str]] = None  # مثل: ["جامعة الإمام محمد بن سعود"]
+    max_distance_minutes: Optional[float] = None  # بالدقائق (بالسيارة)
+
+
 class PropertyCriteria(BaseModel):
     """معايير البحث عن العقار المستخرجة من طلب المستخدم"""
     
@@ -89,6 +96,7 @@ class PropertyCriteria(BaseModel):
     # القرب من الخدمات
     metro_time_max: Optional[float] = Field(None, description="أقصى وقت للوصول لمحطة المترو بالدقائق")
     school_requirements: Optional[SchoolRequirements] = Field(None, description="متطلبات المدارس")
+    university_requirements: Optional[UniversityRequirements] = Field(None, description="متطلبات الجامعات")
     
     # النص الأصلي للطلب (للبحث الدلالي)
     original_query: Optional[str] = Field(None, description="النص الأصلي لطلب المستخدم")
