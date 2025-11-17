@@ -26,13 +26,27 @@ def _minutes_to_meters(minutes: float, avg_speed_kmh: float = 30.0) -> float:
     # تحويل من كم إلى متر
     return distance_km * 1000
 
-# [!! تعديل !!] : إضافة قاموس لترجمة المراحل الدراسية
+# قاموس لترجمة المراحل الدراسية
 LEVELS_TRANSLATION_MAP = {
     "ابتدائي": "elementary",
     "متوسط": "middle",
     "ثانوي": "high",
     "روضة": "kindergarten",
     "حضانة": "nursery"
+}
+
+# قاموس لترجمة أسماء الجامعات (اختياري)
+UNIVERSITIES_TRANSLATION_MAP = {
+    "جامعة الامام": "جامعة الإمام محمد بن سعود الإسلامية",
+    "جامعة الإمام محمد بن سعود": "جامعة الإمام محمد بن سعود الإسلامية",
+    "جامعة الملك سعود": "جامعة الملك سعود",
+    "جامعة سعود": "جامعة الملك سعود",
+    "جامعة نورة": "جامعة الأميرة نورة بنت عبدالرحمن",
+    "جامعة الأميرة نورة": "جامعة الأميرة نورة بنت عبدالرحمن",
+    "جامعة اليمامة": "جامعة اليمامة",
+    "جامعة الفيصل": "جامعة الفيصل",
+    "جامعة الرياض": "جامعة الرياض",
+    "الجامعة السعودية الالكترونية": "الجامعة السعودية الإلكترونية"
 }
 
 class SearchEngine:
@@ -138,7 +152,7 @@ class SearchEngine:
             # ==========================================================
             # [!! -- فلترة المدارس (البحث الدقيق) -- !!]
             # ==========================================================
-            final_properties_data = []
+            final_properties_after_schools = []
             
             # هل طلب المستخدم فلترة للمدارس؟
             if criteria.school_requirements and criteria.school_requirements.required:
@@ -148,7 +162,7 @@ class SearchEngine:
                 school_reqs = criteria.school_requirements
                 distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0) 
                 
-                # [!! إصلاح !!] : ترجمة الجنس من عربي إلى إنجليزي
+                # ترجمة الجنس من عربي إلى إنجليزي
                 school_gender_english = None
                 if school_reqs.gender:
                     if school_reqs.gender.value == "بنات":
@@ -157,7 +171,7 @@ class SearchEngine:
                         school_gender_english = "boys"
                     # (ملاحظة: "مختلط" لا تحتاج ترجمة إذا كانت مخزنة هكذا)
 
-                # [!! إصلاح !!] : ترجمة المراحل الدراسية من عربي إلى إنجليزي
+                # ترجمة المراحل الدراسية من عربي إلى إنجليزي
                 school_levels_english = None
                 if school_reqs.levels:
                     school_levels_english = [LEVELS_TRANSLATION_MAP.get(level, level) for level in school_reqs.levels]
@@ -179,27 +193,78 @@ class SearchEngine:
                                 'p_lat': float(prop_lat),
                                 'p_lon': float(prop_lon),
                                 'p_distance_meters': distance_meters,
-                                'p_gender': school_gender_english, # [!! إصلاح !!] : إرسال القيمة الإنجليزية
-                                'p_levels': school_levels_english  # [!! إصلاح !!] : إرسال القيمة الإنجليزية
+                                'p_gender': school_gender_english,
+                                'p_levels': school_levels_english
                             }
                         ).execute()
                         
                         # 4. إذا رجعت الدالة "true"، أضف العقار للنتائج
                         if match_found.data:
-                            final_properties_data.append(prop_row)
+                            final_properties_after_schools.append(prop_row)
                             
                     except Exception as rpc_error:
                         logger.error(f"خطأ في استدعاء RPC للعقار {prop_row.get('id')}: {rpc_error}")
                         
             else:
                 # إذا لم يطلب المستخدم فلترة مدارس، استخدم كل النتائج الأولية
-                final_properties_data = properties_data
+                final_properties_after_schools = properties_data
+            
+            # ==========================================================
+            # [!! -- فلترة الجامعات (البحث الدقيق) -- !!]
+            # ==========================================================
+            final_properties_after_universities = []
+            
+            # هل طلب المستخدم فلترة للجامعات؟
+            if criteria.university_requirements and criteria.university_requirements.required:
+                logger.info("البحث الدقيق: جاري تنفيذ فلترة الجامعات...")
+                
+                # 1. تحضير معايير الجامعات
+                university_reqs = criteria.university_requirements
+                distance_meters = _minutes_to_meters(university_reqs.max_distance_minutes or 15.0) 
+                
+                # 2. تحضير أسماء الجامعات (مع الترجمة إذا لزم الأمر)
+                university_names = university_reqs.university_names or []
+                if university_names:
+                    # ترجمة الأسماء إلى الصيغة القياسية
+                    university_names = [UNIVERSITIES_TRANSLATION_MAP.get(name, name) for name in university_names]
+                
+                # 3. المرور على العقارات وفلترتها
+                for prop_row in final_properties_after_schools:
+                    
+                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
+                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
+
+                    if not prop_lat or not prop_lon:
+                        continue 
+
+                    try:
+                        # 4. استدعاء دالة RPC للجامعات
+                        universities_found = self.db.client.rpc(
+                            'get_nearby_universities',
+                            {
+                                'p_lat': float(prop_lat),
+                                'p_lon': float(prop_lon),
+                                'p_distance_meters': distance_meters,
+                                'p_university_names': university_names
+                            }
+                        ).execute()
+                        
+                        # 5. إذا وجدت جامعات قريبة، أضف العقار للنتائج
+                        if universities_found.data and len(universities_found.data) > 0:
+                            final_properties_after_universities.append(prop_row)
+                            
+                    except Exception as rpc_error:
+                        logger.error(f"خطأ في استدعاء RPC للجامعات للعقار {prop_row.get('id')}: {rpc_error}")
+                        
+            else:
+                # إذا لم يطلب المستخدم فلترة جامعات، استخدم النتائج السابقة
+                final_properties_after_universities = final_properties_after_schools
             # ==========================================================
             # [!! -- نهاية الفلترة -- !!]
             # ==========================================================
 
             # تحويل النتائج النهائية إلى Property objects
-            properties = [self._row_to_property(row) for row in final_properties_data]
+            properties = [self._row_to_property(row) for row in final_properties_after_universities]
             
             logger.info(f"البحث الدقيق (المحسّن): وجد {len(properties)} عقار")
             
@@ -288,9 +353,9 @@ class SearchEngine:
             properties_data = result.data if result.data else []
 
             # ==========================================================
-            # [!! -- التعديل الجديد: فلترة المدارس (البحث المرن) -- !!]
+            # [!! -- فلترة المدارس (البحث المرن) -- !!]
             # ==========================================================
-            final_properties_data = []
+            final_properties_after_schools = []
             
             # هل طلب المستخدم فلترة للمدارس؟
             if criteria.school_requirements and criteria.school_requirements.required:
@@ -300,7 +365,7 @@ class SearchEngine:
                 school_reqs = criteria.school_requirements
                 distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0)
                 
-                # [!! إصلاح !!] : ترجمة الجنس من عربي إلى إنجليزي
+                # ترجمة الجنس من عربي إلى إنجليزي
                 school_gender_english = None
                 if school_reqs.gender:
                     if school_reqs.gender.value == "بنات":
@@ -308,7 +373,7 @@ class SearchEngine:
                     elif school_reqs.gender.value == "بنين":
                         school_gender_english = "boys"
                 
-                # [!! إصلاح !!] : ترجمة المراحل الدراسية من عربي إلى إنجليزي
+                # ترجمة المراحل الدراسية من عربي إلى إنجليزي
                 school_levels_english = None
                 if school_reqs.levels:
                     school_levels_english = [LEVELS_TRANSLATION_MAP.get(level, level) for level in school_reqs.levels]
@@ -330,28 +395,77 @@ class SearchEngine:
                                 'p_lat': float(prop_lat),
                                 'p_lon': float(prop_lon),
                                 'p_distance_meters': distance_meters,
-                                'p_gender': school_gender_english, # [!! إصلاح !!]
-                                'p_levels': school_levels_english  # [!! إصلاح !!]
+                                'p_gender': school_gender_english,
+                                'p_levels': school_levels_english
                             }
                         ).execute()
                         
                         # 4. إذا رجعت الدالة "true"، أضف العقار للنتائج
                         if match_found.data:
-                            final_properties_data.append(prop_row)
+                            final_properties_after_schools.append(prop_row)
                             
                     except Exception as rpc_error:
                         logger.error(f"خطأ في استدعاء RPC (مرن) للعقار {prop_row.get('id')}: {rpc_error}")
                         
             else:
                 # إذا لم يطلب المستخدم فلترة مدارس، استخدم كل النتائج الأولية
-                final_properties_data = properties_data
+                final_properties_after_schools = properties_data
+            
             # ==========================================================
-            # [!! -- نهاية التعديل -- !!]
+            # [!! -- فلترة الجامعات (البحث المرن) -- !!]
+            # ==========================================================
+            final_properties_after_universities = []
+            
+            # هل طلب المستخدم فلترة للجامعات؟
+            if criteria.university_requirements and criteria.university_requirements.required:
+                logger.info("البحث المرن: جاري تنفيذ فلترة الجامعات...")
+                
+                # 1. تحضير معايير الجامعات
+                university_reqs = criteria.university_requirements
+                distance_meters = _minutes_to_meters(university_reqs.max_distance_minutes or 15.0)
+                
+                # 2. تحضير أسماء الجامعات (مع الترجمة إذا لزم الأمر)
+                university_names = university_reqs.university_names or []
+                if university_names:
+                    university_names = [UNIVERSITIES_TRANSLATION_MAP.get(name, name) for name in university_names]
+                
+                # 3. المرور على العقارات وفلترتها
+                for prop_row in final_properties_after_schools:
+                    
+                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
+                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
+
+                    if not prop_lat or not prop_lon:
+                        continue 
+
+                    try:
+                        # 4. استدعاء دالة RPC للجامعات
+                        universities_found = self.db.client.rpc(
+                            'get_nearby_universities',
+                            {
+                                'p_lat': float(prop_lat),
+                                'p_lon': float(prop_lon),
+                                'p_distance_meters': distance_meters,
+                                'p_university_names': university_names
+                            }
+                        ).execute()
+                        
+                        # 5. إذا وجدت جامعات قريبة، أضف العقار للنتائج
+                        if universities_found.data and len(universities_found.data) > 0:
+                            final_properties_after_universities.append(prop_row)
+                            
+                    except Exception as rpc_error:
+                        logger.error(f"خطأ في استدعاء RPC للجامعات (مرن) للعقار {prop_row.get('id')}: {rpc_error}")
+                        
+            else:
+                # إذا لم يطلب المستخدم فلترة جامعات، استخدم النتائج السابقة
+                final_properties_after_universities = final_properties_after_schools
+            # ==========================================================
+            # [!! -- نهاية الفلترة -- !!]
             # ==========================================================
             
-            # (حساب النقاط كما هو...)
-            # [!! تعديل !!] : تم تغيير 'properties' إلى 'final_properties_data'
-            for prop in final_properties_data:
+            # حساب نقاط التطابق للمواصفات
+            for prop in final_properties_after_universities:
                 scores = []
                 if criteria.rooms and criteria.rooms.exact is not None:
                     prop_rooms = prop.get('rooms', 0) or 0
@@ -408,9 +522,8 @@ class SearchEngine:
                 prop['price_score'] = scores[3] if len(scores) > 3 else 1.0
                 prop['metro_score'] = scores[4] if len(scores) > 4 else 1.0
             
-            # [!! تعديل !!] : تم تغيير 'properties' إلى 'final_properties_data'
-            logger.info(f"البحث المرن: وجد {len(final_properties_data)} عقار")
-            return final_properties_data
+            logger.info(f"البحث المرن: وجد {len(final_properties_after_universities)} عقار")
+            return final_properties_after_universities
             
         except Exception as e:
             logger.error(f"خطأ في البحث المرن: {e}")
@@ -528,9 +641,7 @@ class SearchEngine:
             baths = int(row['baths']) if row.get('baths') is not None else None
             halls = int(row['halls']) if row.get('halls') is not None else None
 
-            # !! -- هذا هو الإصلاح (التوحيد) -- !!
             # جلب الإحداثيات الصحيحة (final) ووضعها في الحقول القياسية (lat/lon)
-            # إذا كانت final_lat فارغة، استخدم lat العادية كاحتياط
             correct_lat = row.get('final_lat') or row.get('lat')
             correct_lon = row.get('final_lon') or row.get('lon')
             
@@ -549,7 +660,7 @@ class SearchEngine:
                 description=row.get('description'),
                 image_url=row.get('image_url'),
                 
-                # !! -- إرسال الإحداثيات الصحيحة فقط في 'lat' و 'lon' -- !!
+                # إرسال الإحداثيات الصحيحة فقط في 'lat' و 'lon'
                 lat=correct_lat,
                 lon=correct_lon,
                 
