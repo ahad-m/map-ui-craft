@@ -6,7 +6,7 @@ from config import settings
 from models import (
     PropertyCriteria, PropertyPurpose, PropertyType, PricePeriod,
     RangeFilter, IntRangeFilter, PriceFilter, SchoolRequirements,
-    CriteriaExtractionResponse
+    UniversityRequirements, CriteriaExtractionResponse
 )
 import json
 import logging
@@ -54,6 +54,15 @@ class LLMParser:
 - شهري / بالشهر / شهرياً → "شهري"
 - يومي / باليوم / يومياً → "يومي"
 
+## الجامعات (مع المرادفات):
+- "جامعة الامام" / "جامعة الإمام محمد بن سعود" → "جامعة الإمام محمد بن سعود الإسلامية"
+- "جامعة الملك سعود" / "جامعة سعود" → "جامعة الملك سعود"
+- "جامعة نورة" / "جامعة الأميرة نورة" → "جامعة الأميرة نورة بنت عبدالرحمن"
+- "جامعة اليمامة" → "جامعة اليمامة"
+- "جامعة الفيصل" → "جامعة الفيصل"
+- "جامعة الرياض" → "جامعة الرياض"
+- "الجامعة السعودية الالكترونية" → "الجامعة السعودية الإلكترونية"
+
 ## ملاحظات مهمة:
 1. إذا ذكر المستخدم رقم واحد للغرف/الحمامات/الصالات، ضعه في "exact"
 2. إذا ذكر "اقل شي X"، ضع X في "min" فقط
@@ -64,6 +73,9 @@ class LLMParser:
 7. وقت المترو بالدقائق
 8. إذا لم يُذكر الحي، اترك district فارغاً (null)
 9. احفظ النص الأصلي في original_query
+10. إذا ذكر المستخدم جامعة معينة، ضع اسمها في university_names
+11. إذا ذكر "قريب من جامعة" بدون تسمية، ضع required=true بدون names
+12. وقت الوصول للجامعة يُحسب بالدقائق (بالسيارة)
 
 استخرج المعايير بدقة وحول جميع القيم إلى الصيغة المعيارية."""
     
@@ -149,6 +161,14 @@ class LLMParser:
                                 "required": {"type": "boolean"},
                                 "levels": {"type": "array", "items": {"type": "string"}},
                                 "gender": {"type": "string", "enum": ["بنين", "بنات", "مختلط"]},
+                                "max_distance_minutes": {"type": "number"}
+                            }
+                        },
+                        "university_requirements": {
+                            "type": "object",
+                            "properties": {
+                                "required": {"type": "boolean"},
+                                "university_names": {"type": "array", "items": {"type": "string"}},
                                 "max_distance_minutes": {"type": "number"}
                             }
                         }
@@ -244,6 +264,10 @@ class LLMParser:
         if data.get('school_requirements'):
             school_requirements = SchoolRequirements(**data['school_requirements'])
         
+        university_requirements = None
+        if data.get('university_requirements'):
+            university_requirements = UniversityRequirements(**data['university_requirements'])
+        
         return PropertyCriteria(
             purpose=PropertyPurpose(data['purpose']),
             property_type=PropertyType(data['property_type']),
@@ -255,6 +279,7 @@ class LLMParser:
             price=price,
             metro_time_max=data.get('metro_time_max'),
             school_requirements=school_requirements,
+            university_requirements=university_requirements,
             original_query=original_query
         )
     
@@ -329,6 +354,18 @@ class LLMParser:
             if criteria.school_requirements.max_distance_minutes:
                 school_text += f" (≤{criteria.school_requirements.max_distance_minutes:.0f} دقيقة)"
             message += school_text + "\n"
+        
+        # الجامعات
+        if criteria.university_requirements and criteria.university_requirements.required:
+            university_text = "• قريب من "
+            if criteria.university_requirements.university_names:
+                university_text += f"{', '.join(criteria.university_requirements.university_names)}"
+            else:
+                university_text += "جامعة"
+            
+            if criteria.university_requirements.max_distance_minutes:
+                university_text += f" (≤{criteria.university_requirements.max_distance_minutes:.0f} دقيقة)"
+            message += university_text + "\n"
         
         message += "\nتبي بس المطابق لطلبك ولا عادي نقترح لك اللي يشبهه؟\nمتأكدين بيعجبك! 😊"
         
