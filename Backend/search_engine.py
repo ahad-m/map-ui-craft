@@ -191,8 +191,44 @@ class SearchEngine:
                     except Exception as rpc_error:
                         logger.error(f"خطأ في استدعاء RPC للعقار {prop_row.get('id')}: {rpc_error}")
                         
+            # هل طلب المستخدم فلترة للجامعات؟
+            elif criteria.university_requirements and criteria.university_requirements.required:
+                logger.info("البحث الدقيق: جاري تنفيذ فلترة الجامعات...")
+                
+                # 1. تحضير معايير الجامعات
+                uni_reqs = criteria.university_requirements
+                distance_meters = _minutes_to_meters(uni_reqs.max_distance_minutes or 15.0)
+                
+                # 2. المرور على العقارات الأولية وفلترتها
+                for prop_row in properties_data:
+                    
+                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
+                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
+
+                    if not prop_lat or not prop_lon:
+                        continue 
+
+                    try:
+                        # 3. استدعاء دالة RPC في Supabase
+                        match_found = self.db.client.rpc(
+                            'check_university_proximity',
+                            {
+                                'p_lat': float(prop_lat),
+                                'p_lon': float(prop_lon),
+                                'p_distance_meters': distance_meters,
+                                'p_university_name': uni_reqs.university_name
+                            }
+                        ).execute()
+                        
+                        # 4. إذا رجعت الدالة "true"، أضف العقار للنتائج
+                        if match_found.data:
+                            final_properties_data.append(prop_row)
+                            
+                    except Exception as rpc_error:
+                        logger.error(f"خطأ في استدعاء RPC للعقار {prop_row.get('id')}: {rpc_error}")
+                        
             else:
-                # إذا لم يطلب المستخدم فلترة مدارس، استخدم كل النتائج الأولية
+                # إذا لم يطلب المستخدم فلترة مدارس أو جامعات، استخدم كل النتائج الأولية
                 final_properties_data = properties_data
             # ==========================================================
             # [!! -- نهاية الفلترة -- !!]
@@ -342,8 +378,44 @@ class SearchEngine:
                     except Exception as rpc_error:
                         logger.error(f"خطأ في استدعاء RPC (مرن) للعقار {prop_row.get('id')}: {rpc_error}")
                         
+            # هل طلب المستخدم فلترة للجامعات؟
+            elif criteria.university_requirements and criteria.university_requirements.required:
+                logger.info("البحث المرن: جاري تنفيذ فلترة الجامعات...")
+                
+                # 1. تحضير معايير الجامعات
+                uni_reqs = criteria.university_requirements
+                distance_meters = _minutes_to_meters(uni_reqs.max_distance_minutes or 15.0)
+                
+                # 2. المرور على العقارات الأولية وفلترتها
+                for prop_row in properties_data:
+                    
+                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
+                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
+
+                    if not prop_lat or not prop_lon:
+                        continue 
+
+                    try:
+                        # 3. استدعاء دالة RPC في Supabase
+                        match_found = self.db.client.rpc(
+                            'check_university_proximity',
+                            {
+                                'p_lat': float(prop_lat),
+                                'p_lon': float(prop_lon),
+                                'p_distance_meters': distance_meters,
+                                'p_university_name': uni_reqs.university_name
+                            }
+                        ).execute()
+                        
+                        # 4. إذا رجعت الدالة "true"، أضف العقار للنتائج
+                        if match_found.data:
+                            final_properties_data.append(prop_row)
+                            
+                    except Exception as rpc_error:
+                        logger.error(f"خطأ في استدعاء RPC (مرن) للعقار {prop_row.get('id')}: {rpc_error}")
+                        
             else:
-                # إذا لم يطلب المستخدم فلترة مدارس، استخدم كل النتائج الأولية
+                # إذا لم يطلب المستخدم فلترة مدارس أو جامعات، استخدم كل النتائج الأولية
                 final_properties_data = properties_data
             # ==========================================================
             # [!! -- نهاية التعديل -- !!]

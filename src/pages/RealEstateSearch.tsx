@@ -215,6 +215,26 @@ const RealEstateSearch = () => {
           maxSchoolTime: schoolReqs.max_distance_minutes || 15,
         }));
       }
+      
+      // مزامنة معايير الجامعات من المساعد الذكي إلى فلتر الواجهة
+      if (currentCriteria && currentCriteria.university_requirements?.required) {
+        const uniReqs = currentCriteria.university_requirements;
+
+        // تحديث الفلتر للجامعات
+        setFilters((prevFilters) => ({
+          ...prevFilters,
+          selectedUniversity: uniReqs.university_name || "",
+          maxUniversityTime: uniReqs.max_distance_minutes || 30,
+        }));
+        
+        // تحديث مصطلح البحث المخصص للجامعة
+        if (uniReqs.university_name) {
+          setCustomSearchTerms((prev) => ({
+            ...prev,
+            university: uniReqs.university_name,
+          }));
+        }
+      }
       // [!! التعديل الجديد ينتهي هنا !!]
     }
   }, [chatSearchResults, currentCriteria]); // <-- أضفنا currentCriteria
@@ -672,6 +692,52 @@ const RealEstateSearch = () => {
     currentCriteria,
   ]);
 
+  // Calculate nearby universities based on chatbot criteria or manual filters
+  const nearbyUniversities = useMemo(() => {
+    // لا تظهر دبابيس الجامعات إلا إذا بحث المستخدم (عبر الشات أو يدوياً)
+    if (!hasSearched) return [];
+
+    // لا تظهر الدبابيس إذا لم يحدد فلتر (للبحث اليدوي) أو لا يوجد معايير (للبحث بالشات)
+    if (!filters.selectedUniversity && !currentCriteria?.university_requirements) return [];
+
+    if (!propertiesCenterLocation || allUniversities.length === 0) return [];
+
+    return allUniversities
+      .map((university) => {
+        const distance = calculateDistance(
+          propertiesCenterLocation.lat,
+          propertiesCenterLocation.lon,
+          university.lat,
+          university.lon,
+        );
+        const travelTime = calculateTravelTime(distance);
+
+        // إرجاع كائن الجامعة مع إضافة وقت السفر
+        return { ...university, travelTime };
+      })
+      .filter((university) => {
+        // الفلترة بناءً على الوقت
+        if (university.travelTime > filters.maxUniversityTime) return false;
+
+        // الفلترة بناءً على اسم الجامعة المختارة
+        if (filters.selectedUniversity) {
+          const searchTerm = filters.selectedUniversity.toLowerCase();
+          const nameAr = university.name_ar?.toLowerCase() || "";
+          const nameEn = university.name_en?.toLowerCase() || "";
+          return nameAr.includes(searchTerm) || nameEn.includes(searchTerm);
+        }
+
+        return true;
+      });
+  }, [
+    allUniversities,
+    propertiesCenterLocation,
+    filters.maxUniversityTime,
+    filters.selectedUniversity,
+    hasSearched,
+    currentCriteria,
+  ]);
+
   // Fetch all universities with custom search
   const { data: allUniversities = [] } = useQuery({
     queryKey: ["universities", customSearchTerms.university],
@@ -718,19 +784,8 @@ const RealEstateSearch = () => {
     },
   });
 
-  // تصفية الجامعات لإظهار الجامعة المختارة فقط
-  const nearbyUniversities = useMemo(() => {
-    // Only show university if one is selected
-    if (!filters.selectedUniversity) return [];
-    if (allUniversities.length === 0) return [];
-
-    // Return the selected university without distance filtering
-    // Distance filtering will be done per property in displayedProperties
-    return allUniversities.filter((uni) => {
-      const nameMatch = (i18n.language === "ar" ? uni.name_ar : uni.name_en) === filters.selectedUniversity;
-      return nameMatch;
-    });
-  }, [allUniversities, filters.selectedUniversity, i18n.language]);
+  // تصفية الجامعات لإظهار الجامعة المختارة فقط (تم الاستبدال بالنسخة الجديدة في الأعلى)
+  // This memo was replaced by the new implementation above after nearbySchools
 
   // Calculate nearby mosques
   const nearbyMosques = useMemo(() => {
