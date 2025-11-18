@@ -692,6 +692,32 @@ const RealEstateSearch = () => {
     currentCriteria,
   ]);
 
+  // Fetch all universities with custom search
+  const { data: allUniversities = [] } = useQuery({
+    queryKey: ["universities", customSearchTerms.university],
+    queryFn: async () => {
+      let query = supabase
+        .from("universities")
+        .select("*")
+        .not("lat", "is", null)
+        .not("lon", "is", null)
+        .not("name_ar", "is", null)
+        .not("name_en", "is", null);
+
+      // If custom search term exists, filter by it
+      if (customSearchTerms.university) {
+        query = query.or(
+          `name_ar.ilike.%${customSearchTerms.university}%,name_en.ilike.%${customSearchTerms.university}%`,
+        );
+      }
+
+      const { data, error } = await query.order("name_ar", { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Calculate nearby universities based on chatbot criteria or manual filters
   const nearbyUniversities = useMemo(() => {
     // لا تظهر دبابيس الجامعات إلا إذا بحث المستخدم (عبر الشات أو يدوياً)
@@ -737,32 +763,6 @@ const RealEstateSearch = () => {
     hasSearched,
     currentCriteria,
   ]);
-
-  // Fetch all universities with custom search
-  const { data: allUniversities = [] } = useQuery({
-    queryKey: ["universities", customSearchTerms.university],
-    queryFn: async () => {
-      let query = supabase
-        .from("universities")
-        .select("*")
-        .not("lat", "is", null)
-        .not("lon", "is", null)
-        .not("name_ar", "is", null)
-        .not("name_en", "is", null);
-
-      // If custom search term exists, filter by it
-      if (customSearchTerms.university) {
-        query = query.or(
-          `name_ar.ilike.%${customSearchTerms.university}%,name_en.ilike.%${customSearchTerms.university}%`,
-        );
-      }
-
-      const { data, error } = await query.order("name_ar", { ascending: true });
-
-      if (error) throw error;
-      return data || [];
-    },
-  });
 
   // Fetch all mosques
   const { data: allMosques = [] } = useQuery({
