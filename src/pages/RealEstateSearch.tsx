@@ -22,6 +22,7 @@ import {
   Loader2,
   LogOut,
   Mic,
+  User,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -1209,6 +1210,14 @@ const RealEstateSearch = () => {
                   <Button variant="outline" size="sm" onClick={toggleLanguage} className="gap-2">
                     <Languages className="h-4 w-4" />
                     {i18n.language === "en" ? "ع" : "EN"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/profile")}
+                    className="gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary"
+                  >
+                    <User className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
