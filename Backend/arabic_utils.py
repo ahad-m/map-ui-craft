@@ -34,8 +34,8 @@ def normalize_arabic_text(text: str) -> str:
     # Normalize different forms of alef
     text = re.sub(r'[إأٱآا]', 'ا', text)
     
-    # Normalize teh marbuta and heh
-    text = re.sub(r'[ةه]', 'ه', text)
+    # Normalize teh marbuta and heh (this makes ة and ه equivalent)
+    text = re.sub(r'ة', 'ه', text)
     
     # Normalize yeh variations
     text = re.sub(r'[يى]', 'ي', text)
