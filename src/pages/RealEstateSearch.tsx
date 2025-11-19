@@ -58,6 +58,8 @@ const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.
   return null;
 };
 
+import { arabicTextMatches } from "@/utils/arabicUtils";
+
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -747,10 +749,11 @@ const RealEstateSearch = () => {
 
         // الفلترة بناءً على اسم الجامعة المختارة
         if (filters.selectedUniversity) {
-          const searchTerm = filters.selectedUniversity.toLowerCase();
-          const nameAr = university.name_ar?.toLowerCase() || "";
-          const nameEn = university.name_en?.toLowerCase() || "";
-          return nameAr.includes(searchTerm) || nameEn.includes(searchTerm);
+          const searchTerm = filters.selectedUniversity;
+          const nameAr = university.name_ar || "";
+          const nameEn = university.name_en || "";
+          // Use fuzzy Arabic matching
+          return arabicTextMatches(searchTerm, nameAr) || arabicTextMatches(searchTerm, nameEn);
         }
 
         return true;

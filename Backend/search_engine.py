@@ -8,6 +8,7 @@ from config import settings
 from typing import List, Optional, Dict, Any
 import logging
 from embedding_generator import embedding_generator
+from arabic_utils import normalize_arabic_text, calculate_similarity_score
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,6 @@ def _minutes_to_meters(minutes: float, avg_speed_kmh: float = 30.0) -> float:
     # تحويل من كم إلى متر
     return distance_km * 1000
 
-# [!! تعديل !!] : إضافة قاموس لترجمة المراحل الدراسية
 LEVELS_TRANSLATION_MAP = {
     "ابتدائي": "elementary",
     "متوسط": "middle",
@@ -34,6 +34,59 @@ LEVELS_TRANSLATION_MAP = {
     "روضة": "kindergarten",
     "حضانة": "nursery"
 }
+
+
+def _find_matching_university(query_name: str, threshold: float = 0.5) -> Optional[str]:
+    """
+    Find the best matching university name from the database using fuzzy matching.
+    
+    Args:
+        query_name: The university name from user query (may have spelling variations)
+        threshold: Minimum similarity score (0.0-1.0), default 0.5 for flexible matching
+    
+    Returns:
+        The best matching university name from database, or None if no good match
+    """
+    if not query_name:
+        return None
+    
+    try:
+        # Fetch all universities from database
+        result = db.client.table('universities').select('name_ar, name_en').execute()
+        
+        if not result.data:
+            logger.warning("No universities found in database")
+            return None
+        
+        # Collect all university names (Arabic and English)
+        all_names = []
+        for uni in result.data:
+            if uni.get('name_ar'):
+                all_names.append(uni['name_ar'])
+            if uni.get('name_en'):
+                all_names.append(uni['name_en'])
+        
+        # Find best match
+        best_match = None
+        best_score = 0.0
+        
+        for name in all_names:
+            score = calculate_similarity_score(query_name, name)
+            if score > best_score and score >= threshold:
+                best_score = score
+                best_match = name
+        
+        if best_match:
+            logger.info(f"Fuzzy match: '{query_name}' → '{best_match}' (score: {best_score:.2f})")
+        else:
+            logger.warning(f"No good match found for university: '{query_name}' (best score: {best_score:.2f})")
+        
+        return best_match
+        
+    except Exception as e:
+        logger.error(f"Error in fuzzy university matching: {e}")
+        return None
+
 
 class SearchEngine:
     """محرك البحث الهجين للعقارات"""
@@ -199,6 +252,17 @@ class SearchEngine:
                 uni_reqs = criteria.university_requirements
                 distance_meters = _minutes_to_meters(uni_reqs.max_distance_minutes or 15.0)
                 
+                # [!! إضافة !!] : استخدام Fuzzy Matching لاسم الجامعة
+                university_name_to_search = uni_reqs.university_name
+                if university_name_to_search:
+                    # Try to find best matching university name from database
+                    matched_name = _find_matching_university(university_name_to_search)
+                    if matched_name:
+                        logger.info(f"Using matched university name: '{matched_name}' for query: '{university_name_to_search}'")
+                        university_name_to_search = matched_name
+                    else:
+                        logger.warning(f"No close match found for university: '{university_name_to_search}', using original name")
+                
                 # 2. المرور على العقارات الأولية وفلترتها
                 for prop_row in properties_data:
                     
@@ -216,7 +280,7 @@ class SearchEngine:
                                 'p_lat': float(prop_lat),
                                 'p_lon': float(prop_lon),
                                 'p_distance_meters': distance_meters,
-                                'p_university_name': uni_reqs.university_name
+                                'p_university_name': university_name_to_search  # [!! إصلاح !!] : استخدام الاسم المطابق
                             }
                         ).execute()
                         
@@ -386,6 +450,17 @@ class SearchEngine:
                 uni_reqs = criteria.university_requirements
                 distance_meters = _minutes_to_meters(uni_reqs.max_distance_minutes or 15.0)
                 
+                # [!! إضافة !!] : استخدام Fuzzy Matching لاسم الجامعة
+                university_name_to_search = uni_reqs.university_name
+                if university_name_to_search:
+                    # Try to find best matching university name from database
+                    matched_name = _find_matching_university(university_name_to_search)
+                    if matched_name:
+                        logger.info(f"Using matched university name: '{matched_name}' for query: '{university_name_to_search}'")
+                        university_name_to_search = matched_name
+                    else:
+                        logger.warning(f"No close match found for university: '{university_name_to_search}', using original name")
+                
                 # 2. المرور على العقارات الأولية وفلترتها
                 for prop_row in properties_data:
                     
@@ -403,7 +478,7 @@ class SearchEngine:
                                 'p_lat': float(prop_lat),
                                 'p_lon': float(prop_lon),
                                 'p_distance_meters': distance_meters,
-                                'p_university_name': uni_reqs.university_name
+                                'p_university_name': university_name_to_search  # [!! إصلاح !!] : استخدام الاسم المطابق
                             }
                         ).execute()
                         
