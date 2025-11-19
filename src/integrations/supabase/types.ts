@@ -598,6 +598,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_university_proximity:
+        | {
+            Args: {
+              p_distance_meters: number
+              p_lat: number
+              p_lon: number
+              p_university_name?: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_distance_meters: number
+              p_prop_lat: number
+              p_prop_lon: number
+              p_uni_lat: number
+              p_uni_lon: number
+            }
+            Returns: boolean
+          }
       disablelongtransactions: { Args: never; Returns: string }
       drive_minutes_from_km: {
         Args: { avg_speed_kmh?: number; distance_km: number }
@@ -768,6 +788,35 @@ export type Database = {
           name: string
         }[]
       }
+      get_nearby_universities:
+        | {
+            Args: {
+              p_distance_meters: number
+              p_lat: number
+              p_lon: number
+              p_university_name?: string
+            }
+            Returns: {
+              lat: number
+              lon: number
+              name_ar: string
+              name_en: string
+            }[]
+          }
+        | {
+            Args: {
+              p_distance_meters: number
+              p_lat: number
+              p_lon: number
+              p_university_names: string[]
+            }
+            Returns: {
+              lat: number
+              lon: number
+              name_ar: string
+              name_en: string
+            }[]
+          }
       gettransactionid: { Args: never; Returns: unknown }
       haversine_km: {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
