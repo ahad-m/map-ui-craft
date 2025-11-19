@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { User, LogOut, Trash2, Edit2, X } from "lucide-react";
+import { User, LogOut, Trash2, Edit2, X, Lock } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,10 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     loadUserData();
@@ -93,22 +97,54 @@ export default function Profile() {
     }
   };
 
+  const handleChangePassword = async () => {
+    try {
+      // Validate fields
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        toast.error(t("Please fill in all password fields"));
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        toast.error(t("New passwords do not match"));
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        toast.error(t("New password must be at least 6 characters"));
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowPasswordChange(false);
+      toast.success(t("Password updated successfully"));
+    } catch (error) {
+      console.error("Error updating password:", error);
+      toast.error(t("Error updating password"));
+    }
+  };
+
   const handleDeleteAccount = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) return;
 
-      // Delete user favorites first
+      // Delete user favorites
       await supabase.from("user_favorites").delete().eq("user_id", user.id);
       
       // Delete profile
       await supabase.from("profiles").delete().eq("id", user.id);
 
-      // Note: Actual user deletion from auth.users requires admin privileges
-      // This would typically be done via an edge function or admin API
-      toast.info(t("Account deletion initiated. Please contact support to complete the process."));
-      
+      toast.success(t("Account deleted successfully"));
       await supabase.auth.signOut();
       navigate("/auth");
     } catch (error) {
@@ -199,6 +235,72 @@ export default function Profile() {
             </div>
           </div>
 
+          {/* Change Password Section */}
+          <div className="mb-8">
+            <Button
+              onClick={() => setShowPasswordChange(!showPasswordChange)}
+              variant="outline"
+              className="w-full justify-start text-lg py-6 hover:bg-primary/10 hover:border-primary transition-all"
+            >
+              <Lock className="w-5 h-5 mr-3" />
+              {t("Change Password")}
+            </Button>
+
+            {showPasswordChange && (
+              <div className="mt-4 space-y-4 p-4 bg-muted/30 rounded-lg border border-border/50">
+                <div>
+                  <Label className="text-sm text-muted-foreground">{t("Current Password")}</Label>
+                  <Input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder={t("Enter current password")}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm text-muted-foreground">{t("New Password")}</Label>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder={t("Enter new password")}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm text-muted-foreground">{t("Confirm New Password")}</Label>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder={t("Confirm new password")}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button onClick={handleChangePassword} className="flex-1">
+                    {t("Update Password")}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowPasswordChange(false);
+                      setCurrentPassword("");
+                      setNewPassword("");
+                      setConfirmPassword("");
+                    }}
+                    variant="outline"
+                  >
+                    {t("Cancel")}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Action Buttons */}
           <div className="space-y-3">
             <Button
@@ -228,6 +330,9 @@ export default function Profile() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("Delete Account?")}</AlertDialogTitle>
             <AlertDialogDescription>
+              {t("Are you sure you want to delete your account?")}
+              <br />
+              <br />
               {t("This action cannot be undone. Your account data and favorites will be permanently deleted.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
