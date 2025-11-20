@@ -550,51 +550,61 @@ class SearchEngine:
             # المرحلة 3: دمج النتائج وإعادة الترتيب
             merged_results = self._merge_and_rerank(sql_results, vector_results, criteria)
             
-            # [جديد] إضافة الجامعات والمساجد القريبة (مثل _exact_search)
-            if merged_results:
+            # [جديد - مُصلح] إضافة الجامعات والمساجد القريبة بعد إنشاء Property objects
+            if merged_results and len(merged_results) > 0:
                 # جلب الجامعات القريبة
                 if criteria.university_requirements and criteria.university_requirements.required:
-                    uni_reqs = criteria.university_requirements
-                    max_distance_meters = (uni_reqs.max_distance_minutes or 30) * 60 * 30  # 30 كم/س
-                    
-                    # استخدام موقع أول عقار كمرجع
-                    first_prop = merged_results[0]
-                    if first_prop.final_lat and first_prop.final_lon:
-                        nearby_universities = self._get_nearby_universities(
-                            first_prop.final_lat,
-                            first_prop.final_lon,
-                            max_distance_meters,
-                            uni_reqs.university_name
-                        )
+                    try:
+                        uni_reqs = criteria.university_requirements
+                        max_distance_meters = (uni_reqs.max_distance_minutes or 30) * 60 * 30  # 30 كم/س
                         
-                        # إضافة الجامعات لكل عقار
-                        for prop in merged_results:
-                            prop.nearby_universities = nearby_universities
+                        # استخدام موقع أول عقار كمرجع
+                        first_prop = merged_results[0]
+                        if first_prop.final_lat and first_prop.final_lon:
+                            nearby_universities = self._get_nearby_universities(
+                                float(first_prop.final_lat),
+                                float(first_prop.final_lon),
+                                max_distance_meters,
+                                uni_reqs.university_name
+                            )
+                            
+                            logger.info(f"🎓 تم جلب {len(nearby_universities)} جامعة قريبة في البحث الهجين")
+                            
+                            # إضافة الجامعات لكل عقار
+                            for prop in merged_results:
+                                prop.nearby_universities = nearby_universities
+                    except Exception as e:
+                        logger.error(f"خطأ في إضافة الجامعات: {e}")
                 
                 # جلب المساجد القريبة
                 if criteria.mosque_requirements and criteria.mosque_requirements.required:
-                    mosque_reqs = criteria.mosque_requirements
-                    # حساب المسافة بناءً على نوع التنقل
-                    if mosque_reqs.walking:
-                        speed_kmh = 5  # سرعة المشي
-                    else:
-                        speed_kmh = 30  # سرعة السيارة
-                    
-                    max_distance_meters = (mosque_reqs.max_distance_minutes or 10) * 60 * speed_kmh
-                    
-                    # استخدام موقع أول عقار كمرجع
-                    first_prop = merged_results[0]
-                    if first_prop.final_lat and first_prop.final_lon:
-                        nearby_mosques = self._get_nearby_mosques(
-                            first_prop.final_lat,
-                            first_prop.final_lon,
-                            max_distance_meters,
-                            mosque_reqs.mosque_name
-                        )
+                    try:
+                        mosque_reqs = criteria.mosque_requirements
+                        # حساب المسافة بناءً على نوع التنقل
+                        if mosque_reqs.walking:
+                            speed_kmh = 5  # سرعة المشي
+                        else:
+                            speed_kmh = 30  # سرعة السيارة
                         
-                        # إضافة المساجد لكل عقار
-                        for prop in merged_results:
-                            prop.nearby_mosques = nearby_mosques
+                        max_distance_meters = (mosque_reqs.max_distance_minutes or 10) * 60 * speed_kmh
+                        
+                        # استخدام موقع أول عقار كمرجع
+                        first_prop = merged_results[0]
+                        if first_prop.final_lat and first_prop.final_lon:
+                            nearby_mosques = self._get_nearby_mosques(
+                                float(first_prop.final_lat),
+                                float(first_prop.final_lon),
+                                max_distance_meters,
+                                mosque_reqs.mosque_name
+                            )
+                            
+                            logger.info(f"🕌 تم جلب {len(nearby_mosques)} مسجد قريب في البحث الهجين")
+                            
+                            # إضافة المساجد لكل عقار
+                            for prop in merged_results:
+                                prop.nearby_mosques = nearby_mosques
+                    except Exception as e:
+                        logger.error(f"خطأ في إضافة المساجد: {e}")
             
             logger.info(f"البحث الهجين: وجد {len(merged_results)} عقار")
             return merged_results[:self.hybrid_limit]
