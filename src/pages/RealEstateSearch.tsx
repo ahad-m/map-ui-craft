@@ -1090,25 +1090,23 @@ const RealEstateSearch = () => {
             {/* [!! تعديل 6 !!] : العودة إلى `nearbySchools` لعرض الدبابيس */}
             {hasSearched &&
               nearbySchools.map((school) => (
-                <AdvancedMarker key={`school-${school.id}`} position={{ lat: school.lat, lng: school.lon }}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
-                        >
-                          <School className="h-5 w-5 text-white" />
-                        </div>
-                        {/* Hover pulse effect */}
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    {/* [!! تعديل 7 !!] : إعادة عرض الوقت */}
-                    <TooltipContent>
+                <AdvancedMarker key={`school-${school.id}`} position={{ lat: school.lat, lng: school.lon }}>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated"
+                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
+                        >
+                          <School className="h-5 w-5 text-white" />
+                        </div>
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
                       <p className="font-medium">{school.name}</p>
                       {school.travelTime !== undefined && (
                         <p className="text-xs text-muted-foreground">
@@ -1125,24 +1123,23 @@ const RealEstateSearch = () => {
                 <AdvancedMarker
                   key={`university-${university.name_ar}`}
                   position={{ lat: university.lat, lng: university.lon }}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
-                        >
-                          <GraduationCap className="h-5 w-5 text-white" />
-                        </div>
-                        {/* Hover pulse effect */}
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
+                >
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated"
+                          style={{ backgroundColor: "hsl(142 76% 55%)" }}
+                        >
+                          <GraduationCap className="h-5 w-5 text-white" />
+                        </div>
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(142 76% 55% / 0.3)", animationDuration: "1.5s" }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
                       <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
                     </TooltipContent>
                   </Tooltip>
@@ -1155,25 +1152,24 @@ const RealEstateSearch = () => {
                 <AdvancedMarker
                   key={`university-backend-${index}`}
                   position={{ lat: university.lat, lng: university.lon }}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(217 91% 60%)" }}
-                        >
-                          <GraduationCap className="h-5 w-5 text-white" />
-                        </div>
-                        {/* Hover pulse effect */}
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(217 91% 60% / 0.3)", animationDuration: "1.5s" }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
+                >
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated"
+                          style={{ backgroundColor: "hsl(142 76% 65%)" }}
+                        >
+                          <GraduationCap className="h-5 w-5 text-white" />
+                        </div>
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(142 76% 65% / 0.3)", animationDuration: "1.5s" }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
                       {university.drive_minutes !== undefined && (
                         <p className="text-xs text-muted-foreground">
                           {t("drivingTime") || "وقت القيادة"}: {Math.round(university.drive_minutes)}{" "}
@@ -1188,25 +1184,24 @@ const RealEstateSearch = () => {
             {/* [جديد] Mosque markers from Backend - عرض دبابيس المساجد من الباك إند */}
             {hasSearched &&
               nearbyMosquesFromBackend.map((mosque) => (
-                <AdvancedMarker key={`mosque-backend-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated border-2 border-white"
-                          style={{ backgroundColor: "hsl(142 76% 36%)" }}
-                        >
-                          <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
-                        </div>
-                        {/* Hover pulse effect */}
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(142 76% 36% / 0.3)", animationDuration: "1.5s" }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">{mosque.name}</p>
+                <AdvancedMarker key={`mosque-backend-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }}>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated"
+                          style={{ backgroundColor: "hsl(142 71% 50%)" }}
+                        >
+                          <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 brightness-0 invert" />
+                        </div>
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(142 71% 50% / 0.3)", animationDuration: "1.5s" }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-medium">{mosque.name}</p>
                       {mosque.walk_minutes !== undefined && (
                         <p className="text-xs text-muted-foreground">
                           {t("walkingTime") || "وقت المشي"}: {Math.round(mosque.walk_minutes)} {t("minutes") || "دقيقة"}
@@ -1220,25 +1215,24 @@ const RealEstateSearch = () => {
             {/* Mosque markers */}
             {hasSearched &&
               nearbyMosques.map((mosque) => (
-                <AdvancedMarker key={`mosque-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated border-2 border-white"
-                          style={{ backgroundColor: "hsl(142 76% 36%)" }}
-                        >
-                          <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
-                        </div>
-                        {/* Hover pulse effect */}
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(142 76% 36% / 0.3)", animationDuration: "1.5s" }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">{mosque.name}</p>
+                <AdvancedMarker key={`mosque-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }}>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated"
+                          style={{ backgroundColor: "hsl(142 71% 50%)" }}
+                        >
+                          <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 brightness-0 invert" />
+                        </div>
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(142 71% 50% / 0.3)", animationDuration: "1.5s" }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-medium">{mosque.name}</p>
                       {mosque.travelTime !== undefined && (
                         <p className="text-xs text-muted-foreground">
                           {t("maxTravelTime")}: {mosque.travelTime} {t("minutes")}
