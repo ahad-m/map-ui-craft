@@ -1,6 +1,6 @@
 """
 محرك البحث الهجين (Exact + Vector Similarity)
-النسخة المحدثة - مع دعم المساجد وتحسين البحث عن الجامعات
+النسخة المحدثة - مع دعم المساجد والجامعات وإرجاع بياناتها للواجهة الأمامية
 """
 from models import PropertyCriteria, Property, SearchMode
 from database import db
@@ -98,6 +98,142 @@ def _find_matching_university(query_name: str, threshold: float = 0.5) -> Option
     except Exception as e:
         logger.error(f"خطأ في البحث الغامض عن الجامعة: {e}")
         return None
+
+
+def _calculate_properties_center(properties: List[Dict[str, Any]]) -> Optional[Dict[str, float]]:
+    """
+    حساب النقطة المركزية لمجموعة من العقارات
+    
+    Args:
+        properties: قائمة العقارات
+    
+    Returns:
+        dict مع lat و lon للمركز، أو None إذا لم توجد إحداثيات صالحة
+    """
+    valid_lats = []
+    valid_lons = []
+    
+    for prop in properties:
+        lat = prop.get('final_lat') or prop.get('lat')
+        lon = prop.get('final_lon') or prop.get('lon')
+        
+        if lat and lon:
+            try:
+                lat_float = float(lat)
+                lon_float = float(lon)
+                if lat_float != 0 and lon_float != 0:
+                    valid_lats.append(lat_float)
+                    valid_lons.append(lon_float)
+            except (ValueError, TypeError):
+                continue
+    
+    if not valid_lats or not valid_lons:
+        return None
+    
+    return {
+        'lat': sum(valid_lats) / len(valid_lats),
+        'lon': sum(valid_lons) / len(valid_lons)
+    }
+
+
+def _get_nearby_universities_for_display(
+    center_lat: float,
+    center_lon: float,
+    max_distance_meters: float,
+    university_name: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """
+    جلب قائمة الجامعات القريبة من نقطة مركزية لعرضها على الخريطة
+    
+    Args:
+        center_lat: خط العرض للنقطة المركزية
+        center_lon: خط الطول للنقطة المركزية
+        max_distance_meters: المسافة القصوى بالأمتار
+        university_name: اسم الجامعة (اختياري)
+    
+    Returns:
+        قائمة الجامعات مع معلومات المسافة ووقت السفر
+    """
+    try:
+        result = db.client.rpc(
+            'get_universities_for_display',
+            {
+                'center_lat': center_lat,
+                'center_lon': center_lon,
+                'max_distance_meters': max_distance_meters,
+                'university_name': university_name
+            }
+        ).execute()
+        
+        if not result.data:
+            return []
+        
+        # إضافة حساب وقت السفر
+        universities = []
+        for uni in result.data:
+            uni_dict = dict(uni)
+            # حساب وقت السفر بالدقائق (سرعة 30 كم/س)
+            distance_meters = uni_dict.get('distance_meters', 0)
+            drive_minutes = (distance_meters / 1000.0) / 30.0 * 60.0
+            uni_dict['drive_minutes'] = round(drive_minutes, 1)
+            universities.append(uni_dict)
+        
+        logger.info(f"تم جلب {len(universities)} جامعة للعرض")
+        return universities
+        
+    except Exception as e:
+        logger.error(f"خطأ في جلب الجامعات للعرض: {e}")
+        return []
+
+
+def _get_nearby_mosques_for_display(
+    center_lat: float,
+    center_lon: float,
+    max_distance_meters: float,
+    mosque_name: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """
+    جلب قائمة المساجد القريبة من نقطة مركزية لعرضها على الخريطة
+    
+    Args:
+        center_lat: خط العرض للنقطة المركزية
+        center_lon: خط الطول للنقطة المركزية
+        max_distance_meters: المسافة القصوى بالأمتار
+        mosque_name: اسم المسجد (اختياري)
+    
+    Returns:
+        قائمة المساجد مع معلومات المسافة ووقت السفر
+    """
+    try:
+        result = db.client.rpc(
+            'get_mosques_for_display',
+            {
+                'center_lat': center_lat,
+                'center_lon': center_lon,
+                'max_distance_meters': max_distance_meters,
+                'mosque_name': mosque_name
+            }
+        ).execute()
+        
+        if not result.data:
+            return []
+        
+        # إضافة حساب وقت السفر
+        mosques = []
+        for mosque in result.data:
+            mosque_dict = dict(mosque)
+            # حساب وقت السفر بالدقائق (سرعة 5 كم/س للمشي)
+            distance_meters = mosque_dict.get('distance_meters', 0)
+            walk_minutes = (distance_meters / 1000.0) / 5.0 * 60.0
+            mosque_dict['walk_minutes'] = round(walk_minutes, 1)
+            mosques.append(mosque_dict)
+        
+        logger.info(f"تم جلب {len(mosques)} مسجد للعرض")
+        return mosques
+        
+    except Exception as e:
+        logger.error(f"خطأ في جلب المساجد للعرض: {e}")
+        return []
 
 
 class SearchEngine:
@@ -293,7 +429,7 @@ class SearchEngine:
                     except Exception as rpc_error:
                         logger.error(f"خطأ في استدعاء RPC للعقار {prop_row.get('id')}: {rpc_error}")
             
-            # 3. فلترة المساجد (جديد)
+            # 3. فلترة المساجد
             elif criteria.mosque_requirements and criteria.mosque_requirements.required:
                 logger.info("البحث الدقيق: جاري تنفيذ فلترة المساجد...")
                 
@@ -342,6 +478,50 @@ class SearchEngine:
 
             # تحويل النتائج النهائية إلى Property objects
             properties = [self._row_to_property(row) for row in final_properties_data]
+            
+            # ==========================================================
+            # [جديد] إضافة بيانات المساجد والجامعات للعرض على الخريطة
+            # ==========================================================
+            
+            if properties:
+                # حساب النقطة المركزية للعقارات
+                center = _calculate_properties_center(final_properties_data)
+                
+                if center:
+                    # إضافة الجامعات إذا كان المستخدم طلبها
+                    if criteria.university_requirements and criteria.university_requirements.required:
+                        uni_reqs = criteria.university_requirements
+                        max_distance = _minutes_to_meters(uni_reqs.max_distance_minutes or 15.0) * 1.5  # نضيف 50% للعرض
+                        
+                        nearby_universities = _get_nearby_universities_for_display(
+                            center['lat'],
+                            center['lon'],
+                            max_distance,
+                            uni_reqs.university_name
+                        )
+                        
+                        # إضافة الجامعات لكل عقار
+                        for prop in properties:
+                            prop.nearby_universities = nearby_universities
+                    
+                    # إضافة المساجد إذا كان المستخدم طلبها
+                    if criteria.mosque_requirements and criteria.mosque_requirements.required:
+                        mosque_reqs = criteria.mosque_requirements
+                        max_distance = _minutes_to_meters(
+                            mosque_reqs.max_distance_minutes or 5.0,
+                            walking=mosque_reqs.walking if mosque_reqs.walking is not None else True
+                        ) * 1.5  # نضيف 50% للعرض
+                        
+                        nearby_mosques = _get_nearby_mosques_for_display(
+                            center['lat'],
+                            center['lon'],
+                            max_distance,
+                            mosque_reqs.mosque_name
+                        )
+                        
+                        # إضافة المساجد لكل عقار
+                        for prop in properties:
+                            prop.nearby_mosques = nearby_mosques
             
             logger.info(f"البحث الدقيق: وجد {len(properties)} عقار")
             
