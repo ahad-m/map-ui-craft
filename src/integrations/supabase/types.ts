@@ -69,7 +69,6 @@ export type Database = {
           city: string | null
           description: string | null
           district: string | null
-          embedding: string | null
           final_lat: number | null
           final_lon: number | null
           halls: number | null
@@ -94,7 +93,6 @@ export type Database = {
           city?: string | null
           description?: string | null
           district?: string | null
-          embedding?: string | null
           final_lat?: number | null
           final_lon?: number | null
           halls?: number | null
@@ -119,7 +117,6 @@ export type Database = {
           city?: string | null
           description?: string | null
           district?: string | null
-          embedding?: string | null
           final_lat?: number | null
           final_lon?: number | null
           halls?: number | null
@@ -591,19 +588,6 @@ export type Database = {
             }
             Returns: string
           }
-      calculate_travel_time: {
-        Args: { avg_speed_kmh?: number; distance_meters: number }
-        Returns: number
-      }
-      check_mosque_proximity: {
-        Args: {
-          p_distance_meters: number
-          p_lat: number
-          p_lon: number
-          p_mosque_name?: string
-        }
-        Returns: boolean
-      }
       check_school_proximity: {
         Args: {
           p_distance_meters: number
@@ -620,7 +604,7 @@ export type Database = {
               p_distance_meters: number
               p_lat: number
               p_lon: number
-              p_university_name: string
+              p_university_name?: string
             }
             Returns: boolean
           }
@@ -789,31 +773,6 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
-      get_mosques_for_display: {
-        Args: {
-          center_lat: number
-          center_lon: number
-          max_distance_meters: number
-          mosque_name?: string
-        }
-        Returns: {
-          distance_meters: number
-          lat: number
-          lon: number
-          name: string
-        }[]
-      }
-      get_nearby_mosques: {
-        Args: { mosque_name?: string; query_lat: number; query_lon: number }
-        Returns: {
-          dist_meters: number
-          district: string
-          id: number
-          lat: number
-          lon: number
-          name: string
-        }[]
-      }
       get_nearby_schools: {
         Args: {
           p_distance_meters: number
@@ -858,67 +817,12 @@ export type Database = {
               name_en: string
             }[]
           }
-        | {
-            Args: { query_lat: number; query_lon: number; uni_name: string }
-            Returns: {
-              dist_meters: number
-              lat: number
-              lon: number
-              name_ar: string
-              name_en: string
-            }[]
-          }
-      get_universities_for_display: {
-        Args: {
-          center_lat: number
-          center_lon: number
-          max_distance_meters: number
-          university_name?: string
-        }
-        Returns: {
-          distance_meters: number
-          lat: number
-          lon: number
-          name_ar: string
-          name_en: string
-        }[]
-      }
       gettransactionid: { Args: never; Returns: unknown }
       haversine_km: {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
-      match_documents: {
-        Args: {
-          match_count?: number
-          match_threshold?: number
-          query_embedding: string
-        }
-        Returns: {
-          area_m2: number
-          baths: number
-          city: string
-          description: string
-          district: string
-          final_lat: number
-          final_lon: number
-          halls: number
-          id: string
-          image_url: string
-          lat: number
-          lon: number
-          price_currency: string
-          price_num: number
-          price_period: string
-          property_type: string
-          purpose: string
-          rooms: number
-          similarity: number
-          title: string
-          url: string
-        }[]
-      }
       match_properties: {
         Args: { request_json: Json }
         Returns: {
@@ -957,7 +861,6 @@ export type Database = {
           similarity_score: number
         }[]
       }
-      normalize_arabic: { Args: { "": string }; Returns: string }
       normalize_arabic_text: { Args: { "": string }; Returns: string }
       populate_geometry_columns:
         | { Args: { use_typmod?: boolean }; Returns: string }
@@ -1070,73 +973,6 @@ export type Database = {
           title: string
           url: string
         }[]
-      }
-      search_properties_hybrid: {
-        Args: {
-          match_count: number
-          match_threshold: number
-          max_price?: number
-          min_price?: number
-          p_city?: string
-          p_lat?: number
-          p_lon?: number
-          p_property_type?: string
-          p_purpose?: string
-          query_embedding: string
-        }
-        Returns: {
-          dist_meters: number
-          id: string
-          lat: number
-          lon: number
-          price_num: number
-          similarity: number
-        }[]
-      }
-      search_properties_nearby: {
-        Args: {
-          max_price?: number
-          min_area?: number
-          min_price?: number
-          min_rooms?: number
-          p_city?: string
-          p_property_type?: string
-          p_purpose?: string
-          radius_meters: number
-          ref_lat: number
-          ref_lon: number
-        }
-        Returns: {
-          area_m2: number | null
-          baths: number | null
-          city: string | null
-          description: string | null
-          district: string | null
-          embedding: string | null
-          final_lat: number | null
-          final_lon: number | null
-          halls: number | null
-          id: string
-          image_url: string | null
-          lat: number | null
-          lon: number | null
-          price_currency: string | null
-          price_num: number | null
-          price_period: string | null
-          property_type: string | null
-          purpose: string | null
-          rooms: number | null
-          search_text: string | null
-          time_to_metro_min: number | null
-          title: string | null
-          url: string | null
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "properties"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       search_similar_properties: {
         Args: {
