@@ -66,7 +66,8 @@ class SchoolRequirements(BaseModel):
     required: bool = False
     levels: Optional[List[str]] = None  # مثل: ["ابتدائي", "متوسط", "ثانوي"]
     gender: Optional[SchoolGender] = None
-    max_distance_minutes: Optional[float] = None  # بالدقائق (بالسيارة)
+    max_distance_minutes: Optional[float] = None  # بالدقائق
+    walking: bool = False  # False = بالسيارة (الافتراضي للمدارس)
 
 
 class UniversityRequirements(BaseModel):
