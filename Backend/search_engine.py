@@ -1,12 +1,13 @@
 """
-محرك البحث الهجين (Exact + Flexible SQL)
-النسخة المحسّنة - بدون البحث الدلالي مؤقتاً (حتى يتم إعداد embeddings)
+محرك البحث الهجين (Exact + Vector Similarity)
+النسخة النهائية - مع البحث الدلالي الكامل
 """
 from models import PropertyCriteria, Property, SearchMode
 from database import db
 from config import settings
 from typing import List, Optional, Dict, Any
 import logging
+from embedding_generator import embedding_generator
 from arabic_utils import normalize_arabic_text, calculate_similarity_score
 
 logger = logging.getLogger(__name__)
@@ -155,6 +156,8 @@ class SearchEngine:
         self.db = db
         self.exact_limit = settings.EXACT_SEARCH_LIMIT
         self.hybrid_limit = settings.HYBRID_SEARCH_LIMIT
+        self.sql_weight = settings.SQL_WEIGHT
+        self.vector_weight = settings.VECTOR_WEIGHT
     
     def _get_nearby_universities(self, center_lat: float, center_lon: float, max_distance_meters: float, university_name: Optional[str] = None) -> List[Dict[str, Any]]:
         """جلب الجامعات القريبة"""
@@ -170,7 +173,7 @@ class SearchEngine:
             if mode == SearchMode.EXACT:
                 return self._exact_search(criteria)
             else:
-                return self._improved_search(criteria)
+                return self._hybrid_search(criteria)
         except Exception as e:
             logger.error(f"خطأ في البحث: {e}")
             import traceback
@@ -236,10 +239,46 @@ class SearchEngine:
             traceback.print_exc()
             return []
     
-    def _improved_search(self, criteria: PropertyCriteria) -> List[Property]:
-        """
-        البحث المحسّن - يبحث بمرونة مع إعطاء أولوية للعقارات القريبة من الخدمات المطلوبة
-        """
+    def _hybrid_search(self, criteria: PropertyCriteria) -> List[Property]:
+        """البحث الهجين - يجمع بين البحث SQL والبحث الدلالي"""
+        try:
+            # المرحلة 1: البحث SQL مع توسيع النطاقات
+            sql_results = self._flexible_sql_search(criteria)
+            logger.info(f"📊 البحث SQL: وجد {len(sql_results)} عقار")
+            
+            # المرحلة 2: البحث الدلالي (Vector Similarity)
+            vector_results = []
+            if criteria.original_query:
+                vector_results = self._vector_search(criteria.original_query)
+                logger.info(f"🔍 البحث الدلالي: وجد {len(vector_results)} عقار")
+            
+            # المرحلة 3: دمج النتائج وإعادة الترتيب
+            merged_results = self._merge_and_rerank(sql_results, vector_results, criteria)
+            
+            # [مُحسّن] فلترة النتائج بناءً على القرب من الخدمات
+            if merged_results:
+                filtered_results = self._filter_by_services(merged_results, criteria)
+                
+                if not filtered_results:
+                    logger.warning("⚠️ لا توجد عقارات قريبة من الخدمات المطلوبة، إرجاع بعض النتائج")
+                    filtered_results = merged_results[:10]
+                
+                # إضافة الخدمات القريبة للعرض
+                self._add_nearby_services(filtered_results, criteria)
+                
+                logger.info(f"✅ البحث الهجين: وجد {len(filtered_results)} عقار نهائي")
+                return filtered_results[:self.hybrid_limit]
+            
+            return []
+            
+        except Exception as e:
+            logger.error(f"❌ خطأ في البحث الهجين: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+    
+    def _flexible_sql_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
+        """بحث SQL مرن - يوسع نطاقات البحث"""
         try:
             query = self.db.client.table('properties').select('*')
             
@@ -250,57 +289,117 @@ class SearchEngine:
             query = query.eq('purpose', criteria.purpose.value)
             query = query.eq('property_type', criteria.property_type.value)
             
-            # فلترة المدينة (إلزامية)
+            # فلترة المدينة (إلزامية إذا كانت موجودة)
             if criteria.city:
                 query = query.eq('city', criteria.city)
             
-            # فلترة السعر (مع توسيع 30%)
+            # توسيع نطاق السعر (±30%)
             if criteria.price and criteria.price.max:
                 expanded_max = criteria.price.max * 1.3
                 query = query.lte('price_num', expanded_max)
             
-            # فلترة المساحة (مع توسيع 20%)
+            # توسيع نطاق المساحة (±20%)
             if criteria.area_m2:
                 if criteria.area_m2.min:
                     query = query.gte('area_m2', criteria.area_m2.min * 0.8)
                 if criteria.area_m2.max:
                     query = query.lte('area_m2', criteria.area_m2.max * 1.2)
             
-            # تنفيذ الاستعلام
             result = query.order('price_num').limit(200).execute()
             
-            if not result.data:
-                logger.info("البحث المحسّن: لم يُعثر على عقارات")
-                return []
-            
-            # تحويل النتائج إلى Property objects
-            properties = [self._row_to_property(row) for row in result.data]
-            
-            # فلترة بناءً على القرب من الخدمات
-            filtered_properties = self._filter_by_services(properties, criteria)
-            
-            if not filtered_properties:
-                logger.warning("البحث المحسّن: لا توجد عقارات قريبة من الخدمات المطلوبة")
-                # إرجاع بعض النتائج على الأقل
-                filtered_properties = properties[:10]
-            
-            # إضافة الخدمات القريبة للعرض
-            if filtered_properties:
-                self._add_nearby_services(filtered_properties, criteria)
-            
-            logger.info(f"البحث المحسّن: وجد {len(filtered_properties)} عقار")
-            return filtered_properties[:self.hybrid_limit]
+            return result.data if result.data else []
             
         except Exception as e:
-            logger.error(f"خطأ في البحث المحسّن: {e}")
+            logger.error(f"خطأ في البحث SQL المرن: {e}")
+            return []
+    
+    def _vector_search(self, query_text: str) -> List[Dict[str, Any]]:
+        """البحث الدلالي باستخدام Embeddings"""
+        try:
+            # توليد embedding للطلب
+            query_embedding = embedding_generator.generate(query_text)
+            
+            if not query_embedding:
+                logger.warning("فشل توليد embedding للطلب")
+                return []
+            
+            # البحث في Supabase باستخدام match_documents
+            result = self.db.client.rpc(
+                'match_documents',
+                {
+                    'query_embedding': query_embedding,
+                    'match_threshold': 0.5,  # خفضنا الحد الأدنى لزيادة النتائج
+                    'match_count': 100  # زيادة عدد النتائج
+                }
+            ).execute()
+            
+            return result.data if result.data else []
+            
+        except Exception as e:
+            logger.error(f"خطأ في البحث الدلالي: {e}")
             import traceback
             traceback.print_exc()
             return []
+    
+    def _merge_and_rerank(
+        self,
+        sql_results: List[Dict[str, Any]],
+        vector_results: List[Dict[str, Any]],
+        criteria: PropertyCriteria
+    ) -> List[Property]:
+        """دمج نتائج البحث SQL والدلالي وإعادة ترتيبها"""
+        merged = {}
+        
+        # إضافة نتائج SQL
+        for row in sql_results:
+            prop_id = row['id']
+            merged[prop_id] = {
+                'data': row,
+                'sql_score': self.sql_weight,
+                'vector_score': 0
+            }
+        
+        # إضافة نتائج Vector
+        for row in vector_results:
+            prop_id = row['id']
+            similarity = row.get('similarity', 0)
+            
+            if prop_id in merged:
+                merged[prop_id]['vector_score'] = similarity * self.vector_weight
+            else:
+                merged[prop_id] = {
+                    'data': row,
+                    'sql_score': 0,
+                    'vector_score': similarity * self.vector_weight
+                }
+        
+        # حساب النقاط النهائية وترتيب النتائج
+        ranked_properties = []
+        for prop_id, item in merged.items():
+            total_score = item['sql_score'] + item['vector_score']
+            prop = self._row_to_property(item['data'])
+            prop.match_score = total_score
+            ranked_properties.append(prop)
+        
+        # ترتيب تنازلي حسب النقاط
+        ranked_properties.sort(key=lambda x: x.match_score or 0, reverse=True)
+        
+        return ranked_properties
     
     def _filter_by_services(self, properties: List[Property], criteria: PropertyCriteria) -> List[Property]:
         """فلترة العقارات بناءً على القرب من الخدمات المطلوبة"""
         if not properties:
             return []
+        
+        # إذا لم يطلب المستخدم أي خدمات، إرجاع جميع العقارات
+        has_service_requirements = (
+            (criteria.university_requirements and criteria.university_requirements.required) or
+            (criteria.mosque_requirements and criteria.mosque_requirements.required) or
+            (criteria.school_requirements and criteria.school_requirements.required)
+        )
+        
+        if not has_service_requirements:
+            return properties
         
         filtered = []
         
@@ -411,7 +510,7 @@ class SearchEngine:
                     uni_reqs.university_name
                 )
                 
-                logger.info(f"🎓 تم جلب {len(nearby_universities)} جامعة قريبة")
+                logger.info(f"🎓 تم جلب {len(nearby_universities)} جامعة قريبة للعرض")
                 
                 for prop in properties:
                     prop.nearby_universities = nearby_universities
@@ -429,7 +528,7 @@ class SearchEngine:
                     mosque_reqs.mosque_name
                 )
                 
-                logger.info(f"🕌 تم جلب {len(nearby_mosques)} مسجد قريب")
+                logger.info(f"🕌 تم جلب {len(nearby_mosques)} مسجد قريب للعرض")
                 
                 for prop in properties:
                     prop.nearby_mosques = nearby_mosques
