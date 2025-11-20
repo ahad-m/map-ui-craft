@@ -1,13 +1,12 @@
 """
-محرك البحث الهجين (Exact + Vector Similarity)
-النسخة النهائية - مع البحث الدلالي والفلترة القوية
+محرك البحث (Exact + Flexible SQL فقط)
+النسخة النهائية - بدون البحث الدلالي
 """
 from models import PropertyCriteria, Property, SearchMode
 from database import db
 from config import settings
 from typing import List, Optional, Dict, Any
 import logging
-from embedding_generator import embedding_generator
 from arabic_utils import normalize_arabic_text, calculate_similarity_score
 
 logger = logging.getLogger(__name__)
@@ -83,8 +82,6 @@ class SearchEngine:
         self.db = db
         self.exact_limit = 20
         self.similar_limit = 50
-        self.vector_limit = 100
-        self.sql_limit = 100
     
     def search(self, criteria: PropertyCriteria, mode: SearchMode = SearchMode.EXACT) -> List[Property]:
         """نقطة الدخول الرئيسية للبحث"""
@@ -92,7 +89,7 @@ class SearchEngine:
             if mode == SearchMode.EXACT:
                 results = self._exact_search(criteria)
             else:
-                results = self._hybrid_search(criteria)
+                results = self._flexible_search(criteria)
             
             # تحويل النتائج إلى Property objects
             properties = [self._row_to_property(row) for row in results]
@@ -192,46 +189,10 @@ class SearchEngine:
             traceback.print_exc()
             return []
     
-    def _hybrid_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
+    def _flexible_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
         """
-        بحث هجين - يجمع بين SQL المرن والبحث الدلالي
-        مع فلترة قوية بعد الجلب
-        """
-        try:
-            # 1. البحث SQL المرن
-            sql_results = self._flexible_sql_search(criteria)
-            logger.info(f"📊 البحث SQL المرن: وجد {len(sql_results)} عقار")
-            
-            # 2. البحث الدلالي
-            vector_results = []
-            if criteria.original_query:
-                vector_results = self._vector_search(criteria.original_query)
-                logger.info(f"🔍 البحث الدلالي: وجد {len(vector_results)} عقار")
-            
-            # 3. دمج النتائج
-            merged_results = self._merge_results(sql_results, vector_results)
-            logger.info(f"🔀 بعد الدمج: {len(merged_results)} عقار")
-            
-            # 4. [!! المفتاح !!] فلترة قوية بناءً على المعايير المرنة
-            filtered_results = self._apply_flexible_filters(merged_results, criteria)
-            logger.info(f"🎯 بعد الفلترة: {len(filtered_results)} عقار")
-            
-            # 5. إضافة الخدمات القريبة
-            final_results = self._add_nearby_services(filtered_results, criteria)
-            
-            logger.info(f"✅ البحث الهجين: وجد {len(final_results)} عقار نهائي")
-            return final_results[:self.similar_limit]
-            
-        except Exception as e:
-            logger.error(f"❌ خطأ في البحث الهجين: {e}")
-            import traceback
-            traceback.print_exc()
-            return []
-    
-    def _flexible_sql_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
-        """
-        بحث SQL مرن - يطبق المعايير الأساسية فقط
-        الفلترة المرنة ستطبق لاحقاً
+        بحث مرن - يطبق المعايير الأساسية مع مرونة ±1 أو ±20%
+        (نفس منطق النسخة القديمة)
         """
         try:
             query = self.db.client.table('properties').select('*')
@@ -247,136 +208,93 @@ class SearchEngine:
             if criteria.city:
                 query = query.eq('city', criteria.city)
             
-            # الحي (إلزامي)
+            # الحي (إلزامي إذا حُدد)
             if criteria.district:
                 query = query.eq('district', criteria.district)
                 logger.info(f"🎯 فلتر الحي: {criteria.district}")
             
-            result = query.order('price_num').limit(self.sql_limit).execute()
+            # [!! المرونة ±1 !!] عدد الغرف
+            if criteria.rooms and criteria.rooms.exact is not None:
+                min_rooms = max(0, criteria.rooms.exact - 1)
+                max_rooms = criteria.rooms.exact + 1
+                query = query.gte('rooms', min_rooms)
+                query = query.lte('rooms', max_rooms)
+                logger.info(f"🎯 فلتر الغرف: {min_rooms}-{max_rooms}")
             
-            return result.data if result.data else []
+            # [!! المرونة ±1 !!] عدد الحمامات
+            if criteria.baths and criteria.baths.exact is not None:
+                min_baths = max(0, criteria.baths.exact - 1)
+                max_baths = criteria.baths.exact + 1
+                query = query.gte('baths', min_baths)
+                query = query.lte('baths', max_baths)
+                logger.info(f"🎯 فلتر الحمامات: {min_baths}-{max_baths}")
             
-        except Exception as e:
-            logger.error(f"خطأ في البحث SQL المرن: {e}")
-            return []
-    
-    def _vector_search(self, query_text: str) -> List[Dict[str, Any]]:
-        """البحث الدلالي باستخدام Embeddings"""
-        try:
-            # توليد embedding للطلب
-            query_embedding = embedding_generator.generate(query_text)
+            # [!! المرونة ±1 !!] عدد الصالات
+            if criteria.halls and criteria.halls.exact is not None:
+                min_halls = max(0, criteria.halls.exact - 1)
+                max_halls = criteria.halls.exact + 1
+                query = query.gte('halls', min_halls)
+                query = query.lte('halls', max_halls)
+                logger.info(f"🎯 فلتر الصالات: {min_halls}-{max_halls}")
             
-            if not query_embedding:
-                logger.warning("فشل توليد embedding للطلب")
+            # [!! المرونة ±20% !!] المساحة
+            if criteria.area_m2:
+                if criteria.area_m2.min is not None:
+                    min_area = criteria.area_m2.min * 0.8
+                    query = query.gte('area_m2', min_area)
+                    logger.info(f"🎯 فلتر المساحة الدنيا: {min_area}")
+                if criteria.area_m2.max is not None:
+                    max_area = criteria.area_m2.max * 1.2
+                    query = query.lte('area_m2', max_area)
+                    logger.info(f"🎯 فلتر المساحة القصوى: {max_area}")
+            
+            # [!! المرونة ±30% !!] السعر
+            if criteria.price:
+                if criteria.price.min is not None:
+                    min_price = criteria.price.min * 0.7
+                    query = query.gte('price_num', min_price)
+                    logger.info(f"🎯 فلتر السعر الأدنى: {min_price}")
+                if criteria.price.max is not None:
+                    max_price = criteria.price.max * 1.3
+                    query = query.lte('price_num', max_price)
+                    logger.info(f"🎯 فلتر السعر الأقصى: {max_price}")
+            
+            result = query.order('price_num').limit(self.similar_limit).execute()
+            
+            if not result.data:
+                logger.info("❌ لم يتم العثور على عقارات مشابهة")
                 return []
             
-            # البحث في Supabase باستخدام match_documents
-            result = self.db.client.rpc(
-                'match_documents',
-                {
-                    'query_embedding': query_embedding,
-                    'match_threshold': 0.5,
-                    'match_count': self.vector_limit
-                }
-            ).execute()
+            properties_data = result.data
             
-            return result.data if result.data else []
+            # [!! فلترة إضافية !!] الميترو والخدمات
+            if criteria.metro_time_max or criteria.university_requirements or criteria.mosque_requirements:
+                properties_data = self._filter_by_services(properties_data, criteria)
+            
+            # إضافة الخدمات القريبة
+            properties_data = self._add_nearby_services(properties_data, criteria)
+            
+            logger.info(f"✅ البحث المرن: وجد {len(properties_data)} عقار")
+            return properties_data
             
         except Exception as e:
-            logger.error(f"خطأ في البحث الدلالي: {e}")
+            logger.error(f"خطأ في البحث المرن: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
-    def _merge_results(
-        self,
-        sql_results: List[Dict[str, Any]],
-        vector_results: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
-        """دمج النتائج من SQL و Vector بدون تكرار"""
-        merged = {}
-        
-        # إضافة نتائج SQL (أولوية أعلى)
-        for prop in sql_results:
-            prop_id = prop.get('id')
-            if prop_id:
-                merged[prop_id] = prop
-        
-        # إضافة نتائج Vector (بدون تكرار)
-        for prop in vector_results:
-            prop_id = prop.get('id')
-            if prop_id and prop_id not in merged:
-                merged[prop_id] = prop
-        
-        return list(merged.values())
-    
-    def _apply_flexible_filters(
+    def _filter_by_services(
         self,
         properties: List[Dict[str, Any]],
         criteria: PropertyCriteria
     ) -> List[Dict[str, Any]]:
         """
-        [!! المفتاح !!]
-        تطبيق فلترة قوية بناءً على المعايير المرنة ±1 أو ±20%
+        فلترة العقارات بناءً على قربها من الخدمات
+        (الميترو، الجامعات، المساجد)
         """
         filtered = []
         
         for prop in properties:
-            # فحص الحي (إلزامي)
-            if criteria.district and prop.get('district') != criteria.district:
-                continue
-            
-            # فحص الغرف (مع مرونة ±1)
-            if criteria.rooms and criteria.rooms.exact is not None:
-                prop_rooms = prop.get('rooms')
-                if prop_rooms is not None:
-                    min_rooms = max(0, criteria.rooms.exact - 1)
-                    max_rooms = criteria.rooms.exact + 1
-                    if not (min_rooms <= prop_rooms <= max_rooms):
-                        continue
-            
-            # فحص الحمامات (مع مرونة ±1)
-            if criteria.baths and criteria.baths.exact is not None:
-                prop_baths = prop.get('baths')
-                if prop_baths is not None:
-                    min_baths = max(0, criteria.baths.exact - 1)
-                    max_baths = criteria.baths.exact + 1
-                    if not (min_baths <= prop_baths <= max_baths):
-                        continue
-            
-            # فحص الصالات (مع مرونة ±1)
-            if criteria.halls and criteria.halls.exact is not None:
-                prop_halls = prop.get('halls')
-                if prop_halls is not None:
-                    min_halls = max(0, criteria.halls.exact - 1)
-                    max_halls = criteria.halls.exact + 1
-                    if not (min_halls <= prop_halls <= max_halls):
-                        continue
-            
-            # فحص المساحة (مع مرونة ±20%)
-            if criteria.area_m2:
-                prop_area = prop.get('area_m2')
-                if prop_area is not None:
-                    if criteria.area_m2.min is not None:
-                        min_area = criteria.area_m2.min * 0.8
-                        if prop_area < min_area:
-                            continue
-                    if criteria.area_m2.max is not None:
-                        max_area = criteria.area_m2.max * 1.2
-                        if prop_area > max_area:
-                            continue
-            
-            # فحص السعر (مع مرونة ±30%)
-            if criteria.price:
-                prop_price = prop.get('price_num')
-                if prop_price is not None:
-                    if criteria.price.min is not None:
-                        min_price = criteria.price.min * 0.7
-                        if prop_price < min_price:
-                            continue
-                    if criteria.price.max is not None:
-                        max_price = criteria.price.max * 1.3
-                        if prop_price > max_price:
-                            continue
-            
             # فحص الميترو (مع مرونة ±2 دقيقة)
             if criteria.metro_time_max:
                 prop_metro_time = prop.get('time_to_metro_min')
@@ -385,9 +303,10 @@ class SearchEngine:
                     if prop_metro_time > max_metro_time:
                         continue
             
-            # إذا وصلنا هنا، العقار يطابق جميع المعايير المرنة
+            # إذا وصلنا هنا، العقار يطابق جميع المعايير
             filtered.append(prop)
         
+        logger.info(f"🎯 بعد فلترة الخدمات: {len(filtered)} عقار")
         return filtered
     
     def _add_nearby_services(
