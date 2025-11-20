@@ -81,7 +81,7 @@ class SearchEngine:
     def __init__(self):
         self.db = db
         self.exact_limit = 20
-        self.similar_limit = 50
+        self.similar_limit = 100  # زيادة الحد للبحث المرن
     
     def search(self, criteria: PropertyCriteria, mode: SearchMode = SearchMode.EXACT) -> List[Property]:
         """نقطة الدخول الرئيسية للبحث"""
@@ -295,6 +295,12 @@ class SearchEngine:
         filtered = []
         
         for prop in properties:
+            prop_lat = prop.get('final_lat')
+            prop_lon = prop.get('final_lon')
+            
+            if not prop_lat or not prop_lon:
+                continue
+            
             # فحص الميترو (مع مرونة ±2 دقيقة)
             if criteria.metro_time_max:
                 prop_metro_time = prop.get('time_to_metro_min')
@@ -302,6 +308,65 @@ class SearchEngine:
                     max_metro_time = criteria.metro_time_max + 2
                     if prop_metro_time > max_metro_time:
                         continue
+            
+            # فحص الجامعات (صارم إذا حُددت بالاسم)
+            if criteria.university_requirements and criteria.university_requirements.required:
+                uni_reqs = criteria.university_requirements
+                
+                # إذا حُددت جامعة بالاسم → صارم (بدون مرونة)
+                if uni_reqs.university_name:
+                    max_distance_minutes = uni_reqs.max_distance_minutes if uni_reqs.max_distance_minutes else 15
+                    university_name = _find_matching_university(uni_reqs.university_name)
+                else:
+                    # إذا لم تُحدد بالاسم → مرونة +5 دقائق
+                    max_distance_minutes = uni_reqs.max_distance_minutes + 5 if uni_reqs.max_distance_minutes else 20
+                    university_name = None
+                
+                max_distance_meters = _minutes_to_meters(max_distance_minutes, walking=False)
+                
+                try:
+                    result = self.db.client.rpc(
+                        'get_universities_for_display',
+                        {
+                            'center_lat': prop_lat,
+                            'center_lon': prop_lon,
+                            'max_distance_meters': max_distance_meters,
+                            'university_name': university_name
+                        }
+                    ).execute()
+                    
+                    # إذا لم توجد جامعات قريبة، استبعد العقار
+                    if not result.data or len(result.data) == 0:
+                        continue
+                        
+                except Exception as e:
+                    logger.error(f"خطأ في فلترة الجامعات: {e}")
+                    continue
+            
+            # فحص المساجد (مع مرونة +2 دقيقة)
+            if criteria.mosque_requirements and criteria.mosque_requirements.required:
+                mosque_reqs = criteria.mosque_requirements
+                max_distance_minutes = mosque_reqs.max_distance_minutes + 2 if mosque_reqs.max_distance_minutes else 10
+                max_distance_meters = _minutes_to_meters(max_distance_minutes, walking=mosque_reqs.walking)
+                
+                try:
+                    result = self.db.client.rpc(
+                        'get_mosques_for_display',
+                        {
+                            'center_lat': prop_lat,
+                            'center_lon': prop_lon,
+                            'max_distance_meters': max_distance_meters,
+                            'mosque_name': mosque_reqs.mosque_name
+                        }
+                    ).execute()
+                    
+                    # إذا لم توجد مساجد قريبة، استبعد العقار
+                    if not result.data or len(result.data) == 0:
+                        continue
+                        
+                except Exception as e:
+                    logger.error(f"خطأ في فلترة المساجد: {e}")
+                    continue
             
             # إذا وصلنا هنا، العقار يطابق جميع المعايير
             filtered.append(prop)
