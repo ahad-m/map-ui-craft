@@ -678,9 +678,12 @@ const RealEstateSearch = () => {
     // لا تظهر دبابيس المدارس إلا إذا بحث المستخدم (عبر الشات أو يدوياً)
     if (!hasSearched) return [];
 
-    // لا تظهر الدبابيس إذا لم يحدد فلتر (للبحث اليدوي) أو لا يوجد معايير (للبحث بالشات)
-    // (ملاحظة: currentCriteria يتم تحديثه في useEffect)
-    if (!filters.schoolGender && !filters.schoolLevel && !currentCriteria?.school_requirements) return [];
+    // [!! التعديل المحسّن !!] لا تظهر الدبابيس إلا إذا طلبها المستخدم صراحة
+    // من الشات بوت أو من الفلاتر اليدوية
+    const requestedFromChatbot = currentCriteria?.school_requirements?.required;
+    const requestedFromFilters = filters.schoolGender || filters.schoolLevel;
+
+    if (!requestedFromChatbot && !requestedFromFilters) return [];
 
     if (!propertiesCenterLocation || allSchools.length === 0) return [];
 
