@@ -218,7 +218,7 @@ const RealEstateSearch = () => {
           maxSchoolTime: schoolReqs.max_distance_minutes || 15,
         }));
       }
-      
+
       // مزامنة معايير الجامعات من المساعد الذكي إلى فلتر الواجهة
       if (currentCriteria && currentCriteria.university_requirements?.required) {
         const uniReqs = currentCriteria.university_requirements;
@@ -229,7 +229,7 @@ const RealEstateSearch = () => {
           selectedUniversity: uniReqs.university_name || "",
           maxUniversityTime: uniReqs.max_distance_minutes || 30,
         }));
-        
+
         // تحديث مصطلح البحث المخصص للجامعة
         if (uniReqs.university_name) {
           setCustomSearchTerms((prev) => ({
@@ -241,6 +241,23 @@ const RealEstateSearch = () => {
       // [!! التعديل الجديد ينتهي هنا !!]
     }
   }, [chatSearchResults, currentCriteria]); // <-- أضفنا currentCriteria
+
+  // [جديد] استخراج قوائم الجامعات والمساجد من نتائج البحث (من Backend)
+  const nearbyUniversitiesFromBackend = useMemo(() => {
+    if (chatbotProperties.length > 0 && chatbotProperties[0].nearby_universities) {
+      console.log("🎓 Universities from backend:", chatbotProperties[0].nearby_universities);
+      return chatbotProperties[0].nearby_universities;
+    }
+    return [];
+  }, [chatbotProperties]);
+
+  const nearbyMosquesFromBackend = useMemo(() => {
+    if (chatbotProperties.length > 0 && chatbotProperties[0].nearby_mosques) {
+      console.log("🕌 Mosques from backend:", chatbotProperties[0].nearby_mosques);
+      return chatbotProperties[0].nearby_mosques;
+    }
+    return [];
+  }, [chatbotProperties]);
 
   // دالة إرسال رسالة
   const handleSendMessage = async () => {
@@ -801,7 +818,7 @@ const RealEstateSearch = () => {
       nearMosquesFilter: filters.nearMosques,
       propertiesCenterLocation,
       mosquesCount: allMosques.length,
-      maxTime: filters.maxMosqueTime
+      maxTime: filters.maxMosqueTime,
     });
 
     const nearby = allMosques
@@ -817,7 +834,7 @@ const RealEstateSearch = () => {
         return { ...mosque, travelTime };
       })
       .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
-    
+
     console.log("Nearby mosques found:", nearby.length);
     return nearby;
   }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, filters.nearMosques, hasSearched]);
@@ -831,7 +848,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-        
+
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if there's at least one school within the time range
@@ -848,7 +865,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-        
+
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if the selected university is within the time range
@@ -865,7 +882,7 @@ const RealEstateSearch = () => {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
-        
+
         if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
         // Check if there's at least one mosque within the time range
@@ -896,7 +913,7 @@ const RealEstateSearch = () => {
   const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
 
   // Check if user has applied any filters
-  const hasActiveFilters = 
+  const hasActiveFilters =
     filters.propertyType ||
     filters.neighborhood ||
     filters.minPrice > 0 ||
@@ -1126,6 +1143,74 @@ const RealEstateSearch = () => {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </AdvancedMarker>
+              ))}
+
+            {/* [جديد] University markers from Backend - عرض دبابيس الجامعات من الباك إند */}
+            {hasSearched &&
+              nearbyUniversitiesFromBackend.map((university, index) => (
+                <AdvancedMarker
+                  key={`university-backend-${index}`}
+                  position={{ lat: university.lat, lng: university.lon }}
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated"
+                          style={{ backgroundColor: "hsl(217 91% 60%)" }}
+                        >
+                          <GraduationCap className="h-5 w-5 text-white" />
+                        </div>
+                        {/* Hover pulse effect */}
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(217 91% 60% / 0.3)", animationDuration: "1.5s" }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
+                      {university.drive_minutes !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("drivingTime") || "وقت القيادة"}: {Math.round(university.drive_minutes)}{" "}
+                          {t("minutes") || "دقيقة"}
+                        </p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </AdvancedMarker>
+              ))}
+
+            {/* [جديد] Mosque markers from Backend - عرض دبابيس المساجد من الباك إند */}
+            {hasSearched &&
+              nearbyMosquesFromBackend.map((mosque) => (
+                <AdvancedMarker key={`mosque-backend-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated border-2 border-white"
+                          style={{ backgroundColor: "hsl(142 76% 36%)" }}
+                        >
+                          <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
+                        </div>
+                        {/* Hover pulse effect */}
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(142 76% 36% / 0.3)", animationDuration: "1.5s" }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-medium">{mosque.name}</p>
+                      {mosque.walk_minutes !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("walkingTime") || "وقت المشي"}: {Math.round(mosque.walk_minutes)} {t("minutes") || "دقيقة"}
+                        </p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 </AdvancedMarker>
@@ -2014,10 +2099,10 @@ const RealEstateSearch = () => {
 
                       {/* Apply/Reset Buttons */}
                       <div className="flex gap-3 mt-8 pt-6 border-t border-border/50">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="lg"
-                          className="flex-1 h-12 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all" 
+                          className="flex-1 h-12 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all"
                           onClick={resetFilters}
                         >
                           <X className={`h-5 w-5 ${i18n.language === "ar" ? "ml-2" : "mr-2"}`} />
@@ -2113,19 +2198,19 @@ const RealEstateSearch = () => {
                         <div className="flex items-center gap-2 text-xs mb-2">
                           {property.rooms && (
                             <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
-                              <Bed className="h-4 w-4 text-primary" /> 
+                              <Bed className="h-4 w-4 text-primary" />
                               <span className="font-medium">{property.rooms}</span>
                             </span>
                           )}
                           {property.baths && (
                             <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
-                              <Bath className="h-4 w-4 text-primary" /> 
+                              <Bath className="h-4 w-4 text-primary" />
                               <span className="font-medium">{property.baths}</span>
                             </span>
                           )}
                           {property.area_m2 && (
                             <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
-                              <Maximize className="h-4 w-4 text-primary" /> 
+                              <Maximize className="h-4 w-4 text-primary" />
                               <span className="font-medium">{property.area_m2} m²</span>
                             </span>
                           )}
@@ -2180,12 +2265,8 @@ const RealEstateSearch = () => {
                     </p>
                   ) : displayedProperties.length === 0 ? (
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-destructive">
-                        {t("noPropertiesFound")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("tryAdjustingFilters")}
-                      </p>
+                      <p className="text-sm font-semibold text-destructive">{t("noPropertiesFound")}</p>
+                      <p className="text-xs text-muted-foreground">{t("tryAdjustingFilters")}</p>
                     </div>
                   ) : (
                     <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
