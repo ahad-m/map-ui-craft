@@ -1,6 +1,6 @@
 """
 نماذج البيانات (Pydantic Models) للمساعد العقاري الذكي
-النسخة المحدّثة - مع دعم المساجد والجامعات للعرض على الخريطة
+النسخة المحدّثة - مع دعم المساجد
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
@@ -118,38 +118,8 @@ class SearchMode(str, Enum):
     SIMILAR = "similar"  # اللي يشبهه
 
 
-# ============================================================
-# [جديد] نماذج بيانات المساجد والجامعات للعرض على الخريطة
-# ============================================================
-
-class NearbyUniversity(BaseModel):
-    """جامعة قريبة من العقار - للعرض على الخريطة"""
-    name_ar: Optional[str] = None
-    name_en: Optional[str] = None
-    lat: float
-    lon: float
-    distance_meters: Optional[float] = None
-    drive_minutes: Optional[float] = None  # وقت القيادة بالدقائق
-
-
-class NearbyMosque(BaseModel):
-    """مسجد قريب من العقار - للعرض على الخريطة"""
-    id: int
-    name: str
-    lat: float
-    lon: float
-    district: Optional[str] = None
-    distance_meters: Optional[float] = None
-    walk_minutes: Optional[float] = None  # وقت المشي بالدقائق
-
-
 class Property(BaseModel):
     """نموذج العقار"""
-    
-    class Config:
-        arbitrary_types_allowed = True
-        validate_assignment = True
-    
     id: str
     url: Optional[str] = None
     purpose: str
@@ -174,10 +144,6 @@ class Property(BaseModel):
     
     # نقاط التطابق (للبحث المشابه)
     match_score: Optional[float] = None
-    
-    # [جديد] قوائم المساجد والجامعات القريبة للعرض على الخريطة
-    nearby_universities: Optional[List[NearbyUniversity]] = None
-    nearby_mosques: Optional[List[NearbyMosque]] = None
 
 
 class ChatMessage(BaseModel):
