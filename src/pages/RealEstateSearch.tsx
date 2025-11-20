@@ -1392,17 +1392,17 @@ const RealEstateSearch = () => {
                         <div className="space-y-3">
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t("propertyType")}</Label>
-                            <Popover open={openPropertyTypeCombobox} onOpenChange={setOpenPropertyTypeCombobox}>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className="w-full justify-between bg-background hover:bg-accent"
-                                >
-                                  {filters.propertyType || t("selectPropertyType")}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
+                            <Popover open={openPropertyTypeCombobox} onOpenChange={setOpenPropertyTypeCombobox}>
+                              <PopoverTrigger>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between bg-background hover:bg-accent"
+                                >
+                                  {filters.propertyType || t("selectPropertyType")}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
                                   <CommandInput
@@ -1459,17 +1459,17 @@ const RealEstateSearch = () => {
 
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">{t("neighborhood")}</Label>
-                            <Popover open={openNeighborhoodCombobox} onOpenChange={setOpenNeighborhoodCombobox}>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className="w-full justify-between bg-background hover:bg-accent"
-                                >
-                                  {filters.neighborhood || t("selectNeighborhood")}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
+                            <Popover open={openNeighborhoodCombobox} onOpenChange={setOpenNeighborhoodCombobox}>
+                              <PopoverTrigger>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between bg-background hover:bg-accent"
+                                >
+                                  {filters.neighborhood || t("selectNeighborhood")}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
                                   <CommandInput
@@ -1752,23 +1752,23 @@ const RealEstateSearch = () => {
                             <Label className="text-sm font-medium">{t("schools")}</Label>
 
                             {/* School Gender Filter */}
-                            <Popover open={openSchoolGenderCombobox} onOpenChange={setOpenSchoolGenderCombobox}>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className="w-full justify-between bg-background hover:bg-accent"
-                                >
-                                  {filters.schoolGender === "All"
-                                    ? t("all")
-                                    : filters.schoolGender === "Boys"
-                                      ? t("boys")
-                                      : filters.schoolGender === "Girls"
-                                        ? t("girls")
-                                        : filters.schoolGender || t("gender")}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
+                            <Popover open={openSchoolGenderCombobox} onOpenChange={setOpenSchoolGenderCombobox}>
+                              <PopoverTrigger>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between bg-background hover:bg-accent"
+                                >
+                                  {filters.schoolGender === "All"
+                                    ? t("all")
+                                    : filters.schoolGender === "Boys"
+                                      ? t("boys")
+                                      : filters.schoolGender === "Girls"
+                                        ? t("girls")
+                                        : filters.schoolGender || t("gender")}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
                                   <CommandInput
@@ -1829,29 +1829,29 @@ const RealEstateSearch = () => {
                             </Popover>
 
                             {/* School Level Filter */}
-                            <Popover open={openSchoolLevelCombobox} onOpenChange={setOpenSchoolLevelCombobox}>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className="w-full justify-between bg-background hover:bg-accent"
-                                >
-                                  {filters.schoolLevel === "combined"
-                                    ? t("combined")
-                                    : filters.schoolLevel === "nursery"
-                                      ? t("nursery")
-                                      : filters.schoolLevel === "kindergarten"
-                                        ? t("kindergarten")
-                                        : filters.schoolLevel === "elementary"
-                                          ? t("elementary")
-                                          : filters.schoolLevel === "middle"
-                                            ? t("middle")
-                                            : filters.schoolLevel === "high"
-                                              ? t("high")
-                                              : filters.schoolLevel || t("schoolLevel")}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
+                            <Popover open={openSchoolLevelCombobox} onOpenChange={setOpenSchoolLevelCombobox}>
+                              <PopoverTrigger>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between bg-background hover:bg-accent"
+                                >
+                                  {filters.schoolLevel === "combined"
+                                    ? t("combined")
+                                    : filters.schoolLevel === "nursery"
+                                      ? t("nursery")
+                                      : filters.schoolLevel === "kindergarten"
+                                        ? t("kindergarten")
+                                        : filters.schoolLevel === "elementary"
+                                          ? t("elementary")
+                                          : filters.schoolLevel === "middle"
+                                            ? t("middle")
+                                            : filters.schoolLevel === "high"
+                                              ? t("high")
+                                              : filters.schoolLevel || t("schoolLevel")}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
                                   <CommandInput
@@ -1942,17 +1942,17 @@ const RealEstateSearch = () => {
                             <Label className="text-sm font-medium">{t("universities")}</Label>
 
                             {/* University Selection Dropdown */}
-                            <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className="w-full justify-between bg-background hover:bg-accent"
-                                >
-                                  {filters.selectedUniversity || t("selectUniversity")}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
+                            <Popover open={openUniversityCombobox} onOpenChange={setOpenUniversityCombobox}>
+                              <PopoverTrigger>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between bg-background hover:bg-accent"
+                                >
+                                  {filters.selectedUniversity || t("selectUniversity")}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 z-[100]">
                                 <Command>
                                   <CommandInput
