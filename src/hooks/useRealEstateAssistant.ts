@@ -1,6 +1,6 @@
 //**
  * Hook لإدارة المساعد العقاري الذكي
-//
+//**
 import { useState, useEffect, useCallback } from 'react';
 import {
   getWelcomeMessage,
