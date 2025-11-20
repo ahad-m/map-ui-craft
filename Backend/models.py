@@ -1,9 +1,9 @@
 """
 نماذج البيانات (Pydantic Models) للمساعد العقاري الذكي
-النسخة المحدّثة - مع دعم المساجد
+النسخة المحدّثة - مع إضافة حقول الخدمات القريبة (Fix)
 """
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Dict, Any
 from enum import Enum
 
 
@@ -64,63 +64,52 @@ class PriceFilter(BaseModel):
 class SchoolRequirements(BaseModel):
     """متطلبات المدارس"""
     required: bool = False
-    levels: Optional[List[str]] = None  # مثل: ["ابتدائي", "متوسط", "ثانوي"]
+    levels: Optional[List[str]] = None
     gender: Optional[SchoolGender] = None
-    max_distance_minutes: Optional[float] = None  # بالدقائق
-    walking: bool = False  # False = بالسيارة (الافتراضي للمدارس)
+    max_distance_minutes: Optional[float] = None
+    walking: bool = False
 
 
 class UniversityRequirements(BaseModel):
     """متطلبات الجامعات"""
     required: bool = False
-    university_name: Optional[str] = None  # اسم الجامعة المحددة
-    max_distance_minutes: Optional[float] = None  # بالدقائق (بالسيارة)
+    university_name: Optional[str] = None
+    max_distance_minutes: Optional[float] = None
 
 
 class MosqueRequirements(BaseModel):
-    """متطلبات المساجد - جديد"""
+    """متطلبات المساجد"""
     required: bool = False
-    mosque_name: Optional[str] = None  # اسم المسجد المحدد (أو NULL لأي مسجد)
-    max_distance_minutes: Optional[float] = None  # بالدقائق (مشياً أو بالسيارة)
-    walking: bool = True  # True = مشياً، False = بالسيارة
+    mosque_name: Optional[str] = None
+    max_distance_minutes: Optional[float] = None
+    walking: bool = True
 
 
 class PropertyCriteria(BaseModel):
     """معايير البحث عن العقار المستخرجة من طلب المستخدم"""
-    
-    # معايير إلزامية
-    purpose: PropertyPurpose = Field(..., description="الغرض من العقار (بيع أو إيجار)")
+    purpose: PropertyPurpose = Field(..., description="الغرض من العقار")
     property_type: PropertyType = Field(..., description="نوع العقار")
-    
-    # معايير اختيارية
     district: Optional[str] = Field(None, description="اسم الحي")
     city: Optional[str] = Field(default="الرياض", description="المدينة")
-    
-    # المواصفات
     rooms: Optional[IntRangeFilter] = Field(None, description="عدد الغرف")
     baths: Optional[IntRangeFilter] = Field(None, description="عدد الحمامات")
     halls: Optional[IntRangeFilter] = Field(None, description="عدد الصالات")
-    area_m2: Optional[RangeFilter] = Field(None, description="المساحة بالمتر المربع")
+    area_m2: Optional[RangeFilter] = Field(None, description="المساحة")
     price: Optional[PriceFilter] = Field(None, description="السعر")
-    
-    # القرب من الخدمات
-    metro_time_max: Optional[float] = Field(None, description="أقصى وقت للوصول لمحطة المترو بالدقائق")
-    school_requirements: Optional[SchoolRequirements] = Field(None, description="متطلبات المدارس")
-    university_requirements: Optional[UniversityRequirements] = Field(None, description="متطلبات الجامعات")
-    mosque_requirements: Optional[MosqueRequirements] = Field(None, description="متطلبات المساجد")  # جديد
-    
-    # النص الأصلي للطلب (للبحث الدلالي)
-    original_query: Optional[str] = Field(None, description="النص الأصلي لطلب المستخدم")
+    metro_time_max: Optional[float] = Field(None, description="الميترو")
+    school_requirements: Optional[SchoolRequirements] = Field(None, description="المدارس")
+    university_requirements: Optional[UniversityRequirements] = Field(None, description="الجامعات")
+    mosque_requirements: Optional[MosqueRequirements] = Field(None, description="المساجد")
+    original_query: Optional[str] = Field(None, description="النص الأصلي")
 
 
 class SearchMode(str, Enum):
-    """نوع البحث"""
-    EXACT = "exact"  # بس المطابق
-    SIMILAR = "similar"  # اللي يشبهه
+    EXACT = "exact"
+    SIMILAR = "similar"
 
 
 class Property(BaseModel):
-    """نموذج العقار"""
+    """نموذج العقار - تم إضافة حقول الخدمات القريبة"""
     id: str
     url: Optional[str] = None
     purpose: str
@@ -143,30 +132,31 @@ class Property(BaseModel):
     baths: Optional[int] = None
     halls: Optional[int] = None
     
-    # نقاط التطابق (للبحث المشابه)
+    # [هام] الحقول الجديدة للخدمات القريبة
+    nearby_schools: Optional[List[Dict[str, Any]]] = []
+    nearby_universities: Optional[List[Dict[str, Any]]] = []
+    nearby_mosques: Optional[List[Dict[str, Any]]] = []
+    
+    # نقاط التطابق
     match_score: Optional[float] = None
 
 
 class ChatMessage(BaseModel):
-    """رسالة في المحادثة"""
     role: Literal["user", "assistant", "system"]
     content: str
 
 
 class UserQuery(BaseModel):
-    """طلب المستخدم"""
     message: str
     conversation_history: Optional[List[ChatMessage]] = []
 
 
 class SearchModeSelection(BaseModel):
-    """اختيار نوع البحث من المستخدم"""
     mode: SearchMode
     criteria: PropertyCriteria
 
 
 class SearchResponse(BaseModel):
-    """استجابة البحث"""
     success: bool
     message: str
     criteria: Optional[PropertyCriteria] = None
@@ -176,7 +166,6 @@ class SearchResponse(BaseModel):
 
 
 class CriteriaExtractionResponse(BaseModel):
-    """استجابة استخراج المعايير"""
     success: bool
     message: str
     criteria: Optional[PropertyCriteria] = None
