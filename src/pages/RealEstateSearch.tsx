@@ -139,9 +139,7 @@ const RealEstateSearch = () => {
   const [chatbotProperties, setChatbotProperties] = useState<any[]>([]);
   const [showChatbotResults, setShowChatbotResults] = useState(false);
 
-  // ---------------------------------------------------------
-  // Helper to extract unique items (schools/mosques) from ALL properties
-  // ---------------------------------------------------------
+  // Helper to extract unique items
   const getUniqueItems = (properties: any[], key: string) => {
     if (!properties || properties.length === 0) return [];
     const allItems = properties.flatMap((p) => p[key] || []);
@@ -173,7 +171,6 @@ const RealEstateSearch = () => {
   const nearbyMosquesFromBackend = useMemo(() => {
     return getUniqueItems(chatbotProperties, "nearby_mosques");
   }, [chatbotProperties]);
-  // ---------------------------------------------------------
 
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isChatLoading) return;
@@ -185,13 +182,10 @@ const RealEstateSearch = () => {
     await selectSearchMode(mode);
   };
 
-  // دالة إعادة تشغيل المحادثة
   const handleRestartChat = () => {
     if (resetChat) resetChat();
     setChatbotProperties([]);
     setShowChatbotResults(false);
-
-    // Reset local filters
     setFilters({
       propertyType: "",
       city: "الرياض",
@@ -243,9 +237,11 @@ const RealEstateSearch = () => {
     }
   };
 
+  // [تم التعديل هنا لإصلاح خطأ TS]
   const handleVoiceInput = () => {
-    // [Fix] Added ': any' to bypass TypeScript constructor error
-    const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    // تعريف المتغير كـ any لتجنب الأخطاء
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
       toast({
         title: "غير مدعوم",
@@ -255,7 +251,9 @@ const RealEstateSearch = () => {
       return;
     }
 
-    const recognition = new SpeechRecognition();
+    // [FIX]: استخدام (SpeechRecognition as any) هنا هو الحل الجذري للخطأ
+    const recognition = new (SpeechRecognition as any)();
+
     recognition.lang = "ar-SA";
     recognition.continuous = false;
     recognition.interimResults = false;
