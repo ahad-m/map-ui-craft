@@ -1,6 +1,6 @@
 """
 محرك البحث الهجين (Exact + Vector Similarity)
-النسخة النهائية المحسّنة - مع فلترة قوية للبحث المشابه
+النسخة النهائية - مع البحث الدلالي والفلترة القوية
 """
 from models import PropertyCriteria, Property, SearchMode
 from database import db
@@ -83,7 +83,8 @@ class SearchEngine:
         self.db = db
         self.exact_limit = 20
         self.similar_limit = 50
-        self.vector_limit = 50
+        self.vector_limit = 100
+        self.sql_limit = 100
     
     def search(self, criteria: PropertyCriteria, mode: SearchMode = SearchMode.EXACT) -> List[Property]:
         """نقطة الدخول الرئيسية للبحث"""
@@ -192,11 +193,14 @@ class SearchEngine:
             return []
     
     def _hybrid_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
-        """بحث هجين - يجمع بين SQL والبحث الدلالي"""
+        """
+        بحث هجين - يجمع بين SQL المرن والبحث الدلالي
+        مع فلترة قوية بعد الجلب
+        """
         try:
-            # 1. البحث SQL المحسّن (مع فلترة قوية)
-            sql_results = self._improved_sql_search(criteria)
-            logger.info(f"📊 البحث SQL: وجد {len(sql_results)} عقار")
+            # 1. البحث SQL المرن
+            sql_results = self._flexible_sql_search(criteria)
+            logger.info(f"📊 البحث SQL المرن: وجد {len(sql_results)} عقار")
             
             # 2. البحث الدلالي
             vector_results = []
@@ -205,13 +209,18 @@ class SearchEngine:
                 logger.info(f"🔍 البحث الدلالي: وجد {len(vector_results)} عقار")
             
             # 3. دمج النتائج
-            merged_results = self._merge_and_rerank(sql_results, vector_results, criteria)
+            merged_results = self._merge_results(sql_results, vector_results)
+            logger.info(f"🔀 بعد الدمج: {len(merged_results)} عقار")
             
-            # 4. إضافة الخدمات القريبة
-            merged_results = self._add_nearby_services(merged_results, criteria)
+            # 4. [!! المفتاح !!] فلترة قوية بناءً على المعايير المرنة
+            filtered_results = self._apply_flexible_filters(merged_results, criteria)
+            logger.info(f"🎯 بعد الفلترة: {len(filtered_results)} عقار")
             
-            logger.info(f"✅ البحث الهجين: وجد {len(merged_results)} عقار نهائي")
-            return merged_results
+            # 5. إضافة الخدمات القريبة
+            final_results = self._add_nearby_services(filtered_results, criteria)
+            
+            logger.info(f"✅ البحث الهجين: وجد {len(final_results)} عقار نهائي")
+            return final_results[:self.similar_limit]
             
         except Exception as e:
             logger.error(f"❌ خطأ في البحث الهجين: {e}")
@@ -219,10 +228,10 @@ class SearchEngine:
             traceback.print_exc()
             return []
     
-    def _improved_sql_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
+    def _flexible_sql_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
         """
-        [!! التحسين الرئيسي !!]
-        بحث SQL محسّن - يطبق فلترة قوية حتى في البحث المشابه
+        بحث SQL مرن - يطبق المعايير الأساسية فقط
+        الفلترة المرنة ستطبق لاحقاً
         """
         try:
             query = self.db.client.table('properties').select('*')
@@ -234,40 +243,21 @@ class SearchEngine:
             query = query.eq('purpose', criteria.purpose.value)
             query = query.eq('property_type', criteria.property_type.value)
             
-            # فلترة المدينة (إلزامية)
+            # المدينة (إلزامية)
             if criteria.city:
                 query = query.eq('city', criteria.city)
             
-            # [!! التحسين 1 !!] فلترة الحي (إلزامية إذا كانت موجودة)
+            # الحي (إلزامي)
             if criteria.district:
                 query = query.eq('district', criteria.district)
-                logger.info(f"🎯 تطبيق فلتر الحي: {criteria.district}")
+                logger.info(f"🎯 فلتر الحي: {criteria.district}")
             
-            # [!! التحسين 2 !!] فلترة عدد الغرف (مع مرونة بسيطة)
-            if criteria.rooms and criteria.rooms.min is not None:
-                # السماح بـ ±1 غرفة
-                min_rooms = max(1, criteria.rooms.min - 1)
-                query = query.gte('rooms', min_rooms)
-                logger.info(f"🎯 تطبيق فلتر الغرف: min={min_rooms}")
-            
-            # توسيع نطاق السعر (±30%)
-            if criteria.price and criteria.price.max:
-                expanded_max = criteria.price.max * 1.3
-                query = query.lte('price_num', expanded_max)
-            
-            # توسيع نطاق المساحة (±20%)
-            if criteria.area_m2:
-                if criteria.area_m2.min:
-                    query = query.gte('area_m2', criteria.area_m2.min * 0.8)
-                if criteria.area_m2.max:
-                    query = query.lte('area_m2', criteria.area_m2.max * 1.2)
-            
-            result = query.order('price_num').limit(200).execute()
+            result = query.order('price_num').limit(self.sql_limit).execute()
             
             return result.data if result.data else []
             
         except Exception as e:
-            logger.error(f"خطأ في البحث SQL المحسّن: {e}")
+            logger.error(f"خطأ في البحث SQL المرن: {e}")
             return []
     
     def _vector_search(self, query_text: str) -> List[Dict[str, Any]]:
@@ -296,14 +286,12 @@ class SearchEngine:
             logger.error(f"خطأ في البحث الدلالي: {e}")
             return []
     
-    def _merge_and_rerank(
+    def _merge_results(
         self,
         sql_results: List[Dict[str, Any]],
-        vector_results: List[Dict[str, Any]],
-        criteria: PropertyCriteria
+        vector_results: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """دمج وإعادة ترتيب النتائج"""
-        # استخدام dictionary لتجنب التكرار
+        """دمج النتائج من SQL و Vector بدون تكرار"""
         merged = {}
         
         # إضافة نتائج SQL (أولوية أعلى)
@@ -318,19 +306,89 @@ class SearchEngine:
             if prop_id and prop_id not in merged:
                 merged[prop_id] = prop
         
-        # تحويل إلى قائمة
-        final_results = list(merged.values())
+        return list(merged.values())
+    
+    def _apply_flexible_filters(
+        self,
+        properties: List[Dict[str, Any]],
+        criteria: PropertyCriteria
+    ) -> List[Dict[str, Any]]:
+        """
+        [!! المفتاح !!]
+        تطبيق فلترة قوية بناءً على المعايير المرنة ±1 أو ±20%
+        """
+        filtered = []
         
-        # [!! التحسين 3 !!] فلترة نهائية بناءً على الخدمات المطلوبة
-        if criteria.metro_time_max:
-            # فلترة العقارات القريبة من الميترو
-            final_results = [
-                prop for prop in final_results
-                if prop.get('time_to_metro_min') and prop['time_to_metro_min'] <= criteria.metro_time_max
-            ]
-            logger.info(f"🚇 تطبيق فلتر الميترو: {len(final_results)} عقار متبقي")
+        for prop in properties:
+            # فحص الحي (إلزامي)
+            if criteria.district and prop.get('district') != criteria.district:
+                continue
+            
+            # فحص الغرف (مع مرونة ±1)
+            if criteria.rooms and criteria.rooms.exact is not None:
+                prop_rooms = prop.get('rooms')
+                if prop_rooms is not None:
+                    min_rooms = max(0, criteria.rooms.exact - 1)
+                    max_rooms = criteria.rooms.exact + 1
+                    if not (min_rooms <= prop_rooms <= max_rooms):
+                        continue
+            
+            # فحص الحمامات (مع مرونة ±1)
+            if criteria.baths and criteria.baths.exact is not None:
+                prop_baths = prop.get('baths')
+                if prop_baths is not None:
+                    min_baths = max(0, criteria.baths.exact - 1)
+                    max_baths = criteria.baths.exact + 1
+                    if not (min_baths <= prop_baths <= max_baths):
+                        continue
+            
+            # فحص الصالات (مع مرونة ±1)
+            if criteria.halls and criteria.halls.exact is not None:
+                prop_halls = prop.get('halls')
+                if prop_halls is not None:
+                    min_halls = max(0, criteria.halls.exact - 1)
+                    max_halls = criteria.halls.exact + 1
+                    if not (min_halls <= prop_halls <= max_halls):
+                        continue
+            
+            # فحص المساحة (مع مرونة ±20%)
+            if criteria.area_m2:
+                prop_area = prop.get('area_m2')
+                if prop_area is not None:
+                    if criteria.area_m2.min is not None:
+                        min_area = criteria.area_m2.min * 0.8
+                        if prop_area < min_area:
+                            continue
+                    if criteria.area_m2.max is not None:
+                        max_area = criteria.area_m2.max * 1.2
+                        if prop_area > max_area:
+                            continue
+            
+            # فحص السعر (مع مرونة ±30%)
+            if criteria.price:
+                prop_price = prop.get('price_num')
+                if prop_price is not None:
+                    if criteria.price.min is not None:
+                        min_price = criteria.price.min * 0.7
+                        if prop_price < min_price:
+                            continue
+                    if criteria.price.max is not None:
+                        max_price = criteria.price.max * 1.3
+                        if prop_price > max_price:
+                            continue
+            
+            # فحص الميترو (مع مرونة ±2 دقيقة)
+            if criteria.metro_time_max:
+                prop_metro_time = prop.get('time_to_metro_min')
+                if prop_metro_time is not None:
+                    max_metro_time = criteria.metro_time_max + 2
+                    if prop_metro_time > max_metro_time:
+                        continue
+            
+            # إذا وصلنا هنا، العقار يطابق جميع المعايير المرنة
+            filtered.append(prop)
         
-        return final_results[:self.similar_limit]
+        return filtered
     
     def _add_nearby_services(
         self,
@@ -470,10 +528,9 @@ class SearchEngine:
     ) -> List[Dict[str, Any]]:
         """جلب الجامعات القريبة من العقار للعرض على الخريطة"""
         try:
-            max_distance_meters = _minutes_to_meters(
-                uni_reqs.max_distance_minutes,
-                walking=False
-            )
+            # [!! تطبيق المرونة ±5 دقائق !!]
+            max_distance_minutes = uni_reqs.max_distance_minutes + 5
+            max_distance_meters = _minutes_to_meters(max_distance_minutes, walking=False)
             
             # البحث عن اسم الجامعة المطابق
             university_name = None
@@ -516,8 +573,10 @@ class SearchEngine:
     ) -> List[Dict[str, Any]]:
         """جلب المساجد القريبة من العقار للعرض على الخريطة"""
         try:
+            # [!! تطبيق المرونة ±2 دقيقة !!]
+            max_distance_minutes = mosque_reqs.max_distance_minutes + 2
             max_distance_meters = _minutes_to_meters(
-                mosque_reqs.max_distance_minutes,
+                max_distance_minutes,
                 walking=mosque_reqs.walking
             )
             
@@ -587,4 +646,3 @@ class SearchEngine:
 
 # إنشاء instance واحد
 search_engine = SearchEngine()
-
