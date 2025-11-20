@@ -1,6 +1,6 @@
 """
 محرك البحث الهجين (Exact + Vector Similarity)
-النسخة المحدثة - تعمل مع Supabase REST API
+النسخة المحدثة - مع دعم المساجد وتحسين البحث عن الجامعات
 """
 from models import PropertyCriteria, Property, SearchMode
 from database import db
@@ -13,19 +13,31 @@ from arabic_utils import normalize_arabic_text, calculate_similarity_score
 logger = logging.getLogger(__name__)
 
 
-def _minutes_to_meters(minutes: float, avg_speed_kmh: float = 30.0) -> float:
+def _minutes_to_meters(minutes: float, avg_speed_kmh: float = 30.0, walking: bool = False) -> float:
     """
-    تحويل وقت القيادة بالدقائق إلى مسافة بالأمتار
-    بناءً على سرعة متوسطة
+    تحويل وقت القيادة/المشي بالدقائق إلى مسافة بالأمتار
+    
+    Args:
+        minutes: الوقت بالدقائق
+        avg_speed_kmh: السرعة المتوسطة بالكيلومتر/ساعة (افتراضي: 30 للسيارة)
+        walking: True إذا كان المشي (سرعة 5 كم/ساعة)
+    
+    Returns:
+        المسافة بالأمتار
     """
     if minutes <= 0:
         return 0
+    
+    # تحديد السرعة بناءً على نوع الحركة
+    if walking:
+        avg_speed_kmh = 5.0  # سرعة المشي: 5 كم/ساعة
     
     # المسافة (كم) = السرعة (كم/ساعة) * (الدقائق / 60)
     distance_km = avg_speed_kmh * (minutes / 60.0)
     
     # تحويل من كم إلى متر
     return distance_km * 1000
+
 
 LEVELS_TRANSLATION_MAP = {
     "ابتدائي": "elementary",
@@ -38,27 +50,27 @@ LEVELS_TRANSLATION_MAP = {
 
 def _find_matching_university(query_name: str, threshold: float = 0.5) -> Optional[str]:
     """
-    Find the best matching university name from the database using fuzzy matching.
+    البحث عن أفضل تطابق لاسم الجامعة من قاعدة البيانات باستخدام Fuzzy Matching
     
     Args:
-        query_name: The university name from user query (may have spelling variations)
-        threshold: Minimum similarity score (0.0-1.0), default 0.5 for flexible matching
+        query_name: اسم الجامعة من طلب المستخدم (قد يحتوي على اختلافات إملائية)
+        threshold: الحد الأدنى لنقاط التشابه (0.0-1.0)، افتراضي 0.5
     
     Returns:
-        The best matching university name from database, or None if no good match
+        أفضل اسم مطابق من قاعدة البيانات، أو None إذا لم يوجد تطابق جيد
     """
     if not query_name:
         return None
     
     try:
-        # Fetch all universities from database
+        # جلب جميع الجامعات من قاعدة البيانات
         result = db.client.table('universities').select('name_ar, name_en').execute()
         
         if not result.data:
-            logger.warning("No universities found in database")
+            logger.warning("لا توجد جامعات في قاعدة البيانات")
             return None
         
-        # Collect all university names (Arabic and English)
+        # جمع جميع أسماء الجامعات (العربية والإنجليزية)
         all_names = []
         for uni in result.data:
             if uni.get('name_ar'):
@@ -66,7 +78,7 @@ def _find_matching_university(query_name: str, threshold: float = 0.5) -> Option
             if uni.get('name_en'):
                 all_names.append(uni['name_en'])
         
-        # Find best match
+        # البحث عن أفضل تطابق
         best_match = None
         best_score = 0.0
         
@@ -77,14 +89,14 @@ def _find_matching_university(query_name: str, threshold: float = 0.5) -> Option
                 best_match = name
         
         if best_match:
-            logger.info(f"Fuzzy match: '{query_name}' → '{best_match}' (score: {best_score:.2f})")
+            logger.info(f"تطابق غامض: '{query_name}' → '{best_match}' (نقاط: {best_score:.2f})")
         else:
-            logger.warning(f"No good match found for university: '{query_name}' (best score: {best_score:.2f})")
+            logger.warning(f"لم يُعثر على تطابق جيد للجامعة: '{query_name}' (أفضل نقاط: {best_score:.2f})")
         
         return best_match
         
     except Exception as e:
-        logger.error(f"Error in fuzzy university matching: {e}")
+        logger.error(f"خطأ في البحث الغامض عن الجامعة: {e}")
         return None
 
 
@@ -116,13 +128,13 @@ class SearchEngine:
     
     def _exact_search(self, criteria: PropertyCriteria) -> List[Property]:
         """
-        البحث الدقيق - يطابق جميع المعايير بالضبط (نسخة محسّنة)
+        البحث الدقيق - يطابق جميع المعايير بالضبط
         """
         try:
             # بناء استعلام Supabase
             query = self.db.client.table('properties').select('*')
             
-            # !! -- تعديل: فلترة الإحداثيات الخاطئة من قاعدة البيانات -- !!
+            # فلترة الإحداثيات الخاطئة من قاعدة البيانات
             query = query.not_.is_('final_lat', 'null')
             query = query.not_.eq('final_lat', 0)
             
@@ -189,35 +201,32 @@ class SearchEngine:
             properties_data = result.data if result.data else []
             
             # ==========================================================
-            # [!! -- فلترة المدارس (البحث الدقيق) -- !!]
+            # فلترة الخدمات القريبة (المدارس، الجامعات، المساجد)
             # ==========================================================
             final_properties_data = []
             
-            # هل طلب المستخدم فلترة للمدارس؟
+            # 1. فلترة المدارس
             if criteria.school_requirements and criteria.school_requirements.required:
                 logger.info("البحث الدقيق: جاري تنفيذ فلترة المدارس...")
                 
-                # 1. تحضير معايير المدارس
                 school_reqs = criteria.school_requirements
                 distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0) 
                 
-                # [!! إصلاح !!] : ترجمة الجنس من عربي إلى إنجليزي
+                # ترجمة الجنس من عربي إلى إنجليزي
                 school_gender_english = None
                 if school_reqs.gender:
                     if school_reqs.gender.value == "بنات":
                         school_gender_english = "girls"
                     elif school_reqs.gender.value == "بنين":
                         school_gender_english = "boys"
-                    # (ملاحظة: "مختلط" لا تحتاج ترجمة إذا كانت مخزنة هكذا)
 
-                # [!! إصلاح !!] : ترجمة المراحل الدراسية من عربي إلى إنجليزي
+                # ترجمة المراحل الدراسية من عربي إلى إنجليزي
                 school_levels_english = None
                 if school_reqs.levels:
                     school_levels_english = [LEVELS_TRANSLATION_MAP.get(level, level) for level in school_reqs.levels]
                 
-                # 2. المرور على العقارات الأولية وفلترتها
+                # المرور على العقارات وفلترتها
                 for prop_row in properties_data:
-                    
                     prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
                     prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
 
@@ -225,47 +234,42 @@ class SearchEngine:
                         continue 
 
                     try:
-                        # 3. استدعاء دالة RPC في Supabase
                         match_found = self.db.client.rpc(
                             'check_school_proximity',
                             {
                                 'p_lat': float(prop_lat),
                                 'p_lon': float(prop_lon),
                                 'p_distance_meters': distance_meters,
-                                'p_gender': school_gender_english, # [!! إصلاح !!] : إرسال القيمة الإنجليزية
-                                'p_levels': school_levels_english  # [!! إصلاح !!] : إرسال القيمة الإنجليزية
+                                'p_gender': school_gender_english,
+                                'p_levels': school_levels_english
                             }
                         ).execute()
                         
-                        # 4. إذا رجعت الدالة "true"، أضف العقار للنتائج
                         if match_found.data:
                             final_properties_data.append(prop_row)
                             
                     except Exception as rpc_error:
                         logger.error(f"خطأ في استدعاء RPC للعقار {prop_row.get('id')}: {rpc_error}")
-                        
-            # هل طلب المستخدم فلترة للجامعات؟
+            
+            # 2. فلترة الجامعات
             elif criteria.university_requirements and criteria.university_requirements.required:
                 logger.info("البحث الدقيق: جاري تنفيذ فلترة الجامعات...")
                 
-                # 1. تحضير معايير الجامعات
                 uni_reqs = criteria.university_requirements
                 distance_meters = _minutes_to_meters(uni_reqs.max_distance_minutes or 15.0)
                 
-                # [!! إضافة !!] : استخدام Fuzzy Matching لاسم الجامعة
+                # استخدام Fuzzy Matching لاسم الجامعة
                 university_name_to_search = uni_reqs.university_name
                 if university_name_to_search:
-                    # Try to find best matching university name from database
                     matched_name = _find_matching_university(university_name_to_search)
                     if matched_name:
-                        logger.info(f"Using matched university name: '{matched_name}' for query: '{university_name_to_search}'")
+                        logger.info(f"استخدام اسم الجامعة المطابق: '{matched_name}' للطلب: '{university_name_to_search}'")
                         university_name_to_search = matched_name
                     else:
-                        logger.warning(f"No close match found for university: '{university_name_to_search}', using original name")
+                        logger.warning(f"لم يُعثر على تطابق قريب للجامعة: '{university_name_to_search}'، استخدام الاسم الأصلي")
                 
-                # 2. المرور على العقارات الأولية وفلترتها
+                # المرور على العقارات وفلترتها
                 for prop_row in properties_data:
-                    
                     prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
                     prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
 
@@ -273,35 +277,73 @@ class SearchEngine:
                         continue 
 
                     try:
-                        # 3. استدعاء دالة RPC في Supabase
                         match_found = self.db.client.rpc(
                             'check_university_proximity',
                             {
                                 'p_lat': float(prop_lat),
                                 'p_lon': float(prop_lon),
                                 'p_distance_meters': distance_meters,
-                                'p_university_name': university_name_to_search  # [!! إصلاح !!] : استخدام الاسم المطابق
+                                'p_university_name': university_name_to_search
                             }
                         ).execute()
                         
-                        # 4. إذا رجعت الدالة "true"، أضف العقار للنتائج
                         if match_found.data:
                             final_properties_data.append(prop_row)
                             
                     except Exception as rpc_error:
                         logger.error(f"خطأ في استدعاء RPC للعقار {prop_row.get('id')}: {rpc_error}")
+            
+            # 3. فلترة المساجد (جديد)
+            elif criteria.mosque_requirements and criteria.mosque_requirements.required:
+                logger.info("البحث الدقيق: جاري تنفيذ فلترة المساجد...")
+                
+                mosque_reqs = criteria.mosque_requirements
+                
+                # تحديد المسافة بناءً على نوع الحركة (مشي أو سيارة)
+                distance_meters = _minutes_to_meters(
+                    mosque_reqs.max_distance_minutes or 5.0,
+                    walking=mosque_reqs.walking if mosque_reqs.walking is not None else True
+                )
+                
+                mosque_name = mosque_reqs.mosque_name  # قد يكون None (أي مسجد)
+                
+                # المرور على العقارات وفلترتها
+                for prop_row in properties_data:
+                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
+                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
+
+                    if not prop_lat or not prop_lon:
+                        continue 
+
+                    try:
+                        match_found = self.db.client.rpc(
+                            'check_mosque_proximity',
+                            {
+                                'p_lat': float(prop_lat),
+                                'p_lon': float(prop_lon),
+                                'p_distance_meters': distance_meters,
+                                'p_mosque_name': mosque_name
+                            }
+                        ).execute()
                         
+                        if match_found.data:
+                            final_properties_data.append(prop_row)
+                            
+                    except Exception as rpc_error:
+                        logger.error(f"خطأ في استدعاء RPC للعقار {prop_row.get('id')}: {rpc_error}")
+            
             else:
-                # إذا لم يطلب المستخدم فلترة مدارس أو جامعات، استخدم كل النتائج الأولية
+                # إذا لم يطلب المستخدم فلترة خدمات، استخدم كل النتائج الأولية
                 final_properties_data = properties_data
+            
             # ==========================================================
-            # [!! -- نهاية الفلترة -- !!]
+            # نهاية الفلترة
             # ==========================================================
 
             # تحويل النتائج النهائية إلى Property objects
             properties = [self._row_to_property(row) for row in final_properties_data]
             
-            logger.info(f"البحث الدقيق (المحسّن): وجد {len(properties)} عقار")
+            logger.info(f"البحث الدقيق: وجد {len(properties)} عقار")
             
             # تطبيق الـ limit النهائي بعد الفلترة
             return properties[:self.exact_limit]
@@ -345,380 +387,128 @@ class SearchEngine:
             # بناء الاستعلام
             query = self.db.client.table('properties').select('*')
 
-            # !! -- تعديل: فلترة الإحداثيات الخاطئة من قاعدة البيانات -- !!
+            # فلترة الإحداثيات الخاطئة
             query = query.not_.is_('final_lat', 'null')
             query = query.not_.eq('final_lat', 0)
-            # !! -- نهاية التعديل -- !!
             
             # الشروط الإلزامية
             query = query.eq('purpose', criteria.purpose.value)
             query = query.eq('property_type', criteria.property_type.value)
             
-            # الحي (مرن)
-            if criteria.district:
-                query = query.eq('district', criteria.district)
-            
-            # عدد الغرف (مع مرونة ±1)
-            if criteria.rooms and criteria.rooms.exact is not None:
-                min_rooms = max(0, criteria.rooms.exact - 1)
-                max_rooms = criteria.rooms.exact + 1
-                query = query.gte('rooms', min_rooms).lte('rooms', max_rooms)
-            elif criteria.rooms:
-                if criteria.rooms.min is not None:
-                    query = query.gte('rooms', max(0, criteria.rooms.min - 1))
-                if criteria.rooms.max is not None:
-                    query = query.lte('rooms', criteria.rooms.max + 1)
-            
-            # عدد الحمامات (مع مرونة)
-            if criteria.baths and criteria.baths.exact is not None:
-                min_baths = max(0, criteria.baths.exact - 1)
-                max_baths = criteria.baths.exact + 1
-                query = query.gte('baths', min_baths).lte('baths', max_baths)
-            
-            # عدد الصالات (مع مرونة)
-            if criteria.halls and criteria.halls.exact is not None:
-                min_halls = max(0, criteria.halls.exact - 1)
-                max_halls = criteria.halls.exact + 1
-                query = query.gte('halls', min_halls).lte('halls', max_halls)
+            # توسيع نطاق السعر (±20%)
+            if criteria.price and criteria.price.max:
+                expanded_max = criteria.price.max * 1.2
+                query = query.lte('price_num', expanded_max)
             
             # تنفيذ الاستعلام
-            result = query.limit(100).execute()
+            result = query.order('price_num').limit(200).execute()
             
-            # معالجة النتائج
-            properties_data = result.data if result.data else []
-
-            # ==========================================================
-            # [!! -- التعديل الجديد: فلترة المدارس (البحث المرن) -- !!]
-            # ==========================================================
-            final_properties_data = []
-            
-            # هل طلب المستخدم فلترة للمدارس؟
-            if criteria.school_requirements and criteria.school_requirements.required:
-                logger.info("البحث المرن: جاري تنفيذ فلترة المدارس...")
-                
-                # 1. تحضير معايير المدارس
-                school_reqs = criteria.school_requirements
-                distance_meters = _minutes_to_meters(school_reqs.max_distance_minutes or 10.0)
-                
-                # [!! إصلاح !!] : ترجمة الجنس من عربي إلى إنجليزي
-                school_gender_english = None
-                if school_reqs.gender:
-                    if school_reqs.gender.value == "بنات":
-                        school_gender_english = "girls"
-                    elif school_reqs.gender.value == "بنين":
-                        school_gender_english = "boys"
-                
-                # [!! إصلاح !!] : ترجمة المراحل الدراسية من عربي إلى إنجليزي
-                school_levels_english = None
-                if school_reqs.levels:
-                    school_levels_english = [LEVELS_TRANSLATION_MAP.get(level, level) for level in school_reqs.levels]
-                
-                # 2. المرور على العقارات الأولية وفلترتها
-                for prop_row in properties_data:
-                    
-                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
-                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
-
-                    if not prop_lat or not prop_lon:
-                        continue 
-
-                    try:
-                        # 3. استدعاء دالة RPC في Supabase
-                        match_found = self.db.client.rpc(
-                            'check_school_proximity',
-                            {
-                                'p_lat': float(prop_lat),
-                                'p_lon': float(prop_lon),
-                                'p_distance_meters': distance_meters,
-                                'p_gender': school_gender_english, # [!! إصلاح !!]
-                                'p_levels': school_levels_english  # [!! إصلاح !!]
-                            }
-                        ).execute()
-                        
-                        # 4. إذا رجعت الدالة "true"، أضف العقار للنتائج
-                        if match_found.data:
-                            final_properties_data.append(prop_row)
-                            
-                    except Exception as rpc_error:
-                        logger.error(f"خطأ في استدعاء RPC (مرن) للعقار {prop_row.get('id')}: {rpc_error}")
-                        
-            # هل طلب المستخدم فلترة للجامعات؟
-            elif criteria.university_requirements and criteria.university_requirements.required:
-                logger.info("البحث المرن: جاري تنفيذ فلترة الجامعات...")
-                
-                # 1. تحضير معايير الجامعات
-                uni_reqs = criteria.university_requirements
-                distance_meters = _minutes_to_meters(uni_reqs.max_distance_minutes or 15.0)
-                
-                # [!! إضافة !!] : استخدام Fuzzy Matching لاسم الجامعة
-                university_name_to_search = uni_reqs.university_name
-                if university_name_to_search:
-                    # Try to find best matching university name from database
-                    matched_name = _find_matching_university(university_name_to_search)
-                    if matched_name:
-                        logger.info(f"Using matched university name: '{matched_name}' for query: '{university_name_to_search}'")
-                        university_name_to_search = matched_name
-                    else:
-                        logger.warning(f"No close match found for university: '{university_name_to_search}', using original name")
-                
-                # 2. المرور على العقارات الأولية وفلترتها
-                for prop_row in properties_data:
-                    
-                    prop_lat = prop_row.get('final_lat') or prop_row.get('lat')
-                    prop_lon = prop_row.get('final_lon') or prop_row.get('lon')
-
-                    if not prop_lat or not prop_lon:
-                        continue 
-
-                    try:
-                        # 3. استدعاء دالة RPC في Supabase
-                        match_found = self.db.client.rpc(
-                            'check_university_proximity',
-                            {
-                                'p_lat': float(prop_lat),
-                                'p_lon': float(prop_lon),
-                                'p_distance_meters': distance_meters,
-                                'p_university_name': university_name_to_search  # [!! إصلاح !!] : استخدام الاسم المطابق
-                            }
-                        ).execute()
-                        
-                        # 4. إذا رجعت الدالة "true"، أضف العقار للنتائج
-                        if match_found.data:
-                            final_properties_data.append(prop_row)
-                            
-                    except Exception as rpc_error:
-                        logger.error(f"خطأ في استدعاء RPC (مرن) للعقار {prop_row.get('id')}: {rpc_error}")
-                        
-            else:
-                # إذا لم يطلب المستخدم فلترة مدارس أو جامعات، استخدم كل النتائج الأولية
-                final_properties_data = properties_data
-            # ==========================================================
-            # [!! -- نهاية التعديل -- !!]
-            # ==========================================================
-            
-            # (حساب النقاط كما هو...)
-            # [!! تعديل !!] : تم تغيير 'properties' إلى 'final_properties_data'
-            for prop in final_properties_data:
-                scores = []
-                if criteria.rooms and criteria.rooms.exact is not None:
-                    prop_rooms = prop.get('rooms', 0) or 0
-                    if prop_rooms == criteria.rooms.exact: scores.append(1.0)
-                    elif abs(prop_rooms - criteria.rooms.exact) <= 1: scores.append(0.7)
-                    else: scores.append(0.3)
-                else: scores.append(1.0)
-                
-                if criteria.baths and criteria.baths.exact is not None:
-                    prop_baths = prop.get('baths', 0) or 0
-                    if prop_baths == criteria.baths.exact: scores.append(1.0)
-                    elif abs(prop_baths - criteria.baths.exact) <= 1: scores.append(0.7)
-                    else: scores.append(0.3)
-                else: scores.append(1.0)
-                
-                if criteria.area_m2 and (criteria.area_m2.min or criteria.area_m2.max):
-                    area = prop.get('area_m2')
-                    if area is not None:
-                        min_area = criteria.area_m2.min or 0
-                        max_area = criteria.area_m2.max or 999999
-                        expanded_min = min_area * 0.8
-                        expanded_max = max_area * 1.2
-                        if min_area <= area <= max_area: scores.append(1.0)
-                        elif expanded_min <= area <= expanded_max: scores.append(0.7)
-                        else: scores.append(0.3)
-                    else: scores.append(0.5)
-                else: scores.append(1.0)
-                
-                if criteria.price and (criteria.price.min or criteria.price.max):
-                    price = prop.get('price_num')
-                    if price is not None:
-                        min_price = criteria.price.min or 0
-                        max_price = criteria.price.max or 999999999
-                        expanded_min_price = min_price * 0.8
-                        expanded_max_price = max_price * 1.2
-                        if min_price <= price <= max_price: scores.append(1.0)
-                        elif expanded_min_price <= price <= expanded_max_price: scores.append(0.7)
-                        else: scores.append(0.3)
-                    else: scores.append(0.5)
-                else: scores.append(1.0)
-                
-                if criteria.metro_time_max:
-                    metro_time = prop.get('time_to_metro_min')
-                    if metro_time is not None:
-                        if metro_time <= criteria.metro_time_max: scores.append(1.0)
-                        elif metro_time <= criteria.metro_time_max * 1.5: scores.append(0.5)
-                        else: scores.append(0.2)
-                    else: scores.append(0.5)
-                else: scores.append(1.0)
-                
-                prop['sql_score'] = sum(scores) / len(scores) if scores else 0.5
-                prop['room_score'] = scores[0] if len(scores) > 0 else 1.0
-                prop['area_score'] = scores[2] if len(scores) > 2 else 1.0
-                prop['price_score'] = scores[3] if len(scores) > 3 else 1.0
-                prop['metro_score'] = scores[4] if len(scores) > 4 else 1.0
-            
-            # [!! تعديل !!] : تم تغيير 'properties' إلى 'final_properties_data'
-            logger.info(f"البحث المرن: وجد {len(final_properties_data)} عقار")
-            return final_properties_data
+            return result.data if result.data else []
             
         except Exception as e:
-            logger.error(f"خطأ في البحث المرن: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"خطأ في البحث SQL المرن: {e}")
             return []
     
-    def _vector_search(self, query_text: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def _vector_search(self, query_text: str) -> List[Dict[str, Any]]:
         """
-        البحث الدلالي باستخدام embeddings (BGE-m3) - (نسخة مفعلّة)
+        البحث الدلالي باستخدام Embeddings
         """
         try:
-            logger.info(f"البحث الدلالي: جاري توليد embedding لـ: '{query_text}'")
-            query_embedding = embedding_generator.generate(query_text)
+            # توليد embedding للطلب
+            query_embedding = embedding_generator.generate_embedding(query_text)
             
             if not query_embedding:
-                logger.error("البحث الدلالي: فشل توليد الـ embedding")
                 return []
             
-            logger.info("البحث الدلالي: جاري استدعاء دالة 'match_properties_bge_m3' في Supabase")
+            # البحث في Supabase باستخدام match_documents
             result = self.db.client.rpc(
-                'match_properties_bge_m3',
+                'match_documents',
                 {
                     'query_embedding': query_embedding,
-                    'match_threshold': settings.VECTOR_SIMILARITY_THRESHOLD,
-                    'match_count': limit
+                    'match_threshold': 0.7,
+                    'match_count': 50
                 }
             ).execute()
             
-            if result.data:
-                logger.info(f"البحث الدلالي: تم العثور على {len(result.data)} نتيجة")
-                matching_ids = [row['id'] for row in result.data]
-                scores_map = {row['id']: row['similarity_score'] for row in result.data}
-                
-                properties_result = self.db.client.table('properties') \
-                                        .select('*') \
-                                        .in_('id', matching_ids) \
-                                        .execute()
-                
-                properties_data = properties_result.data if properties_result.data else []
-                
-                for prop in properties_data:
-                    prop['similarity_score'] = scores_map.get(prop['id'], 0.0)
-                
-                return properties_data
-            else:
-                logger.info("البحث الدلالي: لم يتم العثور على نتائج مطابقة")
-                return []
+            return result.data if result.data else []
             
         except Exception as e:
             logger.error(f"خطأ في البحث الدلالي: {e}")
-            import traceback
-            traceback.print_exc()
-            return []
-            
-    def _merge_and_rerank(self, sql_results: List[Dict], vector_results: List[Dict], 
-                          criteria: PropertyCriteria) -> List[Property]:
-        """
-        دمج نتائج SQL والـ Vector وإعادة ترتيبها
-        """
-        try:
-            properties_dict = {}
-            
-            for row in sql_results:
-                prop_id = row['id']
-                properties_dict[prop_id] = {
-                    **row,
-                    'sql_score': row.get('sql_score', 0.5),
-                    'vector_score': 0.0
-                }
-            
-            for row in vector_results:
-                prop_id = row['id']
-                if prop_id in properties_dict:
-                    properties_dict[prop_id]['vector_score'] = row.get('similarity_score', 0.0)
-                else:
-                    properties_dict[prop_id] = {
-                        **row,
-                        'sql_score': 0.0,
-                        'vector_score': row.get('similarity_score', 0.0)
-                    }
-            
-            for prop_id, prop_data in properties_dict.items():
-                sql_score = prop_data.get('sql_score', 0.0)
-                vector_score = prop_data.get('vector_score', 0.0)
-                final_score = (self.sql_weight * sql_score) + (self.vector_weight * vector_score)
-                prop_data['final_score'] = final_score
-            
-            sorted_properties = sorted(
-                properties_dict.values(),
-                key=lambda x: x['final_score'],
-                reverse=True
-            )
-            
-            properties = []
-            for row in sorted_properties:
-                prop = self._row_to_property(row)
-                prop.match_score = row['final_score']
-                properties.append(prop)
-            
-            return properties
-            
-        except Exception as e:
-            logger.error(f"خطأ في دمج النتائج: {e}")
-            import traceback
-            traceback.print_exc()
             return []
     
-    def _row_to_property(self, row: Dict[str, Any]) -> Property:
+    def _merge_and_rerank(
+        self,
+        sql_results: List[Dict[str, Any]],
+        vector_results: List[Dict[str, Any]],
+        criteria: PropertyCriteria
+    ) -> List[Property]:
         """
-        تحويل صف من قاعدة البيانات إلى Property object (نسخة موحدة)
+        دمج نتائج البحث SQL والدلالي وإعادة ترتيبها
         """
-        try:
-            rooms = int(row['rooms']) if row.get('rooms') is not None else None
-            baths = int(row['baths']) if row.get('baths') is not None else None
-            halls = int(row['halls']) if row.get('halls') is not None else None
-
-            # !! -- هذا هو الإصلاح (التوحيد) -- !!
-            # جلب الإحداثيات الصحيحة (final) ووضعها في الحقول القياسية (lat/lon)
-            # إذا كانت final_lat فارغة، استخدم lat العادية كاحتياط
-            correct_lat = row.get('final_lat') or row.get('lat')
-            correct_lon = row.get('final_lon') or row.get('lon')
+        # دمج النتائج بناءً على ID
+        merged = {}
+        
+        # إضافة نتائج SQL
+        for row in sql_results:
+            prop_id = row['id']
+            merged[prop_id] = {
+                'data': row,
+                'sql_score': self.sql_weight,
+                'vector_score': 0
+            }
+        
+        # إضافة نتائج Vector
+        for row in vector_results:
+            prop_id = row['id']
+            similarity = row.get('similarity', 0)
             
-            return Property(
-                id=row['id'],
-                url=row.get('url'),
-                purpose=row.get('purpose'),
-                property_type=row.get('property_type'),
-                city=row.get('city'),
-                district=row.get('district'),
-                title=row.get('title'),
-                price_num=row.get('price_num'),
-                price_currency=row.get('price_currency'),
-                price_period=row.get('price_period'),
-                area_m2=row.get('area_m2'),
-                description=row.get('description'),
-                image_url=row.get('image_url'),
-                
-                # !! -- إرسال الإحداثيات الصحيحة فقط في 'lat' و 'lon' -- !!
-                lat=correct_lat,
-                lon=correct_lon,
-                
-                # (الحقول القديمة (final) لا تهم الواجهة الآن)
-                final_lat=row.get('final_lat'),
-                final_lon=row.get('final_lon'),
-
-                time_to_metro_min=row.get('time_to_metro_min'),
-                rooms=rooms,
-                baths=baths,
-                halls=halls,
-                match_score=row.get('final_score') or row.get('sql_score')
-            )
-        except Exception as e:
-            logger.error(f"خطأ في تحويل الصف: {row.get('id', 'unknown')}: {e}")
-            import traceback
-            traceback.print_exc()
-            return Property(
-                id=row.get('id', 'unknown'),
-                purpose=row.get('purpose', ''),
-                property_type=row.get('property_type', '')
-            )
+            if prop_id in merged:
+                merged[prop_id]['vector_score'] = similarity * self.vector_weight
+            else:
+                merged[prop_id] = {
+                    'data': row,
+                    'sql_score': 0,
+                    'vector_score': similarity * self.vector_weight
+                }
+        
+        # حساب النقاط النهائية وترتيب النتائج
+        ranked_properties = []
+        for prop_id, item in merged.items():
+            total_score = item['sql_score'] + item['vector_score']
+            prop = self._row_to_property(item['data'])
+            prop.match_score = total_score
+            ranked_properties.append(prop)
+        
+        # ترتيب تنازلي حسب النقاط
+        ranked_properties.sort(key=lambda x: x.match_score or 0, reverse=True)
+        
+        return ranked_properties
+    
+    def _row_to_property(self, row: Dict[str, Any]) -> Property:
+        """تحويل صف من قاعدة البيانات إلى Property object"""
+        return Property(
+            id=str(row['id']),
+            url=row.get('url'),
+            purpose=row.get('purpose', ''),
+            property_type=row.get('property_type', ''),
+            city=row.get('city'),
+            district=row.get('district'),
+            title=row.get('title'),
+            price_num=row.get('price_num'),
+            price_currency=row.get('price_currency'),
+            price_period=row.get('price_period'),
+            area_m2=row.get('area_m2'),
+            description=row.get('description'),
+            image_url=row.get('image_url'),
+            lat=row.get('lat'),
+            lon=row.get('lon'),
+            final_lat=row.get('final_lat'),
+            final_lon=row.get('final_lon'),
+            time_to_metro_min=row.get('time_to_metro_min'),
+            rooms=row.get('rooms'),
+            baths=row.get('baths'),
+            halls=row.get('halls')
+        )
 
 
 # إنشاء instance عام من SearchEngine
