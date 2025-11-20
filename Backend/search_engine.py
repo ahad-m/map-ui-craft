@@ -1,6 +1,6 @@
 """
 محرك البحث الهجين (Exact + Vector Similarity)
-النسخة النهائية - مع البحث الدلالي الكامل
+النسخة النهائية المحسّنة - مع فلترة قوية للبحث المشابه
 """
 from models import PropertyCriteria, Property, SearchMode
 from database import db
@@ -53,185 +53,137 @@ def _find_matching_university(query_name: str, threshold: float = 0.5) -> Option
             if uni.get('name_en'):
                 all_names.append(uni['name_en'])
         
+        query_normalized = normalize_arabic_text(query_name)
+        
         best_match = None
         best_score = 0.0
         
         for name in all_names:
-            score = calculate_similarity_score(query_name, name)
-            if score > best_score and score >= threshold:
+            name_normalized = normalize_arabic_text(name)
+            score = calculate_similarity_score(query_normalized, name_normalized)
+            
+            if score > best_score:
                 best_score = score
                 best_match = name
         
-        if best_match:
-            logger.info(f"تطابق غامض: '{query_name}' → '{best_match}' (نقاط: {best_score:.2f})")
+        if best_score >= threshold:
+            logger.info(f"✅ تم العثور على تطابق للجامعة: '{query_name}' → '{best_match}' (score: {best_score:.2f})")
+            return best_match
         else:
-            logger.warning(f"لم يُعثر على تطابق جيد للجامعة: '{query_name}'")
-        
-        return best_match
-        
+            logger.warning(f"⚠️ لم يتم العثور على تطابق جيد للجامعة: '{query_name}' (أفضل score: {best_score:.2f})")
+            return None
+            
     except Exception as e:
-        logger.error(f"خطأ في البحث الغامض عن الجامعة: {e}")
+        logger.error(f"خطأ في البحث عن الجامعة: {e}")
         return None
 
 
-def _get_nearby_universities_for_display(
-    center_lat: float,
-    center_lon: float,
-    max_distance_meters: float,
-    university_name: Optional[str] = None
-) -> List[Dict[str, Any]]:
-    """جلب قائمة الجامعات القريبة من نقطة مركزية لعرضها على الخريطة"""
-    try:
-        result = db.client.rpc(
-            'get_universities_for_display',
-            {
-                'center_lat': center_lat,
-                'center_lon': center_lon,
-                'max_distance_meters': max_distance_meters,
-                'university_name': university_name
-            }
-        ).execute()
-        
-        if not result.data:
-            return []
-        
-        universities = []
-        for uni in result.data:
-            uni_dict = dict(uni)
-            distance_meters = uni_dict.get('distance_meters', 0)
-            drive_minutes = (distance_meters / 1000.0) / 30.0 * 60.0
-            uni_dict['drive_minutes'] = round(drive_minutes, 1)
-            universities.append(uni_dict)
-        
-        logger.info(f"تم جلب {len(universities)} جامعة للعرض")
-        return universities
-        
-    except Exception as e:
-        logger.error(f"خطأ في جلب الجامعات للعرض: {e}")
-        return []
-
-
-def _get_nearby_mosques_for_display(
-    center_lat: float,
-    center_lon: float,
-    max_distance_meters: float,
-    mosque_name: Optional[str] = None
-) -> List[Dict[str, Any]]:
-    """جلب قائمة المساجد القريبة من نقطة مركزية لعرضها على الخريطة"""
-    try:
-        result = db.client.rpc(
-            'get_mosques_for_display',
-            {
-                'center_lat': center_lat,
-                'center_lon': center_lon,
-                'max_distance_meters': max_distance_meters,
-                'mosque_name': mosque_name
-            }
-        ).execute()
-        
-        if not result.data:
-            return []
-        
-        mosques = []
-        for mosque in result.data:
-            mosque_dict = dict(mosque)
-            distance_meters = mosque_dict.get('distance_meters', 0)
-            walk_minutes = (distance_meters / 1000.0) / 5.0 * 60.0
-            mosque_dict['walk_minutes'] = round(walk_minutes, 1)
-            mosques.append(mosque_dict)
-        
-        logger.info(f"تم جلب {len(mosques)} مسجد للعرض")
-        return mosques
-        
-    except Exception as e:
-        logger.error(f"خطأ في جلب المساجد للعرض: {e}")
-        return []
-
-
 class SearchEngine:
-    """محرك البحث الهجين للعقارات"""
-    
     def __init__(self):
-        """تهيئة محرك البحث"""
         self.db = db
-        self.exact_limit = settings.EXACT_SEARCH_LIMIT
-        self.hybrid_limit = settings.HYBRID_SEARCH_LIMIT
-        self.sql_weight = settings.SQL_WEIGHT
-        self.vector_weight = settings.VECTOR_WEIGHT
+        self.exact_limit = 20
+        self.similar_limit = 50
+        self.vector_limit = 50
     
-    def _get_nearby_universities(self, center_lat: float, center_lon: float, max_distance_meters: float, university_name: Optional[str] = None) -> List[Dict[str, Any]]:
-        """جلب الجامعات القريبة"""
-        return _get_nearby_universities_for_display(center_lat, center_lon, max_distance_meters, university_name)
-    
-    def _get_nearby_mosques(self, center_lat: float, center_lon: float, max_distance_meters: float, mosque_name: Optional[str] = None) -> List[Dict[str, Any]]:
-        """جلب المساجد القريبة"""
-        return _get_nearby_mosques_for_display(center_lat, center_lon, max_distance_meters, mosque_name)
-    
-    def search(self, criteria: PropertyCriteria, mode: SearchMode) -> List[Property]:
-        """البحث عن العقارات بناءً على المعايير ونوع البحث"""
+    def search(self, criteria: PropertyCriteria, mode: SearchMode = SearchMode.EXACT) -> List[Property]:
+        """نقطة الدخول الرئيسية للبحث"""
         try:
             if mode == SearchMode.EXACT:
-                return self._exact_search(criteria)
+                results = self._exact_search(criteria)
             else:
-                return self._hybrid_search(criteria)
+                results = self._hybrid_search(criteria)
+            
+            # تحويل النتائج إلى Property objects
+            properties = [self._row_to_property(row) for row in results]
+            
+            logger.info(f"✅ تم إرجاع {len(properties)} عقار")
+            return properties
+            
         except Exception as e:
             logger.error(f"خطأ في البحث: {e}")
             import traceback
             traceback.print_exc()
             return []
     
-    def _exact_search(self, criteria: PropertyCriteria) -> List[Property]:
-        """البحث الدقيق - يطابق جميع المعايير بالضبط"""
+    def _exact_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
+        """بحث دقيق - يطابق جميع المعايير"""
         try:
             query = self.db.client.table('properties').select('*')
             
             query = query.not_.is_('final_lat', 'null')
             query = query.not_.eq('final_lat', 0)
             
+            # الغرض (بيع/إيجار)
             query = query.eq('purpose', criteria.purpose.value)
+            
+            # نوع العقار
             query = query.eq('property_type', criteria.property_type.value)
             
+            # المدينة
             if criteria.city:
                 query = query.eq('city', criteria.city)
             
+            # الحي (إذا حُدد)
             if criteria.district:
                 query = query.eq('district', criteria.district)
             
+            # عدد الغرف
             if criteria.rooms:
-                query = query.eq('rooms', criteria.rooms)
+                if criteria.rooms.exact is not None:
+                    query = query.eq('rooms', criteria.rooms.exact)
+                else:
+                    if criteria.rooms.min is not None:
+                        query = query.gte('rooms', criteria.rooms.min)
+                    if criteria.rooms.max is not None:
+                        query = query.lte('rooms', criteria.rooms.max)
             
+            # عدد الحمامات
             if criteria.baths:
-                query = query.eq('baths', criteria.baths)
+                if criteria.baths.exact is not None:
+                    query = query.eq('baths', criteria.baths.exact)
+                else:
+                    if criteria.baths.min is not None:
+                        query = query.gte('baths', criteria.baths.min)
+                    if criteria.baths.max is not None:
+                        query = query.lte('baths', criteria.baths.max)
             
+            # عدد الصالات
             if criteria.halls:
-                query = query.eq('halls', criteria.halls)
+                if criteria.halls.exact is not None:
+                    query = query.eq('halls', criteria.halls.exact)
+                else:
+                    if criteria.halls.min is not None:
+                        query = query.gte('halls', criteria.halls.min)
+                    if criteria.halls.max is not None:
+                        query = query.lte('halls', criteria.halls.max)
             
-            if criteria.price:
-                if criteria.price.min:
-                    query = query.gte('price_num', criteria.price.min)
-                if criteria.price.max:
-                    query = query.lte('price_num', criteria.price.max)
-            
+            # المساحة
             if criteria.area_m2:
-                if criteria.area_m2.min:
+                if criteria.area_m2.min is not None:
                     query = query.gte('area_m2', criteria.area_m2.min)
-                if criteria.area_m2.max:
+                if criteria.area_m2.max is not None:
                     query = query.lte('area_m2', criteria.area_m2.max)
+            
+            # السعر
+            if criteria.price:
+                if criteria.price.min is not None:
+                    query = query.gte('price_num', criteria.price.min)
+                if criteria.price.max is not None:
+                    query = query.lte('price_num', criteria.price.max)
             
             result = query.order('price_num').limit(self.exact_limit).execute()
             
             if not result.data:
-                logger.info("البحث الدقيق: لم يُعثر على عقارات")
+                logger.info("❌ لم يتم العثور على عقارات مطابقة")
                 return []
             
-            properties = [self._row_to_property(row) for row in result.data]
+            properties_data = result.data
             
             # إضافة الخدمات القريبة
-            if properties:
-                self._add_nearby_services(properties, criteria)
+            properties_data = self._add_nearby_services(properties_data, criteria)
             
-            logger.info(f"البحث الدقيق: وجد {len(properties)} عقار")
-            return properties
+            logger.info(f"✅ البحث الدقيق: وجد {len(properties_data)} عقار")
+            return properties_data
             
         except Exception as e:
             logger.error(f"خطأ في البحث الدقيق: {e}")
@@ -239,37 +191,27 @@ class SearchEngine:
             traceback.print_exc()
             return []
     
-    def _hybrid_search(self, criteria: PropertyCriteria) -> List[Property]:
-        """البحث الهجين - يجمع بين البحث SQL والبحث الدلالي"""
+    def _hybrid_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
+        """بحث هجين - يجمع بين SQL والبحث الدلالي"""
         try:
-            # المرحلة 1: البحث SQL مع توسيع النطاقات
-            sql_results = self._flexible_sql_search(criteria)
+            # 1. البحث SQL المحسّن (مع فلترة قوية)
+            sql_results = self._improved_sql_search(criteria)
             logger.info(f"📊 البحث SQL: وجد {len(sql_results)} عقار")
             
-            # المرحلة 2: البحث الدلالي (Vector Similarity)
+            # 2. البحث الدلالي
             vector_results = []
             if criteria.original_query:
                 vector_results = self._vector_search(criteria.original_query)
                 logger.info(f"🔍 البحث الدلالي: وجد {len(vector_results)} عقار")
             
-            # المرحلة 3: دمج النتائج وإعادة الترتيب
+            # 3. دمج النتائج
             merged_results = self._merge_and_rerank(sql_results, vector_results, criteria)
             
-            # [مُحسّن] فلترة النتائج بناءً على القرب من الخدمات
-            if merged_results:
-                filtered_results = self._filter_by_services(merged_results, criteria)
-                
-                if not filtered_results:
-                    logger.warning("⚠️ لا توجد عقارات قريبة من الخدمات المطلوبة، إرجاع بعض النتائج")
-                    filtered_results = merged_results[:10]
-                
-                # إضافة الخدمات القريبة للعرض
-                self._add_nearby_services(filtered_results, criteria)
-                
-                logger.info(f"✅ البحث الهجين: وجد {len(filtered_results)} عقار نهائي")
-                return filtered_results[:self.hybrid_limit]
+            # 4. إضافة الخدمات القريبة
+            merged_results = self._add_nearby_services(merged_results, criteria)
             
-            return []
+            logger.info(f"✅ البحث الهجين: وجد {len(merged_results)} عقار نهائي")
+            return merged_results
             
         except Exception as e:
             logger.error(f"❌ خطأ في البحث الهجين: {e}")
@@ -277,8 +219,11 @@ class SearchEngine:
             traceback.print_exc()
             return []
     
-    def _flexible_sql_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
-        """بحث SQL مرن - يوسع نطاقات البحث"""
+    def _improved_sql_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
+        """
+        [!! التحسين الرئيسي !!]
+        بحث SQL محسّن - يطبق فلترة قوية حتى في البحث المشابه
+        """
         try:
             query = self.db.client.table('properties').select('*')
             
@@ -289,9 +234,21 @@ class SearchEngine:
             query = query.eq('purpose', criteria.purpose.value)
             query = query.eq('property_type', criteria.property_type.value)
             
-            # فلترة المدينة (إلزامية إذا كانت موجودة)
+            # فلترة المدينة (إلزامية)
             if criteria.city:
                 query = query.eq('city', criteria.city)
+            
+            # [!! التحسين 1 !!] فلترة الحي (إلزامية إذا كانت موجودة)
+            if criteria.district:
+                query = query.eq('district', criteria.district)
+                logger.info(f"🎯 تطبيق فلتر الحي: {criteria.district}")
+            
+            # [!! التحسين 2 !!] فلترة عدد الغرف (مع مرونة بسيطة)
+            if criteria.rooms and criteria.rooms.min is not None:
+                # السماح بـ ±1 غرفة
+                min_rooms = max(1, criteria.rooms.min - 1)
+                query = query.gte('rooms', min_rooms)
+                logger.info(f"🎯 تطبيق فلتر الغرف: min={min_rooms}")
             
             # توسيع نطاق السعر (±30%)
             if criteria.price and criteria.price.max:
@@ -310,7 +267,7 @@ class SearchEngine:
             return result.data if result.data else []
             
         except Exception as e:
-            logger.error(f"خطأ في البحث SQL المرن: {e}")
+            logger.error(f"خطأ في البحث SQL المحسّن: {e}")
             return []
     
     def _vector_search(self, query_text: str) -> List[Dict[str, Any]]:
@@ -328,8 +285,8 @@ class SearchEngine:
                 'match_documents',
                 {
                     'query_embedding': query_embedding,
-                    'match_threshold': 0.5,  # خفضنا الحد الأدنى لزيادة النتائج
-                    'match_count': 100  # زيادة عدد النتائج
+                    'match_threshold': 0.5,
+                    'match_count': self.vector_limit
                 }
             ).execute()
             
@@ -337,8 +294,6 @@ class SearchEngine:
             
         except Exception as e:
             logger.error(f"خطأ في البحث الدلالي: {e}")
-            import traceback
-            traceback.print_exc()
             return []
     
     def _merge_and_rerank(
@@ -346,225 +301,290 @@ class SearchEngine:
         sql_results: List[Dict[str, Any]],
         vector_results: List[Dict[str, Any]],
         criteria: PropertyCriteria
-    ) -> List[Property]:
-        """دمج نتائج البحث SQL والدلالي وإعادة ترتيبها"""
+    ) -> List[Dict[str, Any]]:
+        """دمج وإعادة ترتيب النتائج"""
+        # استخدام dictionary لتجنب التكرار
         merged = {}
         
-        # إضافة نتائج SQL
-        for row in sql_results:
-            prop_id = row['id']
-            merged[prop_id] = {
-                'data': row,
-                'sql_score': self.sql_weight,
-                'vector_score': 0
-            }
+        # إضافة نتائج SQL (أولوية أعلى)
+        for prop in sql_results:
+            prop_id = prop.get('id')
+            if prop_id:
+                merged[prop_id] = prop
         
-        # إضافة نتائج Vector
-        for row in vector_results:
-            prop_id = row['id']
-            similarity = row.get('similarity', 0)
-            
-            if prop_id in merged:
-                merged[prop_id]['vector_score'] = similarity * self.vector_weight
-            else:
-                merged[prop_id] = {
-                    'data': row,
-                    'sql_score': 0,
-                    'vector_score': similarity * self.vector_weight
-                }
+        # إضافة نتائج Vector (بدون تكرار)
+        for prop in vector_results:
+            prop_id = prop.get('id')
+            if prop_id and prop_id not in merged:
+                merged[prop_id] = prop
         
-        # حساب النقاط النهائية وترتيب النتائج
-        ranked_properties = []
-        for prop_id, item in merged.items():
-            total_score = item['sql_score'] + item['vector_score']
-            prop = self._row_to_property(item['data'])
-            prop.match_score = total_score
-            ranked_properties.append(prop)
+        # تحويل إلى قائمة
+        final_results = list(merged.values())
         
-        # ترتيب تنازلي حسب النقاط
-        ranked_properties.sort(key=lambda x: x.match_score or 0, reverse=True)
+        # [!! التحسين 3 !!] فلترة نهائية بناءً على الخدمات المطلوبة
+        if criteria.metro_time_max:
+            # فلترة العقارات القريبة من الميترو
+            final_results = [
+                prop for prop in final_results
+                if prop.get('time_to_metro_min') and prop['time_to_metro_min'] <= criteria.metro_time_max
+            ]
+            logger.info(f"🚇 تطبيق فلتر الميترو: {len(final_results)} عقار متبقي")
         
-        return ranked_properties
+        return final_results[:self.similar_limit]
     
-    def _filter_by_services(self, properties: List[Property], criteria: PropertyCriteria) -> List[Property]:
-        """فلترة العقارات بناءً على القرب من الخدمات المطلوبة"""
+    def _add_nearby_services(
+        self,
+        properties: List[Dict[str, Any]],
+        criteria: PropertyCriteria
+    ) -> List[Dict[str, Any]]:
+        """إضافة معلومات الخدمات القريبة لكل عقار"""
         if not properties:
-            return []
-        
-        # إذا لم يطلب المستخدم أي خدمات، إرجاع جميع العقارات
-        has_service_requirements = (
-            (criteria.university_requirements and criteria.university_requirements.required) or
-            (criteria.mosque_requirements and criteria.mosque_requirements.required) or
-            (criteria.school_requirements and criteria.school_requirements.required)
-        )
-        
-        if not has_service_requirements:
             return properties
         
-        filtered = []
-        
         for prop in properties:
-            if not prop.final_lat or not prop.final_lon:
+            prop_lat = prop.get('final_lat')
+            prop_lon = prop.get('final_lon')
+            
+            if not prop_lat or not prop_lon:
                 continue
             
-            is_valid = True
-            
-            # فحص الجامعات
-            if criteria.university_requirements and criteria.university_requirements.required:
-                uni_reqs = criteria.university_requirements
-                max_distance_meters = (uni_reqs.max_distance_minutes or 30) * 60 * 30
-                
-                try:
-                    nearby_unis = self._get_nearby_universities(
-                        float(prop.final_lat),
-                        float(prop.final_lon),
-                        max_distance_meters,
-                        uni_reqs.university_name
-                    )
-                    
-                    if not nearby_unis:
-                        is_valid = False
-                        continue
-                        
-                except Exception as e:
-                    logger.error(f"خطأ في فحص الجامعات: {e}")
-                    is_valid = False
-                    continue
-            
-            # فحص المساجد
-            if criteria.mosque_requirements and criteria.mosque_requirements.required:
-                mosque_reqs = criteria.mosque_requirements
-                speed_kmh = 5 if mosque_reqs.walking else 30
-                max_distance_meters = (mosque_reqs.max_distance_minutes or 10) * 60 * speed_kmh
-                
-                try:
-                    nearby_mosques = self._get_nearby_mosques(
-                        float(prop.final_lat),
-                        float(prop.final_lon),
-                        max_distance_meters,
-                        mosque_reqs.mosque_name
-                    )
-                    
-                    if not nearby_mosques:
-                        is_valid = False
-                        continue
-                        
-                except Exception as e:
-                    logger.error(f"خطأ في فحص المساجد: {e}")
-                    is_valid = False
-                    continue
-            
-            # فحص المدارس
+            # إضافة المدارس القريبة
             if criteria.school_requirements and criteria.school_requirements.required:
-                school_reqs = criteria.school_requirements
-                speed_kmh = 5 if school_reqs.walking else 30
-                max_distance_meters = (school_reqs.max_distance_minutes or 15) * 60 * speed_kmh
-                
                 try:
-                    levels = [LEVELS_TRANSLATION_MAP.get(lvl, lvl) for lvl in (school_reqs.levels or [])]
-                    
-                    result = db.client.rpc(
-                        'get_nearby_schools',
-                        {
-                            'p_lat': float(prop.final_lat),
-                            'p_lon': float(prop.final_lon),
-                            'p_distance_meters': max_distance_meters,
-                            'p_gender': school_reqs.gender,
-                            'p_levels': levels
-                        }
-                    ).execute()
-                    
-                    if not result.data:
-                        is_valid = False
-                        continue
-                        
+                    schools = self._get_nearby_schools(
+                        prop_lat,
+                        prop_lon,
+                        criteria.school_requirements
+                    )
+                    prop['nearby_schools'] = schools
                 except Exception as e:
-                    logger.error(f"خطأ في فحص المدارس: {e}")
-                    is_valid = False
-                    continue
+                    logger.error(f"خطأ في جلب المدارس: {e}")
+                    prop['nearby_schools'] = []
             
-            if is_valid:
-                filtered.append(prop)
-        
-        return filtered
-    
-    def _add_nearby_services(self, properties: List[Property], criteria: PropertyCriteria):
-        """إضافة الخدمات القريبة لكل عقار للعرض على الخريطة"""
-        if not properties:
-            return
-        
-        first_prop = properties[0]
-        if not first_prop.final_lat or not first_prop.final_lon:
-            return
-        
-        try:
-            # إضافة الجامعات
+            # إضافة الجامعات القريبة
             if criteria.university_requirements and criteria.university_requirements.required:
-                uni_reqs = criteria.university_requirements
-                max_distance_meters = (uni_reqs.max_distance_minutes or 30) * 60 * 30
-                
-                nearby_universities = self._get_nearby_universities(
-                    float(first_prop.final_lat),
-                    float(first_prop.final_lon),
-                    max_distance_meters,
-                    uni_reqs.university_name
-                )
-                
-                logger.info(f"🎓 تم جلب {len(nearby_universities)} جامعة قريبة للعرض")
-                
-                for prop in properties:
-                    prop.nearby_universities = nearby_universities
+                try:
+                    universities = self._get_nearby_universities_for_display(
+                        prop_lat,
+                        prop_lon,
+                        criteria.university_requirements
+                    )
+                    prop['nearby_universities'] = universities
+                except Exception as e:
+                    logger.error(f"خطأ في جلب الجامعات: {e}")
+                    prop['nearby_universities'] = []
             
-            # إضافة المساجد
+            # إضافة المساجد القريبة
             if criteria.mosque_requirements and criteria.mosque_requirements.required:
-                mosque_reqs = criteria.mosque_requirements
-                speed_kmh = 5 if mosque_reqs.walking else 30
-                max_distance_meters = (mosque_reqs.max_distance_minutes or 10) * 60 * speed_kmh
+                try:
+                    mosques = self._get_nearby_mosques_for_display(
+                        prop_lat,
+                        prop_lon,
+                        criteria.mosque_requirements
+                    )
+                    prop['nearby_mosques'] = mosques
+                except Exception as e:
+                    logger.error(f"خطأ في جلب المساجد: {e}")
+                    prop['nearby_mosques'] = []
+        
+        return properties
+    
+    def _get_nearby_schools(
+        self,
+        center_lat: float,
+        center_lon: float,
+        school_reqs
+    ) -> List[Dict[str, Any]]:
+        """جلب المدارس القريبة من العقار"""
+        try:
+            max_distance_meters = _minutes_to_meters(
+                school_reqs.max_distance_minutes,
+                walking=school_reqs.walking
+            )
+            
+            # ترجمة المستوى
+            levels_en = []
+            if school_reqs.levels:
+                for level_ar in school_reqs.levels:
+                    level_en = LEVELS_TRANSLATION_MAP.get(level_ar, level_ar)
+                    levels_en.append(level_en)
+            
+            # ترجمة الجنس
+            gender_en = None
+            if school_reqs.gender:
+                if school_reqs.gender == "بنات":
+                    gender_en = "girls"
+                elif school_reqs.gender == "بنين":
+                    gender_en = "boys"
+            
+            result = self.db.client.rpc(
+                'get_nearby_schools',
+                {
+                    'p_lat': center_lat,
+                    'p_lon': center_lon,
+                    'p_distance_meters': max_distance_meters,
+                    'p_gender': gender_en,
+                    'p_levels': levels_en if levels_en else None
+                }
+            ).execute()
+            
+            if not result.data:
+                return []
+            
+            # إضافة حساب وقت السفر
+            schools = []
+            for school in result.data:
+                school_dict = dict(school)
+                # حساب المسافة
+                from math import radians, sin, cos, sqrt, atan2
                 
-                nearby_mosques = self._get_nearby_mosques(
-                    float(first_prop.final_lat),
-                    float(first_prop.final_lon),
-                    max_distance_meters,
-                    mosque_reqs.mosque_name
-                )
+                lat1, lon1 = radians(center_lat), radians(center_lon)
+                lat2, lon2 = radians(school['lat']), radians(school['lon'])
                 
-                logger.info(f"🕌 تم جلب {len(nearby_mosques)} مسجد قريب للعرض")
+                dlat = lat2 - lat1
+                dlon = lon2 - lon1
+                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+                c = 2 * atan2(sqrt(a), sqrt(1-a))
+                distance_meters = 6371000 * c
                 
-                for prop in properties:
-                    prop.nearby_mosques = nearby_mosques
-                    
+                # حساب وقت السفر
+                if school_reqs.walking:
+                    travel_minutes = (distance_meters / 1000.0) / 5.0 * 60.0
+                else:
+                    travel_minutes = (distance_meters / 1000.0) / 30.0 * 60.0
+                
+                school_dict['travel_minutes'] = round(travel_minutes, 1)
+                schools.append(school_dict)
+            
+            return schools
+            
         except Exception as e:
-            logger.error(f"خطأ في إضافة الخدمات: {e}")
+            logger.error(f"خطأ في جلب المدارس: {e}")
+            return []
+    
+    def _get_nearby_universities_for_display(
+        self,
+        center_lat: float,
+        center_lon: float,
+        uni_reqs
+    ) -> List[Dict[str, Any]]:
+        """جلب الجامعات القريبة من العقار للعرض على الخريطة"""
+        try:
+            max_distance_meters = _minutes_to_meters(
+                uni_reqs.max_distance_minutes,
+                walking=False
+            )
+            
+            # البحث عن اسم الجامعة المطابق
+            university_name = None
+            if uni_reqs.university_name:
+                university_name = _find_matching_university(uni_reqs.university_name)
+            
+            result = self.db.client.rpc(
+                'get_universities_for_display',
+                {
+                    'center_lat': center_lat,
+                    'center_lon': center_lon,
+                    'max_distance_meters': max_distance_meters,
+                    'university_name': university_name
+                }
+            ).execute()
+            
+            if not result.data:
+                return []
+            
+            # إضافة حساب وقت السفر
+            universities = []
+            for uni in result.data:
+                uni_dict = dict(uni)
+                distance_meters = uni_dict.get('distance_meters', 0)
+                drive_minutes = (distance_meters / 1000.0) / 30.0 * 60.0
+                uni_dict['drive_minutes'] = round(drive_minutes, 1)
+                universities.append(uni_dict)
+            
+            return universities
+            
+        except Exception as e:
+            logger.error(f"خطأ في جلب الجامعات: {e}")
+            return []
+    
+    def _get_nearby_mosques_for_display(
+        self,
+        center_lat: float,
+        center_lon: float,
+        mosque_reqs
+    ) -> List[Dict[str, Any]]:
+        """جلب المساجد القريبة من العقار للعرض على الخريطة"""
+        try:
+            max_distance_meters = _minutes_to_meters(
+                mosque_reqs.max_distance_minutes,
+                walking=mosque_reqs.walking
+            )
+            
+            result = self.db.client.rpc(
+                'get_mosques_for_display',
+                {
+                    'center_lat': center_lat,
+                    'center_lon': center_lon,
+                    'max_distance_meters': max_distance_meters,
+                    'mosque_name': mosque_reqs.mosque_name
+                }
+            ).execute()
+            
+            if not result.data:
+                return []
+            
+            # إضافة حساب وقت السفر
+            mosques = []
+            for mosque in result.data:
+                mosque_dict = dict(mosque)
+                distance_meters = mosque_dict.get('distance_meters', 0)
+                
+                if mosque_reqs.walking:
+                    walk_minutes = (distance_meters / 1000.0) / 5.0 * 60.0
+                    mosque_dict['walk_minutes'] = round(walk_minutes, 1)
+                else:
+                    drive_minutes = (distance_meters / 1000.0) / 30.0 * 60.0
+                    mosque_dict['drive_minutes'] = round(drive_minutes, 1)
+                
+                mosques.append(mosque_dict)
+            
+            return mosques
+            
+        except Exception as e:
+            logger.error(f"خطأ في جلب المساجد: {e}")
+            return []
     
     def _row_to_property(self, row: Dict[str, Any]) -> Property:
         """تحويل صف من قاعدة البيانات إلى Property object"""
         return Property(
-            id=str(row['id']),
+            id=row.get('id'),
             url=row.get('url'),
-            purpose=row.get('purpose', ''),
-            property_type=row.get('property_type', ''),
+            purpose=row.get('purpose'),
+            property_type=row.get('property_type'),
             city=row.get('city'),
             district=row.get('district'),
             title=row.get('title'),
-            price_num=row.get('price_num'),
+            price_num=float(row['price_num']) if row.get('price_num') else None,
             price_currency=row.get('price_currency'),
             price_period=row.get('price_period'),
-            area_m2=row.get('area_m2'),
+            area_m2=float(row['area_m2']) if row.get('area_m2') else None,
             description=row.get('description'),
             image_url=row.get('image_url'),
             lat=row.get('lat'),
             lon=row.get('lon'),
             final_lat=row.get('final_lat'),
             final_lon=row.get('final_lon'),
-            time_to_metro_min=row.get('time_to_metro_min'),
+            time_to_metro_min=float(row['time_to_metro_min']) if row.get('time_to_metro_min') else None,
             rooms=row.get('rooms'),
             baths=row.get('baths'),
             halls=row.get('halls'),
-            match_score=None,
-            nearby_universities=None,
-            nearby_mosques=None
+            nearby_schools=row.get('nearby_schools', []),
+            nearby_universities=row.get('nearby_universities', []),
+            nearby_mosques=row.get('nearby_mosques', [])
         )
 
 
-# إنشاء instance عام
+# إنشاء instance واحد
 search_engine = SearchEngine()
+
