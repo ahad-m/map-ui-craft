@@ -262,7 +262,7 @@ class SearchEngine:
                         rpc_params = {
                             'query_embedding': query_vector,
                             'match_threshold': 0.5,
-                            'match_count': 30,
+                            'match_count': 50,
                             'p_purpose': criteria.purpose.value,
                             'p_property_type': criteria.property_type.value,
                             'p_city': criteria.city,
