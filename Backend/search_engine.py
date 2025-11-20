@@ -1,6 +1,6 @@
 """
-محرك البحث (Exact + Flexible SQL فقط)
-النسخة النهائية - مع إصلاح البحث المكاني (الجامعات والمساجد)
+محرك البحث المطور (Hybrid + Geospatial)
+يستخدم تقنيات البحث المتجهي (Vector Search) والبحث المكاني (PostGIS)
 """
 from models import PropertyCriteria, Property, SearchMode
 from database import db
@@ -8,6 +8,8 @@ from config import settings
 from typing import List, Optional, Dict, Any
 import logging
 from arabic_utils import normalize_arabic_text, calculate_similarity_score
+# استيراد مولد المتجهات للبحث الهجين
+from embedding_generator import embedding_generator
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +41,6 @@ def _find_matching_university(query_name: str, threshold: float = 0.5) -> Option
         return None
     
     try:
-        # محاولة البحث البسيط أولاً
         result = db.client.table('universities').select('name_ar, name_en').execute()
         
         if not result.data:
@@ -124,7 +125,7 @@ class SearchEngine:
             return []
     
     def _exact_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
-        """بحث دقيق - تم التعديل ليدعم البحث المكاني المباشر"""
+        """بحث دقيق - يستخدم البحث المكاني المباشر (RPC) عند توفر موقع"""
         try:
             # 1. التحقق مما إذا كان البحث يعتمد على موقع محدد (جامعة أو مسجد بالاسم)
             target_lat = None
@@ -134,15 +135,12 @@ class SearchEngine:
             # أ) هل حدد جامعة بالاسم؟
             if criteria.university_requirements and criteria.university_requirements.university_name:
                 uni_name = criteria.university_requirements.university_name
-                # محاولة العثور على الاسم المطابق أولاً
                 matched_name = _find_matching_university(uni_name) or uni_name
-                
                 loc = self._get_entity_location(matched_name, 'universities')
                 if loc:
                     target_lat, target_lon = loc
                     mins = criteria.university_requirements.max_distance_minutes or 15
                     radius_meters = _minutes_to_meters(mins, walking=False)
-                    logger.info(f"🏫 بحث حول جامعة: {matched_name} (نصف قطر {radius_meters:.0f}م)")
 
             # ب) هل حدد مسجداً بالاسم؟ (إذا لم تكن الجامعة محددة)
             elif criteria.mosque_requirements and criteria.mosque_requirements.mosque_name:
@@ -152,7 +150,6 @@ class SearchEngine:
                     target_lat, target_lon = loc
                     mins = criteria.mosque_requirements.max_distance_minutes or 5
                     radius_meters = _minutes_to_meters(mins, walking=criteria.mosque_requirements.walking)
-                    logger.info(f"🕌 بحث حول مسجد: {mosque_name} (نصف قطر {radius_meters:.0f}م)")
 
             # 2. إذا وجدنا موقعاً مستهدفاً، نستخدم دالة البحث المكاني السريع (RPC)
             if target_lat and target_lon and radius_meters:
@@ -175,16 +172,13 @@ class SearchEngine:
                     
                     if result.data:
                         properties_data = result.data
-                        # إضافة معلومات الخدمات للعرض
                         properties_data = self._add_nearby_services(properties_data, criteria)
                         return properties_data
                     else:
-                        logger.info("❌ لم يتم العثور على عقارات حول الموقع المحدد")
                         return []
                         
                 except Exception as rpc_error:
                     logger.error(f"فشل RPC، العودة للبحث التقليدي: {rpc_error}")
-                    # في حالة الفشل، نكمل للكود القديم بالأسفل
 
             # 3. البحث التقليدي (إذا لم يكن هناك موقع محدد أو فشل الـ RPC)
             logger.info("🔍 استخدام البحث التقليدي (فلاتر عادية)")
@@ -237,108 +231,159 @@ class SearchEngine:
     
     def _flexible_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
         """
-        بحث مرن - يطبق المعايير الأساسية مع مرونة
+        بحث هجين ذكي (Hybrid Search):
+        يدمج بين البحث الدلالي (Vector) والبحث المكاني (Geospatial)
         """
         try:
-            # ملاحظة: يمكن تطبيق نفس منطق الـ RPC هنا أيضاً للبحث المشابه مستقبلاً
-            # حالياً سنبقي البحث المرن كما هو لضمان عدم تكسر المنطق
+            logger.info("🧠 بدء البحث الهجين (Smart Hybrid Search)...")
             
-            query = self.db.client.table('properties').select('*')
-            query = query.not_.is_('final_lat', 'null')
+            # 1. تجهيز إحداثيات البحث (جامعة أو مسجد) إن وجدت
+            target_lat = None
+            target_lon = None
             
-            # الشروط الإلزامية
-            query = query.eq('purpose', criteria.purpose.value)
-            query = query.eq('property_type', criteria.property_type.value)
-            
-            if criteria.city:
-                query = query.eq('city', criteria.city)
-            
-            # المرونة في الغرف
-            if criteria.rooms and criteria.rooms.exact is not None:
-                min_rooms = max(0, criteria.rooms.exact - 1)
-                max_rooms = criteria.rooms.exact + 1
-                query = query.gte('rooms', min_rooms)
-                query = query.lte('rooms', max_rooms)
-            
-            # المرونة في السعر
-            if criteria.price:
-                if criteria.price.min is not None:
-                    query = query.gte('price_num', criteria.price.min * 0.7)
-                if criteria.price.max is not None:
-                    query = query.lte('price_num', criteria.price.max * 1.3)
-            
-            result = query.order('price_num').limit(self.similar_limit).execute()
-            
-            if not result.data:
+            if criteria.university_requirements and criteria.university_requirements.university_name:
+                uni_name = criteria.university_requirements.university_name
+                matched_name = _find_matching_university(uni_name) or uni_name
+                loc = self._get_entity_location(matched_name, 'universities')
+                if loc: target_lat, target_lon = loc
+                
+            elif criteria.mosque_requirements and criteria.mosque_requirements.mosque_name:
+                loc = self._get_entity_location(criteria.mosque_requirements.mosque_name, 'mosques')
+                if loc: target_lat, target_lon = loc
+
+            # 2. محاولة البحث باستخدام المتجهات (إذا توفر نص أصلي من المستخدم)
+            hybrid_results = []
+            if criteria.original_query:
+                try:
+                    logger.info("توليد Embedding للنص...")
+                    query_vector = embedding_generator.generate(criteria.original_query)
+                    
+                    if query_vector:
+                        rpc_params = {
+                            'query_embedding': query_vector,
+                            'match_threshold': 0.5,
+                            'match_count': 30,
+                            'p_purpose': criteria.purpose.value,
+                            'p_property_type': criteria.property_type.value,
+                            'p_city': criteria.city,
+                            'min_price': criteria.price.min * 0.7 if criteria.price and criteria.price.min else None,
+                            'max_price': criteria.price.max * 1.3 if criteria.price and criteria.price.max else None,
+                            'p_lat': target_lat,
+                            'p_lon': target_lon
+                        }
+                        
+                        logger.info("🚀 استدعاء search_properties_hybrid...")
+                        result = self.db.client.rpc('search_properties_hybrid', rpc_params).execute()
+                        hybrid_results = result.data or []
+                except Exception as vec_error:
+                    logger.error(f"فشل البحث المتجهي: {vec_error}")
+                    hybrid_results = []
+
+            # 3. Fallback: إذا لم نجد نتائج بالبحث الهجين، نلجأ للبحث الرقمي (Weighted)
+            if not hybrid_results:
+                logger.info("⚠️ استخدام البحث الرقمي البديل (Weighted Search)...")
+                
+                target_price = 0
+                if criteria.price:
+                    if criteria.price.min and criteria.price.max:
+                        target_price = (criteria.price.min + criteria.price.max) / 2
+                    elif criteria.price.max:
+                        target_price = criteria.price.max
+                    elif criteria.price.min:
+                        target_price = criteria.price.min
+                
+                if target_price > 0:
+                    try:
+                        rpc_params = {
+                            'target_price': target_price,
+                            'target_lat': target_lat,
+                            'target_lon': target_lon,
+                            'p_purpose': criteria.purpose.value,
+                            'p_property_type': criteria.property_type.value,
+                            'p_city': criteria.city
+                        }
+                        # ملاحظة: يفترض أنك أنشأت search_properties_flexible_ranked في الخطوات السابقة
+                        res = self.db.client.rpc('search_properties_flexible_ranked', rpc_params).execute()
+                        hybrid_results = res.data or []
+                    except Exception as e:
+                        logger.error(f"فشل البحث الرقمي: {e}")
+
+            if not hybrid_results:
                 return []
+
+            # 4. جلب التفاصيل الكاملة للعقارات
+            ranked_ids = [str(item['id']) for item in hybrid_results]
             
-            properties_data = result.data
+            if not ranked_ids:
+                return []
+
+            properties_response = self.db.client.table('properties')\
+                .select('*')\
+                .in_('id', ranked_ids)\
+                .execute()
             
-            # الفلترة
-            if criteria.metro_time_max or criteria.university_requirements or criteria.mosque_requirements:
-                properties_data = self._filter_by_services(properties_data, criteria)
+            full_properties_map = {str(p['id']): p for p in properties_response.data}
             
-            properties_data = self._add_nearby_services(properties_data, criteria)
+            sorted_properties = []
+            for item in hybrid_results:
+                p_id = str(item['id'])
+                if p_id in full_properties_map:
+                    prop = full_properties_map[p_id]
+                    # إضافة نسبة التطابق
+                    prop['match_score'] = round(item.get('similarity', 0) * 100) if 'similarity' in item else 80
+                    sorted_properties.append(prop)
             
-            return properties_data
+            # 5. إضافة الخدمات
+            sorted_properties = self._add_nearby_services(sorted_properties, criteria)
             
+            return sorted_properties
+
         except Exception as e:
-            logger.error(f"خطأ في البحث المرن: {e}")
+            logger.error(f"خطأ في البحث الهجين: {e}")
             return []
     
     def _filter_by_services(self, properties: List[Dict[str, Any]], criteria: PropertyCriteria) -> List[Dict[str, Any]]:
         """فلترة العقارات بناءً على الخدمات (للبحث العام غير المحدد باسم)"""
         filtered = []
-        
         for prop in properties:
             prop_lat = prop.get('final_lat')
             prop_lon = prop.get('final_lon')
             
-            if not prop_lat or not prop_lon:
-                continue
+            if not prop_lat or not prop_lon: continue
             
             # الميترو
             if criteria.metro_time_max:
                 prop_metro_time = prop.get('time_to_metro_min')
-                if prop_metro_time is not None:
-                    if prop_metro_time > (criteria.metro_time_max + 2):
-                        continue
+                if prop_metro_time is not None and prop_metro_time > (criteria.metro_time_max + 2):
+                    continue
             
-            # الجامعات (في حال لم يتم استخدام البحث المكاني RPC)
+            # الجامعات (بحث عام)
             if criteria.university_requirements and criteria.university_requirements.required:
-                # إذا كنا هنا، فهذا يعني أننا نبحث عن "أي جامعة" أو أن الـ RPC لم يعمل
                 uni_reqs = criteria.university_requirements
-                max_mins = uni_reqs.max_distance_minutes or 20
-                max_dist = _minutes_to_meters(max_mins)
-                
-                try:
-                    res = self.db.client.rpc('get_universities_for_display', {
-                        'center_lat': prop_lat,
-                        'center_lon': prop_lon,
-                        'max_distance_meters': max_dist,
-                        'university_name': uni_reqs.university_name # قد يكون None
-                    }).execute()
-                    if not res.data: continue
-                except: continue
+                if not uni_reqs.university_name: # فقط إذا لم يكن الاسم محدداً، لأن المحدد تم حله في الفلتر الأساسي
+                    max_dist = _minutes_to_meters(uni_reqs.max_distance_minutes or 20)
+                    try:
+                        res = self.db.client.rpc('get_universities_for_display', {
+                            'center_lat': prop_lat, 'center_lon': prop_lon,
+                            'max_distance_meters': max_dist, 'university_name': None
+                        }).execute()
+                        if not res.data: continue
+                    except: continue
 
-            # المساجد (في حال لم يتم استخدام البحث المكاني RPC)
+            # المساجد (بحث عام)
             if criteria.mosque_requirements and criteria.mosque_requirements.required:
                 mosque_reqs = criteria.mosque_requirements
-                max_mins = mosque_reqs.max_distance_minutes or 10
-                max_dist = _minutes_to_meters(max_mins, walking=mosque_reqs.walking)
-                
-                try:
-                    res = self.db.client.rpc('get_mosques_for_display', {
-                        'center_lat': prop_lat,
-                        'center_lon': prop_lon,
-                        'max_distance_meters': max_dist,
-                        'mosque_name': mosque_reqs.mosque_name
-                    }).execute()
-                    if not res.data: continue
-                except: continue
+                if not mosque_reqs.mosque_name:
+                    max_dist = _minutes_to_meters(mosque_reqs.max_distance_minutes or 10, walking=mosque_reqs.walking)
+                    try:
+                        res = self.db.client.rpc('get_mosques_for_display', {
+                            'center_lat': prop_lat, 'center_lon': prop_lon,
+                            'max_distance_meters': max_dist, 'mosque_name': None
+                        }).execute()
+                        if not res.data: continue
+                    except: continue
             
             filtered.append(prop)
-        
         return filtered
     
     def _add_nearby_services(self, properties: List[Dict[str, Any]], criteria: PropertyCriteria) -> List[Dict[str, Any]]:
@@ -350,15 +395,12 @@ class SearchEngine:
             prop_lon = prop.get('final_lon')
             if not prop_lat or not prop_lon: continue
             
-            # المدارس
             if criteria.school_requirements and criteria.school_requirements.required:
                 prop['nearby_schools'] = self._get_nearby_schools(prop_lat, prop_lon, criteria.school_requirements)
             
-            # الجامعات
             if criteria.university_requirements and criteria.university_requirements.required:
                 prop['nearby_universities'] = self._get_nearby_universities_for_display(prop_lat, prop_lon, criteria.university_requirements)
                 
-            # المساجد
             if criteria.mosque_requirements and criteria.mosque_requirements.required:
                  prop['nearby_mosques'] = self._get_nearby_mosques_for_display(prop_lat, prop_lon, criteria.mosque_requirements)
                  
@@ -387,7 +429,6 @@ class SearchEngine:
                 'max_distance_meters': dist, 'university_name': uni_name
             }).execute()
             
-            # إضافة وقت القيادة
             data = res.data or []
             for item in data:
                 d = item.get('distance_meters', 0)
@@ -424,6 +465,8 @@ class SearchEngine:
             district=row.get('district'),
             title=row.get('title'),
             price_num=float(row['price_num']) if row.get('price_num') else None,
+            price_currency=row.get('price_currency'),
+            price_period=row.get('price_period'),
             area_m2=float(row['area_m2']) if row.get('area_m2') else None,
             description=row.get('description'),
             image_url=row.get('image_url'),
@@ -437,8 +480,10 @@ class SearchEngine:
             halls=row.get('halls'),
             nearby_schools=row.get('nearby_schools', []),
             nearby_universities=row.get('nearby_universities', []),
-            nearby_mosques=row.get('nearby_mosques', [])
+            nearby_mosques=row.get('nearby_mosques', []),
+            match_score=row.get('match_score') # إضافة درجة التطابق إذا وجدت
         )
+
 
 # إنشاء instance واحد
 search_engine = SearchEngine()
