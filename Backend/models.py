@@ -1,5 +1,6 @@
 """
 نماذج البيانات (Pydantic Models) للمساعد العقاري الذكي
+النسخة المحدّثة - مع دعم المساجد
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
@@ -75,6 +76,14 @@ class UniversityRequirements(BaseModel):
     max_distance_minutes: Optional[float] = None  # بالدقائق (بالسيارة)
 
 
+class MosqueRequirements(BaseModel):
+    """متطلبات المساجد - جديد"""
+    required: bool = False
+    mosque_name: Optional[str] = None  # اسم المسجد المحدد (أو NULL لأي مسجد)
+    max_distance_minutes: Optional[float] = None  # بالدقائق (مشياً أو بالسيارة)
+    walking: bool = True  # True = مشياً، False = بالسيارة
+
+
 class PropertyCriteria(BaseModel):
     """معايير البحث عن العقار المستخرجة من طلب المستخدم"""
     
@@ -97,6 +106,7 @@ class PropertyCriteria(BaseModel):
     metro_time_max: Optional[float] = Field(None, description="أقصى وقت للوصول لمحطة المترو بالدقائق")
     school_requirements: Optional[SchoolRequirements] = Field(None, description="متطلبات المدارس")
     university_requirements: Optional[UniversityRequirements] = Field(None, description="متطلبات الجامعات")
+    mosque_requirements: Optional[MosqueRequirements] = Field(None, description="متطلبات المساجد")  # جديد
     
     # النص الأصلي للطلب (للبحث الدلالي)
     original_query: Optional[str] = Field(None, description="النص الأصلي لطلب المستخدم")
