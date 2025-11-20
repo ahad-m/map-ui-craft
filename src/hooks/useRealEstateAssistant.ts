@@ -1,7 +1,7 @@
-//**
- * Hook لإدارة المساعد العقاري الذكي
-//**
-import { useState, useEffect, useCallback } from 'react';
+/**
+ Hook لإدارة المساعد العقاري الذكي
+**/
+import { useState, useEffect, useCallback } from "react";
 import {
   getWelcomeMessage,
   sendUserQuery,
@@ -10,11 +10,11 @@ import {
   type AssistantMessage,
   type Property,
   type PropertyCriteria,
-} from '../api/realEstateAssistant';
+} from "../api/realEstateAssistant";
 
 export interface ChatMessage {
   id: string;
-  type: 'user' | 'assistant';
+  type: "user" | "assistant";
   content: string;
   timestamp: Date;
   criteria?: PropertyCriteria;
@@ -27,7 +27,7 @@ export interface UseRealEstateAssistantReturn {
   currentCriteria: PropertyCriteria | null;
   searchResults: Property[];
   sendMessage: (message: string) => Promise<void>;
-  selectSearchMode: (mode: 'exact' | 'similar') => Promise<void>;
+  selectSearchMode: (mode: "exact" | "similar") => Promise<void>;
   clearChat: () => void;
 }
 
@@ -50,12 +50,12 @@ export function useRealEstateAssistant(): UseRealEstateAssistantReturn {
           const welcome = await getWelcomeMessage();
           addAssistantMessage(welcome.message);
         } catch (error) {
-          console.error('Failed to get welcome message:', error);
-          addAssistantMessage('مرحباً! أنا مساعدك العقاري الذكي 🏡');
+          console.error("Failed to get welcome message:", error);
+          addAssistantMessage("مرحباً! أنا مساعدك العقاري الذكي 🏡");
         }
       } else {
         addAssistantMessage(
-          '⚠️ عذراً، لا يمكن الاتصال بالمساعد الذكي حالياً.\n\nتأكد من تشغيل Backend على http://localhost:8000'
+          "⚠️ عذراً، لا يمكن الاتصال بالمساعد الذكي حالياً.\n\nتأكد من تشغيل Backend على http://localhost:8000",
         );
       }
     };
@@ -67,7 +67,7 @@ export function useRealEstateAssistant(): UseRealEstateAssistantReturn {
   const addAssistantMessage = useCallback((content: string, criteria?: PropertyCriteria) => {
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
-      type: 'assistant',
+      type: "assistant",
       content,
       timestamp: new Date(),
       criteria,
@@ -79,7 +79,7 @@ export function useRealEstateAssistant(): UseRealEstateAssistantReturn {
   const addUserMessage = useCallback((content: string) => {
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
-      type: 'user',
+      type: "user",
       content,
       timestamp: new Date(),
     };
@@ -107,25 +107,23 @@ export function useRealEstateAssistant(): UseRealEstateAssistantReturn {
           // إضافة رد المساعد
           addAssistantMessage(response.message, response.criteria);
         } else {
-          addAssistantMessage(
-            response.message || 'عذراً، حدث خطأ في فهم طلبك. حاول مرة أخرى.'
-          );
+          addAssistantMessage(response.message || "عذراً، حدث خطأ في فهم طلبك. حاول مرة أخرى.");
         }
       } catch (error) {
-        console.error('Error sending message:', error);
-        addAssistantMessage('عذراً، حدث خطأ في الاتصال. حاول مرة أخرى.');
+        console.error("Error sending message:", error);
+        addAssistantMessage("عذراً، حدث خطأ في الاتصال. حاول مرة أخرى.");
       } finally {
         setIsLoading(false);
       }
     },
-    [isBackendOnline, addUserMessage, addAssistantMessage]
+    [isBackendOnline, addUserMessage, addAssistantMessage],
   );
 
   // اختيار نمط البحث
   const selectSearchMode = useCallback(
-    async (mode: 'exact' | 'similar') => {
+    async (mode: "exact" | "similar") => {
       if (!currentCriteria) {
-        addAssistantMessage('لم يتم تحديد معايير البحث بعد.');
+        addAssistantMessage("لم يتم تحديد معايير البحث بعد.");
         return;
       }
 
@@ -138,27 +136,27 @@ export function useRealEstateAssistant(): UseRealEstateAssistantReturn {
         if (response.success && response.properties && response.properties.length > 0) {
           setSearchResults(response.properties);
 
-          const modeText = mode === 'exact' ? 'المطابقة' : 'المشابهة';
+          const modeText = mode === "exact" ? "المطابقة" : "المشابهة";
           addAssistantMessage(
-            `تمام! وجدت ${response.total_count} عقار ${modeText} لطلبك 🎉\n\nشوف النتائج على الخريطة!`
+            `تمام! وجدت ${response.total_count} عقار ${modeText} لطلبك 🎉\n\nشوف النتائج على الخريطة!`,
           );
         } else {
           setSearchResults([]);
           addAssistantMessage(
-            `للأسف ما لقيت عقارات ${mode === 'exact' ? 'مطابقة' : 'مشابهة'} لطلبك 😔\n\nتبي تجرب ${
-              mode === 'exact' ? 'العقارات المشابهة' : 'معايير مختلفة'
-            }؟`
+            `للأسف ما لقيت عقارات ${mode === "exact" ? "مطابقة" : "مشابهة"} لطلبك 😔\n\nتبي تجرب ${
+              mode === "exact" ? "العقارات المشابهة" : "معايير مختلفة"
+            }؟`,
           );
         }
       } catch (error) {
-        console.error('Error searching properties:', error);
+        console.error("Error searching properties:", error);
         setSearchResults([]);
-        addAssistantMessage('عذراً، حدث خطأ في البحث. حاول مرة أخرى.');
+        addAssistantMessage("عذراً، حدث خطأ في البحث. حاول مرة أخرى.");
       } finally {
         setIsLoading(false);
       }
     },
-    [currentCriteria, addAssistantMessage]
+    [currentCriteria, addAssistantMessage],
   );
 
   // مسح المحادثة
@@ -168,7 +166,7 @@ export function useRealEstateAssistant(): UseRealEstateAssistantReturn {
     setSearchResults([]);
 
     // إضافة رسالة ترحيب جديدة
-    addAssistantMessage('مرحباً! كيف أقدر أساعدك اليوم؟ 🏡');
+    addAssistantMessage("مرحباً! كيف أقدر أساعدك اليوم؟ 🏡");
   }, [addAssistantMessage]);
 
   return {
