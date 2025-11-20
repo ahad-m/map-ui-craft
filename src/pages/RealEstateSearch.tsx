@@ -23,7 +23,7 @@ import {
   LogOut,
   Mic,
   User,
-  RotateCcw, // [جديد] أيقونة الريستارت
+  RotateCcw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -89,7 +89,7 @@ const RealEstateSearch = () => {
     searchResults: chatSearchResults,
     sendMessage,
     selectSearchMode,
-    resetChat, // [جديد] استدعاء دالة الريستارت من الهوك
+    resetChat,
   } = useRealEstateAssistant();
 
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -185,7 +185,7 @@ const RealEstateSearch = () => {
     await selectSearchMode(mode);
   };
 
-  // [جديد] دالة إعادة تشغيل المحادثة
+  // دالة إعادة تشغيل المحادثة
   const handleRestartChat = () => {
     if (resetChat) resetChat();
     setChatbotProperties([]);
@@ -244,7 +244,8 @@ const RealEstateSearch = () => {
   };
 
   const handleVoiceInput = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    // [Fix] Added ': any' to bypass TypeScript constructor error
+    const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast({
         title: "غير مدعوم",
@@ -1936,6 +1937,156 @@ const RealEstateSearch = () => {
             </div>
           </Card>
         </div>
+
+        {/* Property Details Dialog */}
+        <PropertyDetailsDialog
+          property={selectedProperty}
+          isOpen={showPropertyDialog}
+          onClose={() => {
+            setShowPropertyDialog(false);
+            setSelectedProperty(null);
+          }}
+          isFavorite={selectedProperty ? isFavorite(selectedProperty.id) : false}
+          onToggleFavorite={() => selectedProperty && handleToggleFavorite(selectedProperty.id)}
+          selectedSchool={null}
+          selectedUniversity={null}
+        />
+
+        {/* Favorites Sheet */}
+        <Sheet open={showFavorites} onOpenChange={setShowFavorites}>
+          <SheetContent side={i18n.language === "ar" ? "left" : "right"} className="w-full sm:max-w-lg overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-red-500 fill-red-500" />
+                {t("favorites")} ({displayedFavorites.length})
+              </SheetTitle>
+            </SheetHeader>
+            <div className="mt-6 space-y-4">
+              {displayedFavorites.length === 0 ? (
+                <div className="text-center py-12">
+                  <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">{t("noFavorites")}</p>
+                </div>
+              ) : (
+                displayedFavorites.map((property, index) => (
+                  <Card
+                    key={property.id}
+                    className="p-4 cursor-pointer hover-lift glass-effect animate-slide-up"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                    onClick={() => {
+                      setSelectedProperty(property);
+                      setShowPropertyDialog(true);
+                      setShowFavorites(false);
+                    }}
+                  >
+                    <div className="flex gap-3">
+                      {property.image_url && (
+                        <img
+                          src={property.image_url}
+                          alt={property.title}
+                          className="w-24 h-24 object-cover rounded-lg"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold text-sm line-clamp-2">{property.title}</h3>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleFavorite(property.id);
+                            }}
+                          >
+                            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {property.district}, {property.city}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs mb-2">
+                          {property.rooms && (
+                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
+                              <Bed className="h-4 w-4 text-primary" />
+                              <span className="font-medium">{property.rooms}</span>
+                            </span>
+                          )}
+                          {property.baths && (
+                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
+                              <Bath className="h-4 w-4 text-primary" />
+                              <span className="font-medium">{property.baths}</span>
+                            </span>
+                          )}
+                          {property.area_m2 && (
+                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
+                              <Maximize className="h-4 w-4 text-primary" />
+                              <span className="font-medium">{property.area_m2} m²</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="pt-3 border-t border-border/50">
+                          <p className="text-primary font-bold text-xl">
+                            {property.price_num} {property.price_currency}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Clear Chatbot Results Button */}
+        {showChatbotResults && (
+          <div className="absolute bottom-24 right-4 z-10">
+            <Button
+              onClick={() => {
+                setShowChatbotResults(false);
+                setChatbotProperties([]);
+                setFilters((prev) => ({
+                  ...prev,
+                  schoolGender: "",
+                  schoolLevel: "",
+                  maxSchoolTime: 15,
+                }));
+              }}
+              variant="outline"
+              className="bg-white/95 backdrop-blur-sm shadow-lg"
+            >
+              <X className="h-4 w-4 mr-2" />
+              {i18n.language === "ar" ? "إلغاء نتائج المساعد" : "Clear Assistant Results"}
+            </Button>
+          </div>
+        )}
+
+        {/* Results Count */}
+        {!selectedProperty && hasSearched && (
+          <div className="absolute bottom-24 left-4 right-4 z-10 animate-slide-up">
+            <Card className="glass-effect shadow-elevated border-primary/30">
+              <div className="p-4">
+                <div className="text-center">
+                  {isLoading ? (
+                    <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      {t("loading")}
+                    </p>
+                  ) : displayedProperties.length === 0 ? (
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-destructive">{t("noPropertiesFound")}</p>
+                      <p className="text-xs text-muted-foreground">{t("tryAdjustingFilters")}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      {`${displayedProperties.length} ${t("propertiesFound")}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Chatbot Floating Button - Enhanced */}
         <div className="fixed bottom-6 left-6 z-50 animate-float">
