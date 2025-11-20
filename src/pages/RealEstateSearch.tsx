@@ -219,44 +219,22 @@ const RealEstateSearch = () => {
     }
   }, [chatSearchResults, currentCriteria]);
 
-  // ----------------------------------------------------------------------
-  // [Fix]: Helper to extract unique items (schools/mosques) from ALL properties
-  // ----------------------------------------------------------------------
-  const getUniqueItems = (properties: any[], key: string) => {
-    if (!properties || properties.length === 0) return [];
-    
-    // Collect all items from all properties
-    const allItems = properties.flatMap((p) => p[key] || []);
-    
-    // Remove duplicates based on location (lat/lon) or name
-    const uniqueItems = new Map();
-    
-    allItems.forEach((item) => {
-      const uniqueKey = item.lat && item.lon 
-        ? `${Number(item.lat).toFixed(5)}-${Number(item.lon).toFixed(5)}` 
-        : item.name || Math.random().toString();
-        
-      if (!uniqueItems.has(uniqueKey)) {
-        uniqueItems.set(uniqueKey, item);
-      }
-    });
-
-    return Array.from(uniqueItems.values());
-  };
-
-  // Extract entities from Backend results using the helper
-  const nearbySchoolsFromBackend = useMemo(() => {
-    return getUniqueItems(chatbotProperties, "nearby_schools");
-  }, [chatbotProperties]);
-
+  // Extract entities from Backend results
   const nearbyUniversitiesFromBackend = useMemo(() => {
-    return getUniqueItems(chatbotProperties, "nearby_universities");
+    if (chatbotProperties.length > 0 && chatbotProperties[0].nearby_universities) {
+      console.log("🎓 Universities from backend:", chatbotProperties[0].nearby_universities);
+      return chatbotProperties[0].nearby_universities;
+    }
+    return [];
   }, [chatbotProperties]);
 
   const nearbyMosquesFromBackend = useMemo(() => {
-    return getUniqueItems(chatbotProperties, "nearby_mosques");
+    if (chatbotProperties.length > 0 && chatbotProperties[0].nearby_mosques) {
+      console.log("🕌 Mosques from backend:", chatbotProperties[0].nearby_mosques);
+      return chatbotProperties[0].nearby_mosques;
+    }
+    return [];
   }, [chatbotProperties]);
-  // ----------------------------------------------------------------------
 
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isChatLoading) return;
@@ -961,48 +939,12 @@ const RealEstateSearch = () => {
                 </AdvancedMarker>
               ))}
 
-            {/* --------------------------------------------------------- */}
-            {/* [New] Schools markers from Backend */}
-            {/* --------------------------------------------------------- */}
-            {hasSearched &&
-              nearbySchoolsFromBackend.map((school: any, index: number) => (
-                <AdvancedMarker
-                  key={`school-backend-${index}`}
-                  position={{ lat: Number(school.lat), lng: Number(school.lon) }}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
-                        >
-                          <School className="h-5 w-5 text-white" />
-                        </div>
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">{school.name}</p>
-                      {school.travel_minutes !== undefined && (
-                        <p className="text-xs text-muted-foreground">
-                          {t("maxTravelTime")}: {Math.round(school.travel_minutes)} {t("minutes")}
-                        </p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </AdvancedMarker>
-              ))}
-
             {/* University markers from Backend */}
             {hasSearched &&
-              nearbyUniversitiesFromBackend.map((university: any, index: number) => (
+              nearbyUniversitiesFromBackend.map((university, index) => (
                 <AdvancedMarker
                   key={`university-backend-${index}`}
-                  position={{ lat: Number(university.lat), lng: Number(university.lon) }}
+                  position={{ lat: university.lat, lng: university.lon }}
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1032,9 +974,9 @@ const RealEstateSearch = () => {
                 </AdvancedMarker>
               ))}
 
-            {/* [Fixed] Mosque markers from Backend */}
+            {/* [FIXED HERE] Mosque markers from Backend - تم إضافة هذا الجزء الناقص */}
             {hasSearched &&
-              nearbyMosquesFromBackend.map((mosque: any, index: number) => (
+              nearbyMosquesFromBackend.map((mosque, index) => (
                 <AdvancedMarker
                   key={`mosque-backend-${index}`}
                   position={{ lat: Number(mosque.lat), lng: Number(mosque.lon) }}
