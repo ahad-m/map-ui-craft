@@ -1060,32 +1060,30 @@ const RealEstateSearch = () => {
               if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return null;
 
               return (
-                <AdvancedMarker
-                  key={property.id}
-                  position={{ lat, lng: lon }}
-                  onClick={() => handlePropertyClick(property)}
-                >
-                  <div className="relative group cursor-pointer">
-                    <div className="transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-2">
-                      <Pin
-                        background={transactionType === "sale" ? "#15803d" : "#22c55e"}
-                        borderColor={transactionType === "sale" ? "#14532d" : "#16a34a"}
-                        glyphColor={"#ffffff"}
-                      />
-                    </div>
-                    {/* Animated pulse ring on hover */}
-                    <div
-                      className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100"
-                      style={{ animationDuration: "1.5s" }}
-                    />
-                    {/* Favorite heart badge */}
-                    {isFavorite(property.id) && (
-                      <div className="absolute -top-2 -right-2 animate-pulse-glow">
-                        <Heart className="h-4 w-4 fill-red-500 text-red-500 drop-shadow-lg" />
-                      </div>
-                    )}
-                  </div>
-                </AdvancedMarker>
+                <AdvancedMarker
+                  key={property.id}
+                  position={{ lat, lng: lon }}
+                  onClick={() => handlePropertyClick(property)}
+                >
+                  <div className="relative group cursor-pointer">
+                    <div className="transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-2">
+                      <Pin
+                        background={transactionType === "sale" ? "#15803d" : "#22c55e"}
+                        borderColor={transactionType === "sale" ? "#14532d" : "#16a34a"}
+                        glyphColor={"#ffffff"}
+                      />
+                    </div>
+                    <div
+                      className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100"
+                      style={{ animationDuration: "1.5s" }}
+                    />
+                    {isFavorite(property.id) && (
+                      <div className="absolute -top-2 -right-2 animate-pulse-glow">
+                        <Heart className="h-4 w-4 fill-red-500 text-red-500 drop-shadow-lg" />
+                      </div>
+                    )}
+                  </div>
+                </AdvancedMarker>
               );
             })}
 
