@@ -145,6 +145,11 @@ class NearbyMosque(BaseModel):
 
 class Property(BaseModel):
     """نموذج العقار"""
+    
+    class Config:
+        arbitrary_types_allowed = True
+        validate_assignment = True
+    
     id: str
     url: Optional[str] = None
     purpose: str
