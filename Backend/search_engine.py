@@ -247,6 +247,14 @@ class SearchEngine:
         self.sql_weight = settings.SQL_WEIGHT
         self.vector_weight = settings.VECTOR_WEIGHT
     
+    def _get_nearby_universities(self, center_lat: float, center_lon: float, max_distance_meters: float, university_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """جلب الجامعات القريبة"""
+        return _get_nearby_universities_for_display(center_lat, center_lon, max_distance_meters, university_name)
+    
+    def _get_nearby_mosques(self, center_lat: float, center_lon: float, max_distance_meters: float, mosque_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """جلب المساجد القريبة"""
+        return _get_nearby_mosques_for_display(center_lat, center_lon, max_distance_meters, mosque_name)
+    
     def search(self, criteria: PropertyCriteria, mode: SearchMode) -> List[Property]:
         """
         البحث عن العقارات بناءً على المعايير ونوع البحث
@@ -651,7 +659,7 @@ class SearchEngine:
         """
         try:
             # توليد embedding للطلب
-            query_embedding = embedding_generator.generate_embedding(query_text)
+            query_embedding = embedding_generator.generate(query_text)
             
             if not query_embedding:
                 return []
