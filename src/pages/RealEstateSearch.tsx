@@ -219,22 +219,45 @@ const RealEstateSearch = () => {
     }
   }, [chatSearchResults, currentCriteria]);
 
-  // Extract entities from Backend results
+  // ----------------------------------------------------------------------
+  // [Fix]: Helper to extract unique items (schools/mosques) from ALL properties
+  // ----------------------------------------------------------------------
+  const getUniqueItems = (properties: any[], key: string) => {
+    if (!properties || properties.length === 0) return [];
+
+    // Collect all items from all properties
+    const allItems = properties.flatMap((p) => p[key] || []);
+
+    // Remove duplicates based on location (lat/lon) or name
+    const uniqueItems = new Map();
+
+    allItems.forEach((item) => {
+      const uniqueKey =
+        item.lat && item.lon
+          ? `${Number(item.lat).toFixed(5)}-${Number(item.lon).toFixed(5)}`
+          : item.name || Math.random().toString();
+
+      if (!uniqueItems.has(uniqueKey)) {
+        uniqueItems.set(uniqueKey, item);
+      }
+    });
+
+    return Array.from(uniqueItems.values());
+  };
+
+  // Extract entities from Backend results using the helper
+  const nearbySchoolsFromBackend = useMemo(() => {
+    return getUniqueItems(chatbotProperties, "nearby_schools");
+  }, [chatbotProperties]);
+
   const nearbyUniversitiesFromBackend = useMemo(() => {
-    if (chatbotProperties.length > 0 && chatbotProperties[0].nearby_universities) {
-      console.log("🎓 Universities from backend:", chatbotProperties[0].nearby_universities);
-      return chatbotProperties[0].nearby_universities;
-    }
-    return [];
+    return getUniqueItems(chatbotProperties, "nearby_universities");
   }, [chatbotProperties]);
 
   const nearbyMosquesFromBackend = useMemo(() => {
-    if (chatbotProperties.length > 0 && chatbotProperties[0].nearby_mosques) {
-      console.log("🕌 Mosques from backend:", chatbotProperties[0].nearby_mosques);
-      return chatbotProperties[0].nearby_mosques;
-    }
-    return [];
+    return getUniqueItems(chatbotProperties, "nearby_mosques");
   }, [chatbotProperties]);
+  // ----------------------------------------------------------------------
 
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isChatLoading) return;
@@ -417,12 +440,14 @@ const RealEstateSearch = () => {
 
       return (data || []).filter((property) => {
         const priceValue = property.price_num as any;
-        const price = typeof priceValue === "string" ? parseFloat(priceValue.replace(/,/g, "")) : Number(priceValue) || 0;
+        const price =
+          typeof priceValue === "string" ? parseFloat(priceValue.replace(/,/g, "")) : Number(priceValue) || 0;
         const areaValue = property.area_m2 as any;
         const area = typeof areaValue === "string" ? parseFloat(areaValue.replace(/,/g, "")) : Number(areaValue) || 0;
 
         let priceMatch = true;
-        if (filters.minPrice > 0 && filters.maxPrice > 0) priceMatch = price >= filters.minPrice && price <= filters.maxPrice;
+        if (filters.minPrice > 0 && filters.maxPrice > 0)
+          priceMatch = price >= filters.minPrice && price <= filters.maxPrice;
         else if (filters.minPrice > 0) priceMatch = price >= filters.minPrice;
         else if (filters.maxPrice > 0) priceMatch = price <= filters.maxPrice;
 
@@ -506,7 +531,8 @@ const RealEstateSearch = () => {
         .not("name", "is", null);
 
       if (filters.schoolGender && filters.schoolGender !== "All") {
-        const genderValue = filters.schoolGender === "Boys" ? "boys" : filters.schoolGender === "Girls" ? "girls" : "both";
+        const genderValue =
+          filters.schoolGender === "Boys" ? "boys" : filters.schoolGender === "Girls" ? "girls" : "both";
         query = query.eq("gender", genderValue);
       }
       if (filters.schoolLevel && filters.schoolLevel !== "combined") {
@@ -939,12 +965,48 @@ const RealEstateSearch = () => {
                 </AdvancedMarker>
               ))}
 
+            {/* --------------------------------------------------------- */}
+            {/* [New] Schools markers from Backend */}
+            {/* --------------------------------------------------------- */}
+            {hasSearched &&
+              nearbySchoolsFromBackend.map((school: any, index: number) => (
+                <AdvancedMarker
+                  key={`school-backend-${index}`}
+                  position={{ lat: Number(school.lat), lng: Number(school.lon) }}
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
+                        <div
+                          className="p-2 rounded-full shadow-elevated"
+                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
+                        >
+                          <School className="h-5 w-5 text-white" />
+                        </div>
+                        <div
+                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
+                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-medium">{school.name}</p>
+                      {school.travel_minutes !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("maxTravelTime")}: {Math.round(school.travel_minutes)} {t("minutes")}
+                        </p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </AdvancedMarker>
+              ))}
+
             {/* University markers from Backend */}
             {hasSearched &&
-              nearbyUniversitiesFromBackend.map((university, index) => (
+              nearbyUniversitiesFromBackend.map((university: any, index: number) => (
                 <AdvancedMarker
                   key={`university-backend-${index}`}
-                  position={{ lat: university.lat, lng: university.lon }}
+                  position={{ lat: Number(university.lat), lng: Number(university.lon) }}
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -974,9 +1036,9 @@ const RealEstateSearch = () => {
                 </AdvancedMarker>
               ))}
 
-            {/* [FIXED HERE] Mosque markers from Backend - تم إضافة هذا الجزء الناقص */}
+            {/* [Fixed] Mosque markers from Backend */}
             {hasSearched &&
-              nearbyMosquesFromBackend.map((mosque, index) => (
+              nearbyMosquesFromBackend.map((mosque: any, index: number) => (
                 <AdvancedMarker
                   key={`mosque-backend-${index}`}
                   position={{ lat: Number(mosque.lat), lng: Number(mosque.lon) }}
@@ -2179,10 +2241,7 @@ const RealEstateSearch = () => {
                   disabled={isChatLoading || !isBackendOnline || isListening}
                   variant="outline"
                   size="icon"
-                  className={cn(
-                    "h-10 w-10",
-                    isListening && "animate-pulse bg-blue-100 border-blue-300 text-blue-700",
-                  )}
+                  className={cn("h-10 w-10", isListening && "animate-pulse bg-blue-100 border-blue-300 text-blue-700")}
                 >
                   <Mic className="h-4 w-4" />
                 </Button>
