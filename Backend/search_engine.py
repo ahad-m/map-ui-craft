@@ -203,6 +203,27 @@ class SearchEngine:
                     if criteria.rooms.min is not None: query = query.gte('rooms', criteria.rooms.min)
                     if criteria.rooms.max is not None: query = query.lte('rooms', criteria.rooms.max)
             
+            # ✅ فلتر الحمامات (كان ناقص!)
+            if criteria.baths:
+                if criteria.baths.exact is not None:
+                    query = query.eq('baths', criteria.baths.exact)
+                else:
+                    if criteria.baths.min is not None: query = query.gte('baths', criteria.baths.min)
+                    if criteria.baths.max is not None: query = query.lte('baths', criteria.baths.max)
+            
+            # ✅ فلتر الصالات (كان ناقص!)
+            if criteria.halls:
+                if criteria.halls.exact is not None:
+                    query = query.eq('halls', criteria.halls.exact)
+                else:
+                    if criteria.halls.min is not None: query = query.gte('halls', criteria.halls.min)
+                    if criteria.halls.max is not None: query = query.lte('halls', criteria.halls.max)
+            
+            # ✅ فلتر المساحة (كان ناقص!)
+            if criteria.area_m2:
+                if criteria.area_m2.min is not None: query = query.gte('area_m2', criteria.area_m2.min)
+                if criteria.area_m2.max is not None: query = query.lte('area_m2', criteria.area_m2.max)
+            
             if criteria.price:
                 if criteria.price.min is not None: query = query.gte('price_num', criteria.price.min)
                 if criteria.price.max is not None: query = query.lte('price_num', criteria.price.max)
