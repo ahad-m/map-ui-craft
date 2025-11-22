@@ -237,17 +237,6 @@ const Auth = () => {
                 <span className="relative z-10">{isLogin ? t('signIn') : t('signUp')}</span>
               )}
             </Button>
-            
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={() => navigate('/search')}
-              disabled={loading}
-            >
-              {t('skip')}
-            </Button>
-
             <Button
               type="button"
               variant="ghost"
@@ -265,6 +254,14 @@ const Auth = () => {
                 : t('haveAccount')
               }
             </Button>
+            <button
+              type="button"
+              onClick={() => navigate('/search')}
+              disabled={loading}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+            >
+              {t('skip')}
+            </button>
           </CardFooter>
         </form>
       </Card>
