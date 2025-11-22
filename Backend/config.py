@@ -24,8 +24,8 @@ class Settings(BaseSettings):
     LLM_MAX_TOKENS: int = 1000
     
     # إعدادات البحث
-    EXACT_SEARCH_LIMIT: int = 100
-    HYBRID_SEARCH_LIMIT: int = 100
+    EXACT_SEARCH_LIMIT: int = 200
+    HYBRID_SEARCH_LIMIT: int = 200
     VECTOR_SIMILARITY_THRESHOLD: float = 0.7
     
     # أوزان البحث الهجين
