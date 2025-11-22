@@ -609,7 +609,9 @@ const RealEstateSearch = () => {
 
   const nearbyUniversities = useMemo(() => {
     if (!hasSearched) return [];
-    if (!filters.selectedUniversity && !currentCriteria?.university_requirements) return [];
+    // University filter is active if: specific university selected, or time slider adjusted (not at default 30), or chatbot requested it
+    const universityFilterActive = filters.selectedUniversity || filters.maxUniversityTime < 30 || currentCriteria?.university_requirements;
+    if (!universityFilterActive) return [];
     if (!propertiesCenterLocation || allUniversities.length === 0) return [];
 
     return allUniversities
@@ -624,7 +626,9 @@ const RealEstateSearch = () => {
         return { ...university, travelTime };
       })
       .filter((university) => {
+        // Always filter by travel time
         if (university.travelTime > filters.maxUniversityTime) return false;
+        // If specific university selected, also filter by name
         if (filters.selectedUniversity) {
           const searchTerm = filters.selectedUniversity;
           const nameAr = university.name_ar || "";
@@ -693,7 +697,9 @@ const RealEstateSearch = () => {
       });
     }
 
-    if (filters.selectedUniversity && nearbyUniversities.length > 0) {
+    // Filter by university if filter is active (specific university OR time slider adjusted)
+    const universityFilterActive = filters.selectedUniversity || filters.maxUniversityTime < 30;
+    if (universityFilterActive && nearbyUniversities.length > 0) {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
@@ -1763,7 +1769,7 @@ const RealEstateSearch = () => {
                                       {allUniversities.length === 0 ? t("notFound") : t("noResults")}
                                     </CommandEmpty>
                                     <CommandGroup>
-                                      <CommandItem
+                                       <CommandItem
                                         onSelect={() => {
                                           setFilters({ ...filters, selectedUniversity: "" });
                                           setCustomSearchTerms({ ...customSearchTerms, university: "" });
@@ -1778,7 +1784,7 @@ const RealEstateSearch = () => {
                                         />
                                         {t("all")}
                                       </CommandItem>
-                                      {allUniversities.map((uni) => (
+                                      {nearbyUniversities.map((uni) => (
                                         <CommandItem
                                           key={uni.name_ar}
                                           value={i18n.language === "ar" ? uni.name_ar : uni.name_en}
