@@ -255,12 +255,24 @@ class SearchEngine:
     def _flexible_search(self, criteria: PropertyCriteria) -> List[Dict[str, Any]]:
         """
         بحث هجين ذكي (Hybrid Search):
-        يدمج بين البحث الدلالي (Vector) والبحث المكاني (Geospatial)
+        يدمج نتائج البحث المطابق + عقارات إضافية مشابهة من البحث الدلالي
+        
+        المنطق: المشابه = المطابق + الإضافات المشابهة
         """
         try:
             logger.info("🧠 بدء البحث الهجين (Smart Hybrid Search)...")
             
-            # 1. تجهيز إحداثيات البحث (جامعة أو مسجد) إن وجدت
+            # ════════════════════════════════════════════════════════════
+            # الخطوة 1: جلب نتائج البحث المطابق أولاً
+            # ════════════════════════════════════════════════════════════
+            logger.info("📌 جلب نتائج البحث المطابق أولاً...")
+            exact_results = self._exact_search(criteria)
+            exact_ids = {str(p.get('id')) for p in exact_results}
+            logger.info(f"✅ البحث المطابق أرجع {len(exact_results)} عقار")
+            
+            # ════════════════════════════════════════════════════════════
+            # الخطوة 2: تجهيز إحداثيات البحث (جامعة أو مسجد) إن وجدت
+            # ════════════════════════════════════════════════════════════
             target_lat = None
             target_lon = None
             
@@ -274,24 +286,26 @@ class SearchEngine:
                 loc = self._get_entity_location(criteria.mosque_requirements.mosque_name, 'mosques')
                 if loc: target_lat, target_lon = loc
 
-            # 2. محاولة البحث باستخدام المتجهات (إذا توفر نص أصلي من المستخدم)
+            # ════════════════════════════════════════════════════════════
+            # الخطوة 3: البحث الدلالي للعقارات الإضافية
+            # ════════════════════════════════════════════════════════════
             hybrid_results = []
             if criteria.original_query:
                 try:
-                    logger.info("توليد Embedding للنص...")
+                    logger.info("🔍 توليد Embedding للبحث الدلالي...")
                     query_vector = embedding_generator.generate(criteria.original_query)
                     
                     if query_vector:
                         rpc_params = {
                             'query_embedding': query_vector,
                             'match_threshold': 0.5,
-                            'match_count': 50,
+                            'match_count': 100,  # زيادة العدد لجلب المزيد
                             'p_purpose': criteria.purpose.value,
                             'p_property_type': criteria.property_type.value,
                             'p_city': criteria.city,
-                            'p_district': criteria.district,  # ✅ إضافة الحي!
-                            'min_price': criteria.price.min * 0.7 if criteria.price and criteria.price.min else None,
-                            'max_price': criteria.price.max * 1.3 if criteria.price and criteria.price.max else None,
+                            'p_district': None,  # لا نحدد الحي للبحث الدلالي (نبي عقارات من أحياء ثانية)
+                            'min_price': criteria.price.min * 0.5 if criteria.price and criteria.price.min else None,
+                            'max_price': criteria.price.max * 1.5 if criteria.price and criteria.price.max else None,
                             'p_lat': target_lat,
                             'p_lon': target_lon
                         }
@@ -299,11 +313,14 @@ class SearchEngine:
                         logger.info("🚀 استدعاء search_properties_hybrid...")
                         result = self.db.client.rpc('search_properties_hybrid', rpc_params).execute()
                         hybrid_results = result.data or []
+                        logger.info(f"✅ البحث الدلالي أرجع {len(hybrid_results)} عقار")
                 except Exception as vec_error:
                     logger.error(f"فشل البحث المتجهي: {vec_error}")
                     hybrid_results = []
 
-            # 3. Fallback: إذا لم نجد نتائج بالبحث الهجين، نلجأ للبحث الرقمي (Weighted)
+            # ════════════════════════════════════════════════════════════
+            # الخطوة 4: Fallback إذا لم نجد نتائج بالبحث الهجين
+            # ════════════════════════════════════════════════════════════
             if not hybrid_results:
                 logger.info("⚠️ استخدام البحث الرقمي البديل (Weighted Search)...")
                 
@@ -326,51 +343,71 @@ class SearchEngine:
                             'p_property_type': criteria.property_type.value,
                             'p_city': criteria.city
                         }
-                        # ملاحظة: يفترض أنك أنشأت search_properties_flexible_ranked في الخطوات السابقة
                         res = self.db.client.rpc('search_properties_flexible_ranked', rpc_params).execute()
                         hybrid_results = res.data or []
                     except Exception as e:
                         logger.error(f"فشل البحث الرقمي: {e}")
 
-            if not hybrid_results:
-                return []
-
-            # 4. جلب التفاصيل الكاملة للعقارات
-            ranked_ids = [str(item['id']) for item in hybrid_results]
+            # ════════════════════════════════════════════════════════════
+            # الخطوة 5: جلب التفاصيل الكاملة للعقارات من البحث الدلالي
+            # ════════════════════════════════════════════════════════════
+            additional_properties = []
+            if hybrid_results:
+                # فلترة العقارات اللي مو موجودة في البحث المطابق
+                new_ids = [str(item['id']) for item in hybrid_results if str(item['id']) not in exact_ids]
+                
+                if new_ids:
+                    properties_response = self.db.client.table('properties')\
+                        .select('*')\
+                        .in_('id', new_ids)\
+                        .execute()
+                    
+                    full_properties_map = {str(p['id']): p for p in properties_response.data}
+                    
+                    for item in hybrid_results:
+                        p_id = str(item['id'])
+                        if p_id in full_properties_map and p_id not in exact_ids:
+                            prop = full_properties_map[p_id]
+                            prop['match_score'] = round(item.get('similarity', 0) * 100) if 'similarity' in item else 70
+                            additional_properties.append(prop)
             
-            if not ranked_ids:
-                return []
-
-            properties_response = self.db.client.table('properties')\
-                .select('*')\
-                .in_('id', ranked_ids)\
-                .execute()
+            logger.info(f"✅ عقارات إضافية مشابهة: {len(additional_properties)}")
             
-            full_properties_map = {str(p['id']): p for p in properties_response.data}
+            # ════════════════════════════════════════════════════════════
+            # الخطوة 6: دمج النتائج (المطابق أولاً + المشابه)
+            # ════════════════════════════════════════════════════════════
+            final_results = []
             
-            sorted_properties = []
-            for item in hybrid_results:
-                p_id = str(item['id'])
-                if p_id in full_properties_map:
-                    prop = full_properties_map[p_id]
-                    # إضافة نسبة التطابق
-                    prop['match_score'] = round(item.get('similarity', 0) * 100) if 'similarity' in item else 80
-                    sorted_properties.append(prop)
+            # أولاً: إضافة نتائج البحث المطابق (مع نسبة 100%)
+            for prop in exact_results:
+                prop['match_score'] = 100  # المطابق = 100%
+                final_results.append(prop)
             
-            # 5. تصفية الخدمات (مع تسامح +5 دقائق للبحث المشابه)
-            if criteria.metro_time_max or \
-               (criteria.university_requirements and criteria.university_requirements.required) or \
-               (criteria.mosque_requirements and criteria.mosque_requirements.required) or \
-               (criteria.school_requirements and criteria.school_requirements.required):
-                sorted_properties = self._filter_by_services(sorted_properties, criteria, strict=False)
+            # ثانياً: تصفية العقارات الإضافية حسب الخدمات (مع تسامح +5 دقائق)
+            if additional_properties:
+                if criteria.metro_time_max or \
+                   (criteria.university_requirements and criteria.university_requirements.required) or \
+                   (criteria.mosque_requirements and criteria.mosque_requirements.required) or \
+                   (criteria.school_requirements and criteria.school_requirements.required):
+                    additional_properties = self._filter_by_services(additional_properties, criteria, strict=False)
             
-            # 6. إضافة معلومات الخدمات القريبة للعرض
-            sorted_properties = self._add_nearby_services(sorted_properties, criteria)
+            # ثالثاً: إضافة العقارات المشابهة
+            for prop in additional_properties:
+                final_results.append(prop)
             
-            return sorted_properties
+            logger.info(f"🎯 إجمالي النتائج: {len(exact_results)} مطابق + {len(additional_properties)} مشابه = {len(final_results)}")
+            
+            # ════════════════════════════════════════════════════════════
+            # الخطوة 7: إضافة معلومات الخدمات القريبة للعرض
+            # ════════════════════════════════════════════════════════════
+            final_results = self._add_nearby_services(final_results, criteria)
+            
+            return final_results
 
         except Exception as e:
             logger.error(f"خطأ في البحث الهجين: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
     def _filter_by_services(self, properties: List[Dict[str, Any]], criteria: PropertyCriteria, strict: bool = True) -> List[Dict[str, Any]]:
