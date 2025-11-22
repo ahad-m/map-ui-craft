@@ -1185,9 +1185,17 @@ const RealEstateSearch = () => {
                     placeholder={t("searchLocation")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && setHasSearched(true)}
                     className={`bg-background/80 backdrop-blur-sm border-border focus-visible:ring-primary focus-visible:border-primary focus-visible:shadow-glow transition-all duration-300 ${i18n.language === "ar" ? "pr-10" : "pl-10"}`}
                   />
                 </div>
+                <Button
+                  size="lg"
+                  onClick={() => setHasSearched(true)}
+                  className="px-6 py-6 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold text-2xl shadow-glow hover:scale-110 transition-all duration-300 border-2 border-primary-foreground/20"
+                >
+                  🔍
+                </Button>
                 <Sheet open={showFilters} onOpenChange={setShowFilters}>
                   <SheetTrigger asChild>
                     <Button
