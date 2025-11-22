@@ -861,6 +861,11 @@ const RealEstateSearch = () => {
   return (
     <APIProvider apiKey={apiKey}>
       <div className="relative h-screen w-full overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-accent-light/20 via-background to-accent-light/10" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_hsl(142_76%_48%/0.08)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_hsl(142_76%_48%/0.05)_0%,_transparent_50%)]" />
+        
         <div className="absolute inset-0">
           <Map
             defaultCenter={mapCenter}
@@ -1070,9 +1075,9 @@ const RealEstateSearch = () => {
 
         {/* Top Search Bar */}
         <div className="absolute top-4 left-4 right-4 z-10">
-          <Card className="p-6 glass-effect shadow-elevated border-primary/20 animate-fade-in">
+          <Card className="p-6 glass-effect shadow-elevated border-primary/20 animate-fade-in backdrop-blur-md card-shine">
             <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3 pb-4 border-b border-border/50">
+              <div className="flex items-center gap-3 pb-4 border-b border-border/40">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -1086,31 +1091,31 @@ const RealEstateSearch = () => {
                       navigate("/", { replace: true });
                     }
                   }}
-                  className="hover:bg-primary/10"
+                  className="hover:bg-primary/10 transition-all duration-300 hover:scale-110"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <img
                   src={riyalEstateLogo}
                   alt="RiyalEstate"
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/30 shadow-elegant"
+                  className="h-16 w-16 rounded-full object-cover ring-2 ring-primary/40 shadow-elegant transition-all duration-300 hover:ring-primary hover:scale-110"
                 />
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  <h1 className="text-3xl font-bold gradient-text">
                     {t("riyalEstate")}
                   </h1>
                   <p className="text-sm text-muted-foreground font-medium">{t("propertySearch")}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowFavorites(true)} className="gap-2 relative">
-                    <Heart className={`h-4 w-4 ${favorites.length > 0 ? "fill-red-500 text-red-500" : ""}`} />
+                  <Button variant="outline" size="sm" onClick={() => setShowFavorites(true)} className="gap-2 relative hover:bg-red-50 hover:border-red-300 transition-all duration-300 hover:scale-105">
+                    <Heart className={`h-4 w-4 transition-all duration-300 ${favorites.length > 0 ? "fill-red-500 text-red-500" : ""}`} />
                     {favorites.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse-glow">
                         {favorites.length}
                       </span>
                     )}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={toggleLanguage} className="gap-2">
+                  <Button variant="outline" size="sm" onClick={toggleLanguage} className="gap-2 hover:bg-accent-light hover:border-primary transition-all duration-300 hover:scale-105">
                     <Languages className="h-4 w-4" />
                     {i18n.language === "en" ? "ع" : "EN"}
                   </Button>
@@ -1118,7 +1123,7 @@ const RealEstateSearch = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => navigate("/profile")}
-                    className="gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary"
+                    className="gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary transition-all duration-300 hover:scale-105"
                   >
                     <User className="h-4 w-4" />
                   </Button>
@@ -1129,10 +1134,10 @@ const RealEstateSearch = () => {
                 <Button
                   variant={transactionType === "sale" ? "default" : "outline"}
                   size="lg"
-                  className={`flex-1 transition-all duration-300 font-semibold ${
+                  className={`flex-1 transition-all duration-300 font-semibold text-base ${
                     transactionType === "sale"
                       ? "bg-gradient-to-r from-primary to-accent shadow-glow hover:shadow-elevated hover:scale-105"
-                      : "hover:border-primary/50 hover:bg-primary/5"
+                      : "hover:border-primary/50 hover:bg-accent-light/50"
                   }`}
                   onClick={() => setTransactionType("sale")}
                 >
@@ -1141,10 +1146,10 @@ const RealEstateSearch = () => {
                 <Button
                   variant={transactionType === "rent" ? "default" : "outline"}
                   size="lg"
-                  className={`flex-1 transition-all duration-300 font-semibold ${
+                  className={`flex-1 transition-all duration-300 font-semibold text-base ${
                     transactionType === "rent"
                       ? "bg-gradient-to-r from-primary to-accent shadow-glow hover:shadow-elevated hover:scale-105"
-                      : "hover:border-primary/50 hover:bg-primary/5"
+                      : "hover:border-primary/50 hover:bg-accent-light/50"
                   }`}
                   onClick={() => setTransactionType("rent")}
                 >
@@ -1155,20 +1160,20 @@ const RealEstateSearch = () => {
               <div className="flex gap-2">
                 <div className="flex-1 relative group">
                   <MapPin
-                    className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-all duration-300 group-hover:scale-110 ${i18n.language === "ar" ? "right-3" : "left-3"}`}
+                    className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-all duration-300 group-hover:scale-125 ${i18n.language === "ar" ? "right-3" : "left-3"}`}
                   />
                   <Input
                     placeholder={t("searchLocation")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && setHasSearched(true)}
-                    className={`bg-background/80 backdrop-blur-sm border-border focus-visible:ring-primary focus-visible:border-primary focus-visible:shadow-glow transition-all duration-300 ${i18n.language === "ar" ? "pr-10" : "pl-10"}`}
+                    className={`bg-background/90 backdrop-blur-sm border-border/60 focus-visible:ring-primary focus-visible:border-primary focus-visible:shadow-glow transition-all duration-300 h-12 ${i18n.language === "ar" ? "pr-10" : "pl-10"}`}
                   />
                 </div>
                 <Button
                   size="icon"
                   onClick={() => setHasSearched(true)}
-                  className="h-11 w-11 rounded-full bg-gradient-to-br from-primary to-accent shadow-elevated hover:scale-110 hover:rotate-12 transition-all duration-300 border-2 border-primary/20 relative group overflow-hidden"
+                  className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent shadow-elevated hover:scale-110 hover:rotate-12 transition-all duration-300 border-2 border-primary/20 relative group overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                   <Search className="h-5 w-5 text-primary-foreground relative z-10 group-hover:scale-110 transition-transform duration-300" />
@@ -1177,7 +1182,7 @@ const RealEstateSearch = () => {
                   <SheetTrigger asChild>
                     <Button
                       size="lg"
-                      className="gap-3 px-6 py-6 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] text-primary-foreground font-bold text-base shadow-glow hover:bg-[position:100%_0] hover:scale-110 transition-all duration-500 border-2 border-primary-foreground/20 group relative overflow-hidden"
+                      className="gap-3 px-8 py-6 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] text-primary-foreground font-bold text-base shadow-glow hover:bg-[position:100%_0] hover:scale-110 transition-all duration-500 border-2 border-primary-foreground/20 group relative overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                       <SlidersHorizontal className="h-6 w-6 group-hover:rotate-180 transition-transform duration-500 relative z-10" />
@@ -1976,14 +1981,14 @@ const RealEstateSearch = () => {
             <div className="mt-6 space-y-4">
               {displayedFavorites.length === 0 ? (
                 <div className="text-center py-12">
-                  <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">{t("noFavorites")}</p>
+                  <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4 animate-pulse" />
+                  <p className="text-muted-foreground font-medium">{t("noFavorites")}</p>
                 </div>
               ) : (
                 displayedFavorites.map((property, index) => (
                   <Card
                     key={property.id}
-                    className="p-4 cursor-pointer hover-lift glass-effect animate-slide-up"
+                    className="p-4 cursor-pointer hover-lift glass-effect animate-slide-up card-shine shadow-card hover:shadow-elevated transition-all duration-300"
                     style={{ animationDelay: `${index * 0.1}s` }}
                     onClick={() => {
                       setSelectedProperty(property);
@@ -1996,49 +2001,49 @@ const RealEstateSearch = () => {
                         <img
                           src={property.image_url}
                           alt={property.title}
-                          className="w-24 h-24 object-cover rounded-lg"
+                          className="w-28 h-28 object-cover rounded-xl ring-2 ring-primary/10 transition-all duration-300 hover:ring-primary/30"
                         />
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="font-semibold text-sm line-clamp-2">{property.title}</h3>
+                          <h3 className="font-bold text-sm line-clamp-2">{property.title}</h3>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 flex-shrink-0"
+                            className="h-7 w-7 flex-shrink-0 hover:bg-red-50 rounded-full transition-all duration-300 hover:scale-110"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleToggleFavorite(property.id);
                             }}
                           >
-                            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                            <Heart className="h-4 w-4 fill-red-500 text-red-500 animate-pulse" />
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground mb-2">
+                        <p className="text-xs text-muted-foreground mb-3 font-medium">
                           {property.district}, {property.city}
                         </p>
-                        <div className="flex items-center gap-2 text-xs mb-2">
+                        <div className="flex items-center gap-2 text-xs mb-3 flex-wrap">
                           {property.rooms && (
-                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
+                            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
                               <Bed className="h-4 w-4 text-primary" />
-                              <span className="font-medium">{property.rooms}</span>
+                              <span className="font-semibold">{property.rooms}</span>
                             </span>
                           )}
                           {property.baths && (
-                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
+                            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
                               <Bath className="h-4 w-4 text-primary" />
-                              <span className="font-medium">{property.baths}</span>
+                              <span className="font-semibold">{property.baths}</span>
                             </span>
                           )}
                           {property.area_m2 && (
-                            <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10">
+                            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
                               <Maximize className="h-4 w-4 text-primary" />
-                              <span className="font-medium">{property.area_m2} m²</span>
+                              <span className="font-semibold">{property.area_m2} m²</span>
                             </span>
                           )}
                         </div>
                         <div className="pt-3 border-t border-border/50">
-                          <p className="text-primary font-bold text-xl">
+                          <p className="gradient-text font-extrabold text-xl">
                             {property.price_num} {property.price_currency}
                           </p>
                         </div>
@@ -2077,20 +2082,23 @@ const RealEstateSearch = () => {
         {/* Results Count */}
         {!selectedProperty && hasSearched && (
           <div className="absolute bottom-24 left-4 right-4 z-10 animate-slide-up">
-            <Card className="glass-effect shadow-elevated border-primary/30">
+            <Card className="glass-effect shadow-elevated border-primary/30 backdrop-blur-md card-shine">
               <div className="p-4">
                 <div className="text-center">
                   {isLoading ? (
-                    <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                      {t("loading")}
-                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <p className="text-sm font-bold gradient-text">
+                        {t("loading")}
+                      </p>
+                    </div>
                   ) : displayedProperties.length === 0 ? (
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-destructive">{t("noPropertiesFound")}</p>
-                      <p className="text-xs text-muted-foreground">{t("tryAdjustingFilters")}</p>
+                      <p className="text-sm font-bold text-destructive">{t("noPropertiesFound")}</p>
+                      <p className="text-xs text-muted-foreground font-medium">{t("tryAdjustingFilters")}</p>
                     </div>
                   ) : (
-                    <p className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    <p className="text-base font-extrabold gradient-text">
                       {`${displayedProperties.length} ${t("propertiesFound")}`}
                     </p>
                   )}
@@ -2105,12 +2113,12 @@ const RealEstateSearch = () => {
           <div className="relative">
             <Button
               onClick={() => setIsChatOpen(!isChatOpen)}
-              className="h-14 w-14 rounded-full shadow-elevated bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 hover-lift relative group overflow-hidden"
+              className="h-16 w-16 rounded-full shadow-elevated bg-gradient-to-br from-green-600 via-green-700 to-green-800 hover:from-green-700 hover:to-green-900 hover-lift relative group overflow-hidden border-2 border-white/30"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-              <Bot className="h-6 w-6 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+              <Bot className="h-7 w-7 text-white relative z-10 group-hover:scale-125 transition-transform duration-300 drop-shadow-lg" />
               {isBackendOnline && (
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white animate-pulse-glow" />
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-400 rounded-full border-2 border-white animate-pulse-glow shadow-glow" />
               )}
             </Button>
           </div>
