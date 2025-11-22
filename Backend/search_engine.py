@@ -289,6 +289,7 @@ class SearchEngine:
                             'p_purpose': criteria.purpose.value,
                             'p_property_type': criteria.property_type.value,
                             'p_city': criteria.city,
+                            'p_district': criteria.district,  # ✅ إضافة الحي!
                             'min_price': criteria.price.min * 0.7 if criteria.price and criteria.price.min else None,
                             'max_price': criteria.price.max * 1.3 if criteria.price and criteria.price.max else None,
                             'p_lat': target_lat,
