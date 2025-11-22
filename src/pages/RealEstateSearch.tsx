@@ -20,7 +20,6 @@ import {
   Bot,
   Send,
   Loader2,
-  LogOut,
   Mic,
   User,
   RotateCcw,
@@ -256,21 +255,6 @@ const RealEstateSearch = () => {
   const toggleLanguage = () => {
     const newLang = i18n.language === "en" ? "ar" : "en";
     i18n.changeLanguage(newLang);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate("/auth", { replace: true });
-      toast({ title: t("loggedOut") || "Logged out successfully" });
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to log out",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleVoiceInput = () => {
@@ -1137,14 +1121,6 @@ const RealEstateSearch = () => {
                     className="gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary"
                   >
                     <User className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleLogout}
-                    className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
-                  >
-                    <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
