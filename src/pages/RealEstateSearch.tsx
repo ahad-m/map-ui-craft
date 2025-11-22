@@ -2120,7 +2120,7 @@ const RealEstateSearch = () => {
           <div className="relative">
             <Button
               onClick={() => setIsChatOpen(!isChatOpen)}
-              className="h-14 w-14 rounded-full shadow-elevated bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover-lift relative group overflow-hidden"
+              className="h-14 w-14 rounded-full shadow-elevated bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 hover-lift relative group overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
               <Bot className="h-6 w-6 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
@@ -2134,7 +2134,7 @@ const RealEstateSearch = () => {
         {/* Chatbot Panel */}
         {isChatOpen && (
           <div className="fixed bottom-24 left-6 w-96 h-[500px] glass-effect rounded-2xl shadow-elevated z-50 flex flex-col animate-slide-up overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-2xl flex items-center justify-between relative">
+            <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4 rounded-t-2xl flex items-center justify-between relative">
               <div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer pointer-events-none"
                 style={{ backgroundSize: "200% 100%" }}
@@ -2179,18 +2179,18 @@ const RealEstateSearch = () => {
               <div className="space-y-4">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        msg.type === "user" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
-                      }`}
-                    >
+                  <div
+                    className={`max-w-[80%] rounded-lg p-3 ${
+                      msg.type === "user" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-900"
+                    }`}
+                  >
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       {msg.criteria && msg.type === "assistant" && (
                         <div className="mt-3 space-y-2">
                           <Button
                             onClick={() => handleSearchModeSelection("exact")}
                             disabled={isChatLoading}
-                            className="w-full bg-white text-blue-600 hover:bg-gray-50 border border-blue-600"
+                            className="w-full bg-white text-green-600 hover:bg-gray-50 border border-green-600"
                             size="sm"
                           >
                             بس المطابق
@@ -2198,7 +2198,7 @@ const RealEstateSearch = () => {
                           <Button
                             onClick={() => handleSearchModeSelection("similar")}
                             disabled={isChatLoading}
-                            className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                            className="w-full bg-green-600 text-white hover:bg-green-700"
                             size="sm"
                           >
                             اللي يشبهه
@@ -2211,7 +2211,7 @@ const RealEstateSearch = () => {
                 {isChatLoading && (
                   <div className="flex justify-start">
                     <div className="bg-gray-100 rounded-lg p-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                      <Loader2 className="h-5 w-5 animate-spin text-green-600" />
                     </div>
                   </div>
                 )}
@@ -2237,7 +2237,7 @@ const RealEstateSearch = () => {
                   size="icon"
                   className={cn(
                     "h-10 w-10",
-                    isListening && "animate-pulse bg-blue-100 border-blue-300 text-blue-700",
+                    isListening && "animate-pulse bg-green-100 border-green-300 text-green-700",
                   )}
                 >
                   <Mic className="h-4 w-4" />
@@ -2245,7 +2245,7 @@ const RealEstateSearch = () => {
                 <Button
                   onClick={handleSendMessage}
                   disabled={isChatLoading || !isBackendOnline || !chatInput.trim() || isListening}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-green-600 hover:bg-green-700"
                   size="icon"
                 >
                   {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
