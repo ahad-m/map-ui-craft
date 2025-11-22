@@ -561,13 +561,16 @@ const RealEstateSearch = () => {
     const requestedFromChatbot = currentCriteria?.school_requirements?.required;
     const requestedFromFilters = filters.schoolGender || filters.schoolLevel;
     if (!requestedFromChatbot && !requestedFromFilters) return [];
-    if (!propertiesCenterLocation || allSchools.length === 0) return [];
+    if (allSchools.length === 0) return [];
+
+    // Use property center if available, otherwise fallback to Riyadh center (24.7136, 46.6753)
+    const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
 
     return allSchools
       .map((school) => {
         const distance = calculateDistance(
-          propertiesCenterLocation.lat,
-          propertiesCenterLocation.lon,
+          referenceLocation.lat,
+          referenceLocation.lon,
           school.lat,
           school.lon,
         );
@@ -612,13 +615,16 @@ const RealEstateSearch = () => {
     // University filter is active if: specific university selected, or time slider adjusted (not at default 30), or chatbot requested it
     const universityFilterActive = filters.selectedUniversity || filters.maxUniversityTime < 30 || currentCriteria?.university_requirements;
     if (!universityFilterActive) return [];
-    if (!propertiesCenterLocation || allUniversities.length === 0) return [];
+    if (allUniversities.length === 0) return [];
+
+    // Use property center if available, otherwise fallback to Riyadh center (24.7136, 46.6753)
+    const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
 
     return allUniversities
       .map((university) => {
         const distance = calculateDistance(
-          propertiesCenterLocation.lat,
-          propertiesCenterLocation.lon,
+          referenceLocation.lat,
+          referenceLocation.lon,
           university.lat,
           university.lon,
         );
@@ -665,12 +671,16 @@ const RealEstateSearch = () => {
   });
 
   const nearbyMosques = useMemo(() => {
-    if (!hasSearched || !filters.nearMosques || !propertiesCenterLocation || allMosques.length === 0) return [];
+    if (!hasSearched || !filters.nearMosques || allMosques.length === 0) return [];
+    
+    // Use property center if available, otherwise fallback to Riyadh center (24.7136, 46.6753)
+    const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
+    
     const nearby = allMosques
       .map((mosque) => {
         const distance = calculateDistance(
-          propertiesCenterLocation.lat,
-          propertiesCenterLocation.lon,
+          referenceLocation.lat,
+          referenceLocation.lon,
           mosque.lat,
           mosque.lon,
         );
