@@ -23,6 +23,7 @@ import {
   LogOut,
   Mic,
   User,
+  RotateCcw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -88,6 +89,7 @@ const RealEstateSearch = () => {
     searchResults: chatSearchResults,
     sendMessage,
     selectSearchMode,
+    clearChat,
   } = useRealEstateAssistant();
 
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -2093,16 +2095,16 @@ const RealEstateSearch = () => {
         {/* Chatbot Panel */}
         {isChatOpen && (
           <div className="fixed bottom-24 left-6 w-96 h-[500px] glass-effect rounded-2xl shadow-elevated z-50 flex flex-col animate-slide-up overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-2xl flex items-center justify-between relative overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-2xl flex items-center justify-between relative">
               <div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer pointer-events-none"
                 style={{ backgroundSize: "200% 100%" }}
               />
               <div className="flex items-center gap-2 relative z-10">
                 <Bot className="h-5 w-5 animate-float" />
                 <span className="font-semibold">المساعد العقاري الذكي</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 relative z-10">
                 {isBackendOnline ? (
                   <span className="text-xs bg-green-500 px-2 py-1 rounded-full">متصل</span>
                 ) : (
@@ -2110,9 +2112,24 @@ const RealEstateSearch = () => {
                 )}
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
+                  onClick={() => {
+                    clearChat();
+                    setChatInput("");
+                    setChatbotProperties([]);
+                    setShowChatbotResults(false);
+                  }}
+                  className="text-white hover:bg-white/20 h-8 w-8 relative z-20"
+                  title="إعادة المحادثة"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setIsChatOpen(false)}
-                  className="text-white hover:bg-white/20"
+                  className="text-white hover:bg-white/20 h-8 w-8 relative z-20"
+                  title="إغلاق"
                 >
                   <X className="h-4 w-4" />
                 </Button>
