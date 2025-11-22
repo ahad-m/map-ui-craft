@@ -1190,11 +1190,12 @@ const RealEstateSearch = () => {
                   />
                 </div>
                 <Button
-                  size="lg"
+                  size="icon"
                   onClick={() => setHasSearched(true)}
-                  className="px-6 py-6 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold text-2xl shadow-glow hover:scale-110 transition-all duration-300 border-2 border-primary-foreground/20"
+                  className="h-11 w-11 rounded-full bg-gradient-to-br from-primary to-accent text-2xl shadow-elevated hover:scale-110 hover:rotate-12 transition-all duration-300 border-2 border-primary/20 relative group overflow-hidden"
                 >
-                  🔍
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                  <span className="relative z-10">🔍</span>
                 </Button>
                 <Sheet open={showFilters} onOpenChange={setShowFilters}>
                   <SheetTrigger asChild>
