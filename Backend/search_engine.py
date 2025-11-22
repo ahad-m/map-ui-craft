@@ -26,6 +26,43 @@ def _minutes_to_meters(minutes: float, avg_speed_kmh: float = 30.0, walking: boo
     return distance_km * 1000
 
 
+def _get_district_coordinates(district_name: str) -> Optional[tuple]:
+    """
+    حساب مركز الحي من متوسط إحداثيات العقارات الموجودة فيه
+    بدون الحاجة لجدول إضافي!
+    """
+    if not district_name:
+        return None
+    
+    try:
+        # جلب متوسط إحداثيات العقارات في الحي
+        result = db.client.table('properties')\
+            .select('final_lat, final_lon')\
+            .eq('district', district_name)\
+            .not_.is_('final_lat', 'null')\
+            .not_.eq('final_lat', 0)\
+            .limit(50)\
+            .execute()
+        
+        if result.data and len(result.data) > 0:
+            # حساب المتوسط
+            lats = [p['final_lat'] for p in result.data if p.get('final_lat')]
+            lons = [p['final_lon'] for p in result.data if p.get('final_lon')]
+            
+            if lats and lons:
+                avg_lat = sum(lats) / len(lats)
+                avg_lon = sum(lons) / len(lons)
+                logger.info(f"📍 مركز حي {district_name} (من {len(lats)} عقار): ({avg_lat:.4f}, {avg_lon:.4f})")
+                return (avg_lat, avg_lon)
+        
+        logger.warning(f"⚠️ لم يتم العثور على عقارات في حي: {district_name}")
+        return None
+        
+    except Exception as e:
+        logger.error(f"❌ خطأ في حساب مركز الحي: {e}")
+        return None
+
+
 LEVELS_TRANSLATION_MAP = {
     "ابتدائي": "elementary",
     "متوسط": "middle",
@@ -271,20 +308,34 @@ class SearchEngine:
             logger.info(f"✅ البحث المطابق أرجع {len(exact_results)} عقار")
             
             # ════════════════════════════════════════════════════════════
-            # الخطوة 2: تجهيز إحداثيات البحث (جامعة أو مسجد) إن وجدت
+            # الخطوة 2: تجهيز إحداثيات البحث
+            # الأولوية: جامعة/مسجد محدد > مركز الحي
             # ════════════════════════════════════════════════════════════
             target_lat = None
             target_lon = None
             
+            # أولاً: هل حدد جامعة بالاسم؟
             if criteria.university_requirements and criteria.university_requirements.university_name:
                 uni_name = criteria.university_requirements.university_name
                 matched_name = _find_matching_university(uni_name) or uni_name
                 loc = self._get_entity_location(matched_name, 'universities')
-                if loc: target_lat, target_lon = loc
-                
+                if loc: 
+                    target_lat, target_lon = loc
+                    logger.info(f"📍 استخدام موقع الجامعة: {matched_name}")
+            
+            # ثانياً: هل حدد مسجد بالاسم؟
             elif criteria.mosque_requirements and criteria.mosque_requirements.mosque_name:
                 loc = self._get_entity_location(criteria.mosque_requirements.mosque_name, 'mosques')
-                if loc: target_lat, target_lon = loc
+                if loc: 
+                    target_lat, target_lon = loc
+                    logger.info(f"📍 استخدام موقع المسجد")
+            
+            # ثالثاً: ✅ جديد - استخدام مركز الحي إذا ما في جامعة/مسجد
+            if not target_lat and criteria.district:
+                loc = _get_district_coordinates(criteria.district)
+                if loc:
+                    target_lat, target_lon = loc
+                    logger.info(f"📍 استخدام مركز حي {criteria.district}")
 
             # ════════════════════════════════════════════════════════════
             # الخطوة 3: البحث الدلالي للعقارات الإضافية
@@ -299,18 +350,18 @@ class SearchEngine:
                         rpc_params = {
                             'query_embedding': query_vector,
                             'match_threshold': 0.5,
-                            'match_count': 100,  # زيادة العدد لجلب المزيد
+                            'match_count': 100,
                             'p_purpose': criteria.purpose.value,
                             'p_property_type': criteria.property_type.value,
                             'p_city': criteria.city,
-                            'p_district': None,  # لا نحدد الحي للبحث الدلالي (نبي عقارات من أحياء ثانية)
+                            'p_district': None,  # لا نحدد الحي - نعتمد على الإحداثيات
                             'min_price': criteria.price.min * 0.5 if criteria.price and criteria.price.min else None,
                             'max_price': criteria.price.max * 1.5 if criteria.price and criteria.price.max else None,
-                            'p_lat': target_lat,
+                            'p_lat': target_lat,  # ✅ إحداثيات الجامعة/المسجد/الحي
                             'p_lon': target_lon
                         }
                         
-                        logger.info("🚀 استدعاء search_properties_hybrid...")
+                        logger.info(f"🚀 استدعاء search_properties_hybrid (target: {target_lat}, {target_lon})...")
                         result = self.db.client.rpc('search_properties_hybrid', rpc_params).execute()
                         hybrid_results = result.data or []
                         logger.info(f"✅ البحث الدلالي أرجع {len(hybrid_results)} عقار")
@@ -353,7 +404,6 @@ class SearchEngine:
             # ════════════════════════════════════════════════════════════
             additional_properties = []
             if hybrid_results:
-                # فلترة العقارات اللي مو موجودة في البحث المطابق
                 new_ids = [str(item['id']) for item in hybrid_results if str(item['id']) not in exact_ids]
                 
                 if new_ids:
@@ -380,7 +430,7 @@ class SearchEngine:
             
             # أولاً: إضافة نتائج البحث المطابق (مع نسبة 100%)
             for prop in exact_results:
-                prop['match_score'] = 100  # المطابق = 100%
+                prop['match_score'] = 100
                 final_results.append(prop)
             
             # ثانياً: تصفية العقارات الإضافية حسب الخدمات (مع تسامح +5 دقائق)
@@ -391,14 +441,39 @@ class SearchEngine:
                    (criteria.school_requirements and criteria.school_requirements.required):
                     additional_properties = self._filter_by_services(additional_properties, criteria, strict=False)
             
-            # ثالثاً: إضافة العقارات المشابهة
-            for prop in additional_properties:
-                final_results.append(prop)
+            # ════════════════════════════════════════════════════════════
+            # الخطوة 7: ✅ ترتيب العقارات المشابهة (نفس الحي أولاً)
+            # ════════════════════════════════════════════════════════════
+            if criteria.district and additional_properties:
+                # فصل العقارات: نفس الحي vs أحياء أخرى
+                same_district = []
+                other_districts = []
+                
+                for prop in additional_properties:
+                    if prop.get('district') == criteria.district:
+                        same_district.append(prop)
+                    else:
+                        other_districts.append(prop)
+                
+                # ترتيب: نفس الحي أولاً (مع نسبة أعلى)
+                for prop in same_district:
+                    prop['match_score'] = min(prop.get('match_score', 70) + 15, 95)  # +15% لنفس الحي
+                    final_results.append(prop)
+                
+                # ثم الأحياء الأخرى
+                for prop in other_districts:
+                    final_results.append(prop)
+                
+                logger.info(f"📊 الترتيب: {len(same_district)} من نفس الحي + {len(other_districts)} من أحياء قريبة")
+            else:
+                # إذا ما في حي محدد، أضف الكل
+                for prop in additional_properties:
+                    final_results.append(prop)
             
             logger.info(f"🎯 إجمالي النتائج: {len(exact_results)} مطابق + {len(additional_properties)} مشابه = {len(final_results)}")
             
             # ════════════════════════════════════════════════════════════
-            # الخطوة 7: إضافة معلومات الخدمات القريبة للعرض
+            # الخطوة 8: إضافة معلومات الخدمات القريبة للعرض
             # ════════════════════════════════════════════════════════════
             final_results = self._add_nearby_services(final_results, criteria)
             
