@@ -125,8 +125,17 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    @apply font-cairo;
+  }
+
   body {
-    @apply bg-background text-foreground font-cairo;
+    @apply bg-background text-foreground;
+    font-family: 'Cairo', sans-serif !important;
+  }
+  
+  button, input, textarea, select {
+    font-family: 'Cairo', sans-serif !important;
   }
 }
 
