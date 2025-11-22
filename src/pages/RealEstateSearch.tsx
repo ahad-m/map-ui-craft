@@ -1756,25 +1756,27 @@ const RealEstateSearch = () => {
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-[400px] p-0 z-[100]">
-                                <Command>
+                              <PopoverContent className="w-[400px] p-0 z-[100] bg-popover">
+                                <Command className="bg-popover">
                                   <CommandInput
                                     placeholder={t("searchUniversity")}
                                     onValueChange={(value) => {
                                       setCustomSearchTerms({ ...customSearchTerms, university: value });
                                     }}
+                                    className="bg-background"
                                   />
-                                  <CommandList>
+                                  <CommandList className="bg-popover">
                                     <CommandEmpty>
                                       {allUniversities.length === 0 ? t("notFound") : t("noResults")}
                                     </CommandEmpty>
                                     <CommandGroup>
-                                       <CommandItem
+                                      <CommandItem
                                         onSelect={() => {
                                           setFilters({ ...filters, selectedUniversity: "" });
                                           setCustomSearchTerms({ ...customSearchTerms, university: "" });
                                           setOpenUniversityCombobox(false);
                                         }}
+                                        className="bg-popover hover:bg-accent"
                                       >
                                         <Check
                                           className={cn(
@@ -1784,7 +1786,7 @@ const RealEstateSearch = () => {
                                         />
                                         {t("all")}
                                       </CommandItem>
-                                      {nearbyUniversities.map((uni) => (
+                                      {allUniversities.map((uni) => (
                                         <CommandItem
                                           key={uni.name_ar}
                                           value={i18n.language === "ar" ? uni.name_ar : uni.name_en}
@@ -1796,6 +1798,7 @@ const RealEstateSearch = () => {
                                             setCustomSearchTerms({ ...customSearchTerms, university: "" });
                                             setOpenUniversityCombobox(false);
                                           }}
+                                          className="bg-popover hover:bg-accent"
                                         >
                                           <Check
                                             className={cn(
