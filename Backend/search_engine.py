@@ -356,7 +356,14 @@ class SearchEngine:
                     prop['match_score'] = round(item.get('similarity', 0) * 100) if 'similarity' in item else 80
                     sorted_properties.append(prop)
             
-            # 5. إضافة الخدمات
+            # 5. تصفية الخدمات (مع تسامح +5 دقائق للبحث المشابه)
+            if criteria.metro_time_max or \
+               (criteria.university_requirements and criteria.university_requirements.required) or \
+               (criteria.mosque_requirements and criteria.mosque_requirements.required) or \
+               (criteria.school_requirements and criteria.school_requirements.required):
+                sorted_properties = self._filter_by_services(sorted_properties, criteria, strict=False)
+            
+            # 6. إضافة معلومات الخدمات القريبة للعرض
             sorted_properties = self._add_nearby_services(sorted_properties, criteria)
             
             return sorted_properties
@@ -372,9 +379,13 @@ class SearchEngine:
         Args:
             properties: قائمة العقارات
             criteria: معايير البحث
-            strict: True = بحث مطابق (بدون تسامح)، False = بحث مشابه (مع تسامح)
+            strict: True = بحث مطابق (بدون تسامح)، False = بحث مشابه (+5 دقائق تسامح)
         """
         filtered = []
+        
+        # ✅ التسامح الموحد للبحث المشابه: +5 دقائق لكل الخدمات
+        TOLERANCE_MINUTES = 5
+        
         for prop in properties:
             prop_lat = prop.get('final_lat')
             prop_lon = prop.get('final_lon')
@@ -382,33 +393,32 @@ class SearchEngine:
             if not prop_lat or not prop_lon: continue
             
             # ═══════════════════════════════════════════════════════
-            # ✅ الميترو - بدون تسامح في البحث المطابق
+            # ✅ الميترو
             # ═══════════════════════════════════════════════════════
             if criteria.metro_time_max:
                 prop_metro_time = prop.get('time_to_metro_min')
                 if prop_metro_time is not None:
                     if strict:
-                        # البحث المطابق: يجب أن يكون الوقت <= المحدد بالضبط
+                        # البحث المطابق: الوقت المحدد بالضبط
                         if prop_metro_time > criteria.metro_time_max:
                             continue
                     else:
-                        # البحث المشابه: تسامح +2 دقائق
-                        if prop_metro_time > (criteria.metro_time_max + 2):
+                        # البحث المشابه: +5 دقائق تسامح
+                        if prop_metro_time > (criteria.metro_time_max + TOLERANCE_MINUTES):
                             continue
             
             # ═══════════════════════════════════════════════════════
-            # ✅ الجامعات (بحث عام) - بدون تسامح في البحث المطابق
+            # ✅ الجامعات (بحث عام)
             # ═══════════════════════════════════════════════════════
             if criteria.university_requirements and criteria.university_requirements.required:
                 uni_reqs = criteria.university_requirements
                 if not uni_reqs.university_name:
                     max_minutes = uni_reqs.max_distance_minutes or 20
                     if strict:
-                        # البحث المطابق: المسافة المحددة بالضبط
                         max_dist = _minutes_to_meters(max_minutes)
                     else:
-                        # البحث المشابه: تسامح +5 دقائق
-                        max_dist = _minutes_to_meters(max_minutes + 5)
+                        # +5 دقائق تسامح
+                        max_dist = _minutes_to_meters(max_minutes + TOLERANCE_MINUTES)
                     try:
                         res = self.db.client.rpc('get_universities_for_display', {
                             'center_lat': prop_lat, 'center_lon': prop_lon,
@@ -418,18 +428,17 @@ class SearchEngine:
                     except: continue
 
             # ═══════════════════════════════════════════════════════
-            # ✅ المساجد (بحث عام) - بدون تسامح في البحث المطابق
+            # ✅ المساجد (بحث عام)
             # ═══════════════════════════════════════════════════════
             if criteria.mosque_requirements and criteria.mosque_requirements.required:
                 mosque_reqs = criteria.mosque_requirements
                 if not mosque_reqs.mosque_name:
                     max_minutes = mosque_reqs.max_distance_minutes or 10
                     if strict:
-                        # البحث المطابق: المسافة المحددة بالضبط
                         max_dist = _minutes_to_meters(max_minutes, walking=mosque_reqs.walking)
                     else:
-                        # البحث المشابه: تسامح +2 دقائق
-                        max_dist = _minutes_to_meters(max_minutes + 2, walking=mosque_reqs.walking)
+                        # +5 دقائق تسامح
+                        max_dist = _minutes_to_meters(max_minutes + TOLERANCE_MINUTES, walking=mosque_reqs.walking)
                     try:
                         res = self.db.client.rpc('get_mosques_for_display', {
                             'center_lat': prop_lat, 'center_lon': prop_lon,
@@ -439,7 +448,7 @@ class SearchEngine:
                     except: continue
             
             # ═══════════════════════════════════════════════════════
-            # ✅ المدارس (بحث عام) - جديد!
+            # ✅ المدارس (بحث عام)
             # ═══════════════════════════════════════════════════════
             if criteria.school_requirements and criteria.school_requirements.required:
                 school_reqs = criteria.school_requirements
@@ -447,7 +456,8 @@ class SearchEngine:
                 if strict:
                     max_dist = _minutes_to_meters(max_minutes, walking=school_reqs.walking)
                 else:
-                    max_dist = _minutes_to_meters(max_minutes + 3, walking=school_reqs.walking)
+                    # +5 دقائق تسامح
+                    max_dist = _minutes_to_meters(max_minutes + TOLERANCE_MINUTES, walking=school_reqs.walking)
                 
                 # تحويل الجنس والمراحل
                 gender = None
