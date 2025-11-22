@@ -377,7 +377,6 @@ const RealEstateSearch = () => {
         .from("properties")
         .select("*")
         .eq("purpose", transactionType === "sale" ? "للبيع" : "للايجار")
-        .eq("city", "الرياض")
         .not("final_lat", "is", null)
         .not("final_lon", "is", null);
 
