@@ -612,12 +612,43 @@ const RealEstateSearch = () => {
 
   const nearbyUniversities = useMemo(() => {
     if (!hasSearched) return [];
-    // University filter is active if: specific university selected, or time slider adjusted (not at default 30), or chatbot requested it
-    const universityFilterActive = filters.selectedUniversity || filters.maxUniversityTime < 30 || currentCriteria?.university_requirements;
-    if (!universityFilterActive) return [];
-    if (allUniversities.length === 0) return [];
 
-    // Use property center if available, otherwise fallback to Riyadh center (24.7136, 46.6753)
+    const hasSelectedUniversity = !!filters.selectedUniversity;
+    const timeFilterChanged = filters.maxUniversityTime < 30;
+    const requestedFromChatbot = !!currentCriteria?.university_requirements;
+
+    // University filter is active if: specific university selected, or time slider adjusted (not at default 30), or chatbot requested it
+    const universityFilterActive = hasSelectedUniversity || timeFilterChanged || requestedFromChatbot;
+    if (!universityFilterActive || allUniversities.length === 0) return [];
+
+    // When a specific university is selected, we must NOT pre-filter by time using a generic center,
+    // otherwise the selected university can be excluded incorrectly. We only filter by name here;
+    // the time filter is applied later per-property in displayedProperties.
+    if (hasSelectedUniversity) {
+      const searchTerm = filters.selectedUniversity!;
+
+      // Use property center if available, otherwise fallback to Riyadh center (24.7136, 46.6753)
+      const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
+
+      return allUniversities
+        .map((university) => {
+          const distance = calculateDistance(
+            referenceLocation.lat,
+            referenceLocation.lon,
+            university.lat,
+            university.lon,
+          );
+          const travelTime = calculateTravelTime(distance);
+          return { ...university, travelTime };
+        })
+        .filter((university) => {
+          const nameAr = university.name_ar || "";
+          const nameEn = university.name_en || "";
+          return arabicTextMatches(searchTerm, nameAr) || arabicTextMatches(searchTerm, nameEn);
+        });
+    }
+
+    // No specific university selected: use center-based time filtering
     const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
 
     return allUniversities
@@ -631,18 +662,7 @@ const RealEstateSearch = () => {
         const travelTime = calculateTravelTime(distance);
         return { ...university, travelTime };
       })
-      .filter((university) => {
-        // Always filter by travel time
-        if (university.travelTime > filters.maxUniversityTime) return false;
-        // If specific university selected, also filter by name
-        if (filters.selectedUniversity) {
-          const searchTerm = filters.selectedUniversity;
-          const nameAr = university.name_ar || "";
-          const nameEn = university.name_en || "";
-          return arabicTextMatches(searchTerm, nameAr) || arabicTextMatches(searchTerm, nameEn);
-        }
-        return true;
-      });
+      .filter((university) => university.travelTime <= filters.maxUniversityTime);
   }, [
     allUniversities,
     propertiesCenterLocation,
