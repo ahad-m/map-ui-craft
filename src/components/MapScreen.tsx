@@ -1,9 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from '@vis.gl/react-google-maps';
-import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart, MapPin, Camera, Edit, Star, MessageSquare, X, Scissors, Store, Stethoscope, Candy, MoreHorizontal, Moon, Sun } from 'lucide-react';
+import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart, MapPin, Camera, Edit, Star, MessageSquare, X, Scissors, Store, Stethoscope, Candy, MoreHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -11,11 +10,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { toast } from 'sonner';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 import { supabase } from '@/integrations/supabase/client';
-import { MapThemeHandler } from './MapThemeHandler';
 
 const MapContent = () => {
   const { t, i18n } = useTranslation();
-  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -27,13 +24,11 @@ const MapContent = () => {
   const [searchResults, setSearchResults] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
-  const [mapKey, setMapKey] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   const places = useMapsLibrary('places');
   const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
   const placesService = useRef<google.maps.places.PlacesService | null>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
 
   // Clear session when landing on home page
   useEffect(() => {
@@ -104,11 +99,6 @@ const MapContent = () => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
-
-  // Update map when theme changes
-  useEffect(() => {
-    setMapKey(prev => prev + 1);
-  }, [theme]);
 
   // Get user location on mount
   useEffect(() => {
@@ -236,88 +226,6 @@ const MapContent = () => {
     { icon: MoreHorizontal, label: i18n.language === 'ar' ? 'المزيد' : 'More', searchTerm: '' },
   ];
 
-  // Dark mode styles for Google Maps
-  const darkMapStyles: google.maps.MapTypeStyle[] = [
-    { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-    { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-    { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-    {
-      featureType: "administrative.locality",
-      elementType: "labels.text.fill",
-      stylers: [{ color: "#d59563" }],
-    },
-    {
-      featureType: "poi",
-      elementType: "labels.text.fill",
-      stylers: [{ color: "#d59563" }],
-    },
-    {
-      featureType: "poi.park",
-      elementType: "geometry",
-      stylers: [{ color: "#263c3f" }],
-    },
-    {
-      featureType: "poi.park",
-      elementType: "labels.text.fill",
-      stylers: [{ color: "#6b9a76" }],
-    },
-    {
-      featureType: "road",
-      elementType: "geometry",
-      stylers: [{ color: "#38414e" }],
-    },
-    {
-      featureType: "road",
-      elementType: "geometry.stroke",
-      stylers: [{ color: "#212a37" }],
-    },
-    {
-      featureType: "road",
-      elementType: "labels.text.fill",
-      stylers: [{ color: "#9ca5b3" }],
-    },
-    {
-      featureType: "road.highway",
-      elementType: "geometry",
-      stylers: [{ color: "#746855" }],
-    },
-    {
-      featureType: "road.highway",
-      elementType: "geometry.stroke",
-      stylers: [{ color: "#1f2835" }],
-    },
-    {
-      featureType: "road.highway",
-      elementType: "labels.text.fill",
-      stylers: [{ color: "#f3d19c" }],
-    },
-    {
-      featureType: "transit",
-      elementType: "geometry",
-      stylers: [{ color: "#2f3948" }],
-    },
-    {
-      featureType: "transit.station",
-      elementType: "labels.text.fill",
-      stylers: [{ color: "#d59563" }],
-    },
-    {
-      featureType: "water",
-      elementType: "geometry",
-      stylers: [{ color: "#17263c" }],
-    },
-    {
-      featureType: "water",
-      elementType: "labels.text.fill",
-      stylers: [{ color: "#515c6d" }],
-    },
-    {
-      featureType: "water",
-      elementType: "labels.text.stroke",
-      stylers: [{ color: "#17263c" }],
-    },
-  ];
-
   return (
     <div className="relative h-screen w-full overflow-hidden bg-background">
         {/* Top Search Bar */}
@@ -410,18 +318,6 @@ const MapContent = () => {
               >
                 <Languages className="h-5 w-5" />
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="h-12 w-12 rounded-full"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-              </Button>
             </div>
 
             {/* Category Buttons */}
@@ -460,9 +356,8 @@ const MapContent = () => {
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
-            key={mapKey}
+            key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}`}
           >
-            <MapThemeHandler theme={theme} darkMapStyles={darkMapStyles} />
             {/* User Location Marker */}
             {userLocation && (
               <AdvancedMarker position={userLocation}>
