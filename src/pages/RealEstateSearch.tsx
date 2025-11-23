@@ -79,6 +79,7 @@ const RealEstateSearch = () => {
   const [showFavorites, setShowFavorites] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const [visitedProperties, setVisitedProperties] = useState<Set<string>>(new Set());
 
   const {
     messages,
@@ -775,6 +776,7 @@ const RealEstateSearch = () => {
   const handlePropertyClick = (property: any) => {
     setSelectedProperty(property);
     setShowPropertyDialog(true);
+    setVisitedProperties((prev) => new Set(prev).add(property.id));
   };
 
   const handleToggleFavorite = (propertyId: string) => {
@@ -879,6 +881,8 @@ const RealEstateSearch = () => {
               const lat = Number(property.lat);
               const lon = Number(property.lon);
               if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return null;
+              
+              const isVisited = visitedProperties.has(property.id);
 
               return (
                 <AdvancedMarker
@@ -887,10 +891,13 @@ const RealEstateSearch = () => {
                   onClick={() => handlePropertyClick(property)}
                 >
                   <div className="relative group cursor-pointer">
-                    <div className="transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-2">
+                    <div className={cn(
+                      "transition-all duration-300 group-hover:scale-125 group-hover:-translate-y-2",
+                      isVisited && "scale-90 opacity-80"
+                    )}>
                       <Pin
-                        background={transactionType === "sale" ? "#15803d" : "#22c55e"}
-                        borderColor={transactionType === "sale" ? "#14532d" : "#16a34a"}
+                        background={isVisited ? "#94a3b8" : (transactionType === "sale" ? "#15803d" : "#22c55e")}
+                        borderColor={isVisited ? "#64748b" : (transactionType === "sale" ? "#14532d" : "#16a34a")}
                         glyphColor={"#ffffff"}
                       />
                     </div>
