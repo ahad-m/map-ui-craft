@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from '@vis.gl/react-google-maps';
-import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart, MapPin, Camera, Edit, Star, MessageSquare, X } from 'lucide-react';
+import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart, MapPin, Camera, Edit, Star, MessageSquare, X, Scissors, Store, Stethoscope, Candy, MoreHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -220,6 +220,15 @@ const MapContent = () => {
     { icon: ShoppingBag, label: t('shopping') },
   ];
 
+  const quickCategories = [
+    { icon: Coffee, label: i18n.language === 'ar' ? 'مقاهي' : 'Cafes', searchTerm: 'cafe' },
+    { icon: Scissors, label: i18n.language === 'ar' ? 'صالونات' : 'Salons', searchTerm: 'salon' },
+    { icon: Store, label: i18n.language === 'ar' ? 'بقالات' : 'Grocery', searchTerm: 'grocery store' },
+    { icon: Stethoscope, label: i18n.language === 'ar' ? 'عيادات' : 'Clinics', searchTerm: 'clinic' },
+    { icon: Candy, label: i18n.language === 'ar' ? 'حلويات' : 'Sweets', searchTerm: 'sweets' },
+    { icon: MoreHorizontal, label: i18n.language === 'ar' ? 'المزيد' : 'More', searchTerm: '' },
+  ];
+
   return (
     <div className="relative h-screen w-full overflow-hidden bg-background">
         {/* Top Search Bar */}
@@ -312,6 +321,29 @@ const MapContent = () => {
               >
                 <Languages className="h-5 w-5" />
               </Button>
+            </div>
+
+            {/* Quick Categories - Google Maps Style */}
+            <div className="flex gap-4 overflow-x-auto pb-2 px-1 scrollbar-hide">
+              {quickCategories.map((cat) => (
+                <button
+                  key={cat.label}
+                  className="flex flex-col items-center gap-1.5 min-w-[70px] group"
+                  onClick={() => {
+                    if (cat.searchTerm) {
+                      setSearchQuery(cat.searchTerm);
+                      handleSearch();
+                    } else {
+                      setShowExploreSheet(true);
+                    }
+                  }}
+                >
+                  <div className="w-14 h-14 rounded-full bg-secondary hover:bg-secondary/80 transition-colors flex items-center justify-center">
+                    <cat.icon className="h-6 w-6 text-secondary-foreground" />
+                  </div>
+                  <span className="text-xs text-center text-foreground">{cat.label}</span>
+                </button>
+              ))}
             </div>
 
             {/* Category Buttons */}
