@@ -327,7 +327,7 @@ const MapContent = () => {
                   key={cat.label}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2 whitespace-nowrap rounded-full"
+                  className="flex items-center gap-2 whitespace-nowrap rounded-full transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
                   onClick={() => {
                     if (cat.searchTerm) {
                       setSearchQuery(cat.searchTerm);
@@ -340,7 +340,7 @@ const MapContent = () => {
                     }
                   }}
                 >
-                  <cat.icon className="h-4 w-4" />
+                  <cat.icon className="h-4 w-4 transition-transform duration-200 group-hover:rotate-12" />
                   {cat.label}
                 </Button>
               ))}
