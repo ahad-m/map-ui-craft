@@ -214,18 +214,15 @@ const MapContent = () => {
   };
 
   const categories = [
-    { icon: Home, label: t('home') },
-    { icon: UtensilsCrossed, label: t('restaurants') },
-    { icon: Shirt, label: t('apparel') },
-    { icon: ShoppingBag, label: t('shopping') },
-  ];
-
-  const quickCategories = [
+    { icon: Home, label: t('home'), searchTerm: '' },
     { icon: Coffee, label: i18n.language === 'ar' ? 'مقاهي' : 'Cafes', searchTerm: 'cafe' },
+    { icon: UtensilsCrossed, label: t('restaurants'), searchTerm: 'restaurant' },
     { icon: Scissors, label: i18n.language === 'ar' ? 'صالونات' : 'Salons', searchTerm: 'salon' },
     { icon: Store, label: i18n.language === 'ar' ? 'بقالات' : 'Grocery', searchTerm: 'grocery store' },
     { icon: Stethoscope, label: i18n.language === 'ar' ? 'عيادات' : 'Clinics', searchTerm: 'clinic' },
     { icon: Candy, label: i18n.language === 'ar' ? 'حلويات' : 'Sweets', searchTerm: 'sweets' },
+    { icon: Shirt, label: t('apparel'), searchTerm: '' },
+    { icon: ShoppingBag, label: t('shopping'), searchTerm: '' },
     { icon: MoreHorizontal, label: i18n.language === 'ar' ? 'المزيد' : 'More', searchTerm: '' },
   ];
 
@@ -323,38 +320,25 @@ const MapContent = () => {
               </Button>
             </div>
 
-            {/* Quick Categories - Google Maps Style */}
-            <div className="flex gap-4 overflow-x-auto pb-2 px-1 scrollbar-hide">
-              {quickCategories.map((cat) => (
-                <button
-                  key={cat.label}
-                  className="flex flex-col items-center gap-1.5 min-w-[70px] group"
-                  onClick={() => {
-                    if (cat.searchTerm) {
-                      setSearchQuery(cat.searchTerm);
-                      handleSearch();
-                    } else {
-                      setShowExploreSheet(true);
-                    }
-                  }}
-                >
-                  <div className="w-14 h-14 rounded-full bg-secondary hover:bg-secondary/80 transition-colors flex items-center justify-center">
-                    <cat.icon className="h-6 w-6 text-secondary-foreground" />
-                  </div>
-                  <span className="text-xs text-center text-foreground">{cat.label}</span>
-                </button>
-              ))}
-            </div>
-
             {/* Category Buttons */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {categories.map((cat) => (
                 <Button
                   key={cat.label}
-                  variant={selectedCategory === cat.label ? "default" : "secondary"}
-                  className="flex-shrink-0 gap-2"
+                  variant="outline"
                   size="sm"
-                  onClick={() => handleCategoryClick(cat.label)}
+                  className="flex items-center gap-2 whitespace-nowrap rounded-full"
+                  onClick={() => {
+                    if (cat.searchTerm) {
+                      setSearchQuery(cat.searchTerm);
+                      handleSearch();
+                    } else if (cat.label === t('home')) {
+                      handleCategoryClick(cat.label);
+                    } else {
+                      setSelectedCategory(cat.label);
+                      setShowExploreSheet(true);
+                    }
+                  }}
                 >
                   <cat.icon className="h-4 w-4" />
                   {cat.label}
