@@ -897,8 +897,8 @@ const RealEstateSearch = () => {
                       isVisited ? "scale-75 opacity-70" : "group-hover:scale-125 group-hover:-translate-y-2"
                     )}>
                       <Pin
-                        background={isVisited ? "#94a3b8" : (transactionType === "sale" ? "#15803d" : "#22c55e")}
-                        borderColor={isVisited ? "#64748b" : (transactionType === "sale" ? "#14532d" : "#16a34a")}
+                        background={isVisited ? "#94a3b8" : (transactionType === "sale" ? "#065f46" : "#10b981")}
+                        borderColor={isVisited ? "#64748b" : (transactionType === "sale" ? "#064e3b" : "#059669")}
                         glyphColor={"#ffffff"}
                       />
                     </div>
@@ -931,13 +931,13 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
+                          style={{ backgroundColor: "#84cc16" }}
                         >
                           <School className="h-5 w-5 text-white" />
                         </div>
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
+                          style={{ backgroundColor: "rgba(132, 204, 22, 0.3)", animationDuration: "1.5s" }}
                         />
                       </div>
                     </TooltipTrigger>
@@ -965,13 +965,13 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(142 71% 45%)" }}
+                          style={{ backgroundColor: "#14b8a6" }}
                         >
                           <GraduationCap className="h-5 w-5 text-white" />
                         </div>
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(142 71% 45% / 0.3)", animationDuration: "1.5s" }}
+                          style={{ backgroundColor: "rgba(20, 184, 166, 0.3)", animationDuration: "1.5s" }}
                         />
                       </div>
                     </TooltipTrigger>
@@ -995,13 +995,13 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "hsl(217 91% 60%)" }}
+                          style={{ backgroundColor: "#0d9488" }}
                         >
                           <GraduationCap className="h-5 w-5 text-white" />
                         </div>
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(217 91% 60% / 0.3)", animationDuration: "1.5s" }}
+                          style={{ backgroundColor: "rgba(13, 148, 136, 0.3)", animationDuration: "1.5s" }}
                         />
                       </div>
                     </TooltipTrigger>
@@ -1031,14 +1031,14 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated border-2 border-white"
-                          style={{ backgroundColor: "hsl(142 76% 36%)" }}
+                          style={{ backgroundColor: "#16a34a" }}
                         >
                           <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
                         </div>
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
                           style={{
-                            backgroundColor: "hsl(142 76% 36% / 0.3)",
+                            backgroundColor: "rgba(22, 163, 74, 0.3)",
                             animationDuration: "1.5s",
                           }}
                         />
@@ -1067,13 +1067,13 @@ const RealEstateSearch = () => {
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                         <div
                           className="p-2 rounded-full shadow-elevated border-2 border-white"
-                          style={{ backgroundColor: "hsl(142 76% 36%)" }}
+                          style={{ backgroundColor: "#16a34a" }}
                         >
                           <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
                         </div>
                         <div
                           className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "hsl(142 76% 36% / 0.3)", animationDuration: "1.5s" }}
+                          style={{ backgroundColor: "rgba(22, 163, 74, 0.3)", animationDuration: "1.5s" }}
                         />
                       </div>
                     </TooltipTrigger>
