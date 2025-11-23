@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { toast } from 'sonner';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 import { supabase } from '@/integrations/supabase/client';
+import { MapThemeHandler } from './MapThemeHandler';
 
 const MapContent = () => {
   const { t, i18n } = useTranslation();
@@ -26,11 +27,13 @@ const MapContent = () => {
   const [searchResults, setSearchResults] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
+  const [mapKey, setMapKey] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   const places = useMapsLibrary('places');
   const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
   const placesService = useRef<google.maps.places.PlacesService | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
 
   // Clear session when landing on home page
   useEffect(() => {
@@ -101,6 +104,11 @@ const MapContent = () => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = i18n.language;
   }, [i18n.language]);
+
+  // Update map when theme changes
+  useEffect(() => {
+    setMapKey(prev => prev + 1);
+  }, [theme]);
 
   // Get user location on mount
   useEffect(() => {
@@ -452,9 +460,9 @@ const MapContent = () => {
             mapId="real-estate-map"
             gestureHandling="greedy"
             disableDefaultUI={false}
-            styles={theme === 'dark' ? darkMapStyles : undefined}
-            key={`${mapCenter.lat}-${mapCenter.lng}-${mapZoom}-${theme}`}
+            key={mapKey}
           >
+            <MapThemeHandler theme={theme} darkMapStyles={darkMapStyles} />
             {/* User Location Marker */}
             {userLocation && (
               <AdvancedMarker position={userLocation}>
