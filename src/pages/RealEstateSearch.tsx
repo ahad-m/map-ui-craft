@@ -889,6 +889,7 @@ const RealEstateSearch = () => {
                   key={property.id}
                   position={{ lat, lng: lon }}
                   onClick={() => handlePropertyClick(property)}
+                  zIndex={100}
                 >
                   <div className="relative group cursor-pointer">
                     <div className={cn(
@@ -924,7 +925,7 @@ const RealEstateSearch = () => {
 
             {hasSearched &&
               nearbySchools.map((school) => (
-                <AdvancedMarker key={`school-${school.id}`} position={{ lat: school.lat, lng: school.lon }}>
+                <AdvancedMarker key={`school-${school.id}`} position={{ lat: school.lat, lng: school.lon }} zIndex={50}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
@@ -957,6 +958,7 @@ const RealEstateSearch = () => {
                 <AdvancedMarker
                   key={`university-${university.name_ar}`}
                   position={{ lat: university.lat, lng: university.lon }}
+                  zIndex={50}
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -986,6 +988,7 @@ const RealEstateSearch = () => {
                 <AdvancedMarker
                   key={`university-backend-${index}`}
                   position={{ lat: university.lat, lng: university.lon }}
+                  zIndex={50}
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1021,6 +1024,7 @@ const RealEstateSearch = () => {
                 <AdvancedMarker
                   key={`mosque-backend-${index}`}
                   position={{ lat: Number(mosque.lat), lng: Number(mosque.lon) }}
+                  zIndex={50}
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1057,7 +1061,7 @@ const RealEstateSearch = () => {
             {/* Standard Mosque markers (Manual Filters) */}
             {hasSearched &&
               nearbyMosques.map((mosque) => (
-                <AdvancedMarker key={`mosque-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }}>
+                <AdvancedMarker key={`mosque-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }} zIndex={50}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
