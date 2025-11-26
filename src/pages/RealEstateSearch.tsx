@@ -1,15 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
-import {
-  Search,
-  MapPin,
-  X,
-  Languages,
-  ArrowLeft,
-  Heart,
-  Loader2,
-  User,
-} from "lucide-react";
+import { Search, MapPin, X, Languages, ArrowLeft, Heart, Loader2, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -17,27 +8,37 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
 import riyalEstateLogo from "@/assets/riyal-estate-logo.jpg";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
-import { arabicTextMatches } from "@/utils/arabicUtils";
 import { PropertyMap } from "@/components/realestate/PropertyMap";
 import { FilterSheet } from "@/components/realestate/FilterSheet";
-import { calculateDistance, calculateTravelTime } from "@/utils/geolocationUtils";
 import { ChatbotPanel } from "@/components/realestate/ChatbotPanel";
 import { FavoritesSheet } from "@/components/realestate/FavoritesSheet";
+import { useChatbotSearch } from "@/hooks/useChatbotSearch";
+import { useFavoritesLogic } from "@/hooks/useFavoritesLogic";
+import {
+  usePropertiesCenter,
+  useFilteredProperties,
+  useNearbySchools,
+  useNearbyUniversities,
+  useNearbyMosques,
+  usePropertiesNearSchools,
+  usePropertiesNearUniversities,
+  usePropertiesNearMosques,
+} from "@/hooks/useGeoFiltering";
+import {
+  fetchProperties,
+  fetchPropertyTypes,
+  fetchNeighborhoods,
+  fetchSchools,
+  fetchSchoolGenders,
+  fetchSchoolLevels,
+  fetchUniversities,
+  fetchMosques,
+} from "@/services/supabaseService";
 
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
@@ -101,9 +102,15 @@ const RealEstateSearch = () => {
     schoolLevel: "",
   });
 
-
-  const [chatbotProperties, setChatbotProperties] = useState<any[]>([]);
-  const [showChatbotResults, setShowChatbotResults] = useState(false);
+  // Chatbot search integration
+  const {
+    chatbotProperties,
+    showChatbotResults,
+    nearbyUniversitiesFromBackend,
+    nearbyMosquesFromBackend,
+    extractFiltersFromCriteria,
+    clearChatbotResults,
+  } = useChatbotSearch(chatSearchResults, currentCriteria);
 
   // Check authentication
   useEffect(() => {
@@ -135,70 +142,22 @@ const RealEstateSearch = () => {
   // Sync filters from Chatbot
   useEffect(() => {
     if (chatSearchResults.length > 0) {
-      console.log("🎯 Chatbot Properties:", chatSearchResults);
-      setChatbotProperties(chatSearchResults);
-      setShowChatbotResults(true);
       setHasSearched(true);
-
-      if (currentCriteria && currentCriteria.school_requirements?.required) {
-        const schoolReqs = currentCriteria.school_requirements;
-        let genderFilter = "";
-        if (schoolReqs.gender === "بنات") genderFilter = "Girls";
-        if (schoolReqs.gender === "بنين") genderFilter = "Boys";
-
-        let levelFilter = "";
-        if (schoolReqs.levels && schoolReqs.levels.length > 0) {
-          const firstLevel = schoolReqs.levels[0];
-          if (firstLevel.includes("ابتدائي")) levelFilter = "elementary";
-          else if (firstLevel.includes("متوسط")) levelFilter = "middle";
-          else if (firstLevel.includes("ثانوي")) levelFilter = "high";
-          else if (firstLevel.includes("روضة")) levelFilter = "kindergarten";
-          else if (firstLevel.includes("حضانة")) levelFilter = "nursery";
-          else levelFilter = firstLevel;
-        }
-
-        setFilters((prevFilters) => ({
-          ...prevFilters,
-          schoolGender: genderFilter,
-          schoolLevel: levelFilter,
-          maxSchoolTime: schoolReqs.max_distance_minutes || 15,
-        }));
+      const filterUpdates = extractFiltersFromCriteria(currentCriteria);
+      
+      if (Object.keys(filterUpdates).length > 0) {
+        setFilters((prev) => ({ ...prev, ...filterUpdates }));
       }
 
-      if (currentCriteria && currentCriteria.university_requirements?.required) {
-        const uniReqs = currentCriteria.university_requirements;
-        setFilters((prevFilters) => ({
-          ...prevFilters,
-          selectedUniversity: uniReqs.university_name || "",
-          maxUniversityTime: uniReqs.max_distance_minutes || 30,
+      // Update university search term if provided
+      if (filterUpdates.selectedUniversity) {
+        setCustomSearchTerms((prev) => ({
+          ...prev,
+          university: filterUpdates.selectedUniversity || "",
         }));
-
-        if (uniReqs.university_name) {
-          setCustomSearchTerms((prev) => ({
-            ...prev,
-            university: uniReqs.university_name || "",
-          }));
-        }
       }
     }
-  }, [chatSearchResults, currentCriteria]);
-
-  // Extract entities from Backend results
-  const nearbyUniversitiesFromBackend = useMemo(() => {
-    if (chatbotProperties.length > 0 && chatbotProperties[0].nearby_universities) {
-      console.log("🎓 Universities from backend:", chatbotProperties[0].nearby_universities);
-      return chatbotProperties[0].nearby_universities;
-    }
-    return [];
-  }, [chatbotProperties]);
-
-  const nearbyMosquesFromBackend = useMemo(() => {
-    if (chatbotProperties.length > 0 && chatbotProperties[0].nearby_mosques) {
-      console.log("🕌 Mosques from backend:", chatbotProperties[0].nearby_mosques);
-      return chatbotProperties[0].nearby_mosques;
-    }
-    return [];
-  }, [chatbotProperties]);
+  }, [chatSearchResults, currentCriteria, extractFiltersFromCriteria]);
 
   const handleSearchModeSelection = async (mode: "exact" | "similar") => {
     await selectSearchMode(mode);
@@ -221,14 +180,7 @@ const RealEstateSearch = () => {
     queryKey: ["propertyTypes", customSearchTerms.propertyType],
     queryFn: async () => {
       if (!customSearchTerms.propertyType) return [];
-      let query = supabase
-        .from("properties")
-        .select("property_type")
-        .not("property_type", "is", null)
-        .not("property_type", "eq", "")
-        .ilike("property_type", `%${customSearchTerms.propertyType}%`);
-      const { data, error } = await query;
-      if (error) throw error;
+      const data = await fetchPropertyTypes(customSearchTerms.propertyType);
       const uniquePropertyTypes = [
         ...new Set(
           data
@@ -245,78 +197,38 @@ const RealEstateSearch = () => {
   const { data: neighborhoods = [] } = useQuery({
     queryKey: ["neighborhoods", customSearchTerms.neighborhood],
     queryFn: async () => {
-      let query = supabase.from("properties").select("district").not("district", "is", null).not("district", "eq", "");
-      if (customSearchTerms.neighborhood) {
-        query = query.ilike("district", `%${customSearchTerms.neighborhood}%`);
-      }
-      const { data, error } = await query;
-      if (error) throw error;
+      const data = await fetchNeighborhoods(customSearchTerms.neighborhood);
       const uniqueNeighborhoods = [...new Set(data?.map((p) => p.district?.trim()).filter((n) => n && n !== "") || [])];
       return uniqueNeighborhoods.sort((a, b) => a.localeCompare(b, "ar"));
     },
   });
 
-  const { data: properties = [], isLoading } = useQuery({
+  const { data: rawProperties = [], isLoading } = useQuery({
     queryKey: ["properties", transactionType, filters, searchQuery, customSearchTerms],
     queryFn: async () => {
-      let query = supabase
-        .from("properties")
-        .select("*")
-        .eq("purpose", transactionType === "sale" ? "للبيع" : "للايجار")
-        .not("final_lat", "is", null)
-        .not("final_lon", "is", null);
-
-      if (filters.propertyType) query = query.eq("property_type", filters.propertyType);
-      if (filters.neighborhood) query = query.eq("district", filters.neighborhood);
-      if (searchQuery) {
-        query = query.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
-      }
-      if (filters.bedrooms && filters.bedrooms !== "other") {
-        const count = parseInt(filters.bedrooms);
-        if (!isNaN(count)) query = query.eq("rooms", count);
-      }
-      if (filters.bathrooms && filters.bathrooms !== "other") {
-        const count = parseInt(filters.bathrooms);
-        if (!isNaN(count)) query = query.eq("baths", count);
-      }
-      if (filters.livingRooms && filters.livingRooms !== "other") {
-        const count = parseInt(filters.livingRooms);
-        if (!isNaN(count)) query = query.eq("halls", count);
-      }
-
-      const { data, error } = await query.limit(1000);
-      if (error) throw error;
-
-      return (data || []).filter((property) => {
-        const priceValue = property.price_num as any;
-        const price = typeof priceValue === "string" ? parseFloat(priceValue.replace(/,/g, "")) : Number(priceValue) || 0;
-        const areaValue = property.area_m2 as any;
-        const area = typeof areaValue === "string" ? parseFloat(areaValue.replace(/,/g, "")) : Number(areaValue) || 0;
-
-        let priceMatch = true;
-        if (filters.minPrice > 0 && filters.maxPrice > 0) priceMatch = price >= filters.minPrice && price <= filters.maxPrice;
-        else if (filters.minPrice > 0) priceMatch = price >= filters.minPrice;
-        else if (filters.maxPrice > 0) priceMatch = price <= filters.maxPrice;
-
-        let areaMatch = true;
-        if (filters.areaMin > 0 && filters.areaMax > 0) areaMatch = area >= filters.areaMin && area <= filters.areaMax;
-        else if (filters.areaMin > 0) areaMatch = area >= filters.areaMin;
-        else if (filters.areaMax > 0) areaMatch = area <= filters.areaMax;
-
-        let metroMatch = true;
-        if (filters.nearMetro) {
-          if (!property.time_to_metro_min) metroMatch = false;
-          else {
-            const metroTime =
-              typeof property.time_to_metro_min === "string"
-                ? parseFloat(property.time_to_metro_min)
-                : Number(property.time_to_metro_min);
-            metroMatch = !isNaN(metroTime) && metroTime <= filters.minMetroTime;
-          }
-        }
-        return priceMatch && areaMatch && metroMatch;
-      });
+      const data = await fetchProperties(
+        transactionType,
+        {
+          propertyType: filters.propertyType,
+          neighborhood: filters.neighborhood,
+          bedrooms: filters.bedrooms,
+          bathrooms: filters.bathrooms,
+          livingRooms: filters.livingRooms,
+        },
+        searchQuery
+      );
+      return data || [];
     },
+  });
+
+  // Apply price, area, and metro filters
+  const properties = useFilteredProperties(rawProperties, {
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    areaMin: filters.areaMin,
+    areaMax: filters.areaMax,
+    nearMetro: filters.nearMetro,
+    minMetroTime: filters.minMetroTime,
   });
 
   const predefinedSchoolGenders = ["Boys", "Girls"];
@@ -324,13 +236,7 @@ const RealEstateSearch = () => {
     queryKey: ["schoolGenders", customSearchTerms.schoolGender],
     queryFn: async () => {
       if (!customSearchTerms.schoolGender) return [];
-      const { data, error } = await supabase
-        .from("schools")
-        .select("gender")
-        .not("gender", "is", null)
-        .not("gender", "eq", "")
-        .ilike("gender", `%${customSearchTerms.schoolGender}%`);
-      if (error) throw error;
+      const data = await fetchSchoolGenders(customSearchTerms.schoolGender);
       const uniqueGenders = [
         ...new Set(
           data
@@ -348,13 +254,7 @@ const RealEstateSearch = () => {
     queryKey: ["schoolLevels", customSearchTerms.schoolLevel],
     queryFn: async () => {
       if (!customSearchTerms.schoolLevel) return [];
-      const { data, error } = await supabase
-        .from("schools")
-        .select("primary_level")
-        .not("primary_level", "is", null)
-        .not("primary_level", "eq", "")
-        .ilike("primary_level", `%${customSearchTerms.schoolLevel}%`);
-      if (error) throw error;
+      const data = await fetchSchoolLevels(customSearchTerms.schoolLevel);
       const uniqueLevels = [
         ...new Set(
           data
@@ -370,262 +270,97 @@ const RealEstateSearch = () => {
   const { data: allSchools = [] } = useQuery({
     queryKey: ["schools", filters.schoolGender, filters.schoolLevel, customSearchTerms.school],
     queryFn: async () => {
-      let query = supabase
-        .from("schools")
-        .select("*")
-        .not("lat", "is", null)
-        .not("lon", "is", null)
-        .not("name", "is", null);
-
-      if (filters.schoolGender && filters.schoolGender !== "All") {
-        const genderValue = filters.schoolGender === "Boys" ? "boys" : filters.schoolGender === "Girls" ? "girls" : "both";
-        query = query.eq("gender", genderValue);
-      }
-      if (filters.schoolLevel && filters.schoolLevel !== "combined") {
-        query = query.eq("primary_level", filters.schoolLevel);
-      }
-      if (customSearchTerms.school) {
-        query = query.or(`name.ilike.%${customSearchTerms.school}%,district.ilike.%${customSearchTerms.school}%`);
-      }
-      const { data, error } = await query.order("name", { ascending: true });
-      if (error) throw error;
+      const data = await fetchSchools(
+        filters.schoolGender,
+        filters.schoolLevel,
+        customSearchTerms.school
+      );
       return data || [];
     },
   });
 
   const baseProperties = showChatbotResults ? chatbotProperties : properties;
 
-  const propertiesCenterLocation = useMemo(() => {
-    if (baseProperties.length === 0) return null;
-    const validProperties = baseProperties.filter(
-      (p) =>
-        p.lat && p.lon && !isNaN(Number(p.lat)) && !isNaN(Number(p.lon)) && Number(p.lat) !== 0 && Number(p.lon) !== 0,
-    );
-    if (validProperties.length === 0) return null;
-    const sumLat = validProperties.reduce((sum, p) => sum + Number(p.lat), 0);
-    const sumLon = validProperties.reduce((sum, p) => sum + Number(p.lon), 0);
-    return {
-      lat: sumLat / validProperties.length,
-      lon: sumLon / validProperties.length,
-    };
-  }, [baseProperties]);
+  // Calculate properties center location
+  const propertiesCenterLocation = usePropertiesCenter(baseProperties);
 
-  const nearbySchools = useMemo(() => {
-    if (!hasSearched) return [];
-    const requestedFromChatbot = currentCriteria?.school_requirements?.required;
-    const requestedFromFilters = filters.schoolGender || filters.schoolLevel;
-    if (!requestedFromChatbot && !requestedFromFilters) return [];
-    if (allSchools.length === 0) return [];
-
-    // Use property center if available, otherwise fallback to Riyadh center (24.7136, 46.6753)
-    const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
-
-    return allSchools
-      .map((school) => {
-        const distance = calculateDistance(
-          referenceLocation.lat,
-          referenceLocation.lon,
-          school.lat,
-          school.lon,
-        );
-        const travelTime = calculateTravelTime(distance);
-        return { ...school, travelTime };
-      })
-      .filter((school) => school.travelTime <= filters.maxSchoolTime);
-  }, [
+  // Calculate nearby schools
+  const schoolFilterActive = !!(filters.schoolGender || filters.schoolLevel || currentCriteria?.school_requirements?.required);
+  const nearbySchools = useNearbySchools(
     allSchools,
     propertiesCenterLocation,
     filters.maxSchoolTime,
-    filters.schoolGender,
-    filters.schoolLevel,
     hasSearched,
-    currentCriteria,
-  ]);
+    schoolFilterActive
+  );
 
   const { data: allUniversities = [] } = useQuery({
     queryKey: ["universities", customSearchTerms.university],
     queryFn: async () => {
-      let query = supabase
-        .from("universities")
-        .select("*")
-        .not("lat", "is", null)
-        .not("lon", "is", null)
-        .not("name_ar", "is", null)
-        .not("name_en", "is", null);
-
-      if (customSearchTerms.university) {
-        query = query.or(
-          `name_ar.ilike.%${customSearchTerms.university}%,name_en.ilike.%${customSearchTerms.university}%`,
-        );
-      }
-      const { data, error } = await query.order("name_ar", { ascending: true });
-      if (error) throw error;
+      const data = await fetchUniversities(customSearchTerms.university);
       return data || [];
     },
   });
 
-  const nearbyUniversities = useMemo(() => {
-    if (!hasSearched) return [];
-
-    const hasSelectedUniversity = !!filters.selectedUniversity;
-    const timeFilterChanged = filters.maxUniversityTime < 30;
-    const requestedFromChatbot = !!currentCriteria?.university_requirements;
-
-    // University filter is active if: specific university selected, or time slider adjusted (not at default 30), or chatbot requested it
-    const universityFilterActive = hasSelectedUniversity || timeFilterChanged || requestedFromChatbot;
-    if (!universityFilterActive || allUniversities.length === 0) return [];
-
-    // When a specific university is selected, we must NOT pre-filter by time using a generic center,
-    // otherwise the selected university can be excluded incorrectly. We only filter by name here;
-    // the time filter is applied later per-property in displayedProperties.
-    if (hasSelectedUniversity) {
-      const searchTerm = filters.selectedUniversity!;
-
-      // Use property center if available, otherwise fallback to Riyadh center (24.7136, 46.6753)
-      const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
-
-      return allUniversities
-        .map((university) => {
-          const distance = calculateDistance(
-            referenceLocation.lat,
-            referenceLocation.lon,
-            university.lat,
-            university.lon,
-          );
-          const travelTime = calculateTravelTime(distance);
-          return { ...university, travelTime };
-        })
-        .filter((university) => {
-          const nameAr = university.name_ar || "";
-          const nameEn = university.name_en || "";
-          return arabicTextMatches(searchTerm, nameAr) || arabicTextMatches(searchTerm, nameEn);
-        });
-    }
-
-    // No specific university selected: use center-based time filtering
-    const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
-
-    return allUniversities
-      .map((university) => {
-        const distance = calculateDistance(
-          referenceLocation.lat,
-          referenceLocation.lon,
-          university.lat,
-          university.lon,
-        );
-        const travelTime = calculateTravelTime(distance);
-        return { ...university, travelTime };
-      })
-      .filter((university) => university.travelTime <= filters.maxUniversityTime);
-  }, [
+  // Calculate nearby universities
+  const universityFilterActive = !!(
+    filters.selectedUniversity ||
+    filters.maxUniversityTime < 30 ||
+    currentCriteria?.university_requirements
+  );
+  const nearbyUniversities = useNearbyUniversities(
     allUniversities,
     propertiesCenterLocation,
-    filters.maxUniversityTime,
     filters.selectedUniversity,
+    filters.maxUniversityTime,
     hasSearched,
-    currentCriteria,
-  ]);
+    universityFilterActive
+  );
 
   const { data: allMosques = [] } = useQuery({
     queryKey: ["mosques"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("mosques")
-        .select("*")
-        .not("lat", "is", null)
-        .not("lon", "is", null)
-        .not("name", "is", null);
-
-      if (error) {
-        console.error("Error fetching mosques:", error);
-        throw error;
-      }
+      const data = await fetchMosques();
       return data || [];
     },
   });
 
-  const nearbyMosques = useMemo(() => {
-    if (!hasSearched || !filters.nearMosques || allMosques.length === 0) return [];
-    
-    // Use property center if available, otherwise fallback to Riyadh center (24.7136, 46.6753)
-    const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
-    
-    const nearby = allMosques
-      .map((mosque) => {
-        const distance = calculateDistance(
-          referenceLocation.lat,
-          referenceLocation.lon,
-          mosque.lat,
-          mosque.lon,
-        );
-        const travelTime = calculateTravelTime(distance);
-        return { ...mosque, travelTime };
-      })
-      .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
-    return nearby;
-  }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, filters.nearMosques, hasSearched]);
-
-  const displayedProperties = useMemo(() => {
-    let filtered = [...baseProperties];
-
-    if (hasSearched && (filters.schoolGender || filters.schoolLevel) && nearbySchools.length > 0) {
-      filtered = filtered.filter((property) => {
-        const lat = Number(property.lat);
-        const lon = Number(property.lon);
-        if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
-        return nearbySchools.some((school) => {
-          const distance = calculateDistance(lat, lon, school.lat, school.lon);
-          const travelTime = calculateTravelTime(distance);
-          return travelTime <= filters.maxSchoolTime;
-        });
-      });
-    }
-
-    // Filter by university if filter is active (specific university OR time slider adjusted)
-    const universityFilterActive = filters.selectedUniversity || filters.maxUniversityTime < 30;
-    if (universityFilterActive && nearbyUniversities.length > 0) {
-      filtered = filtered.filter((property) => {
-        const lat = Number(property.lat);
-        const lon = Number(property.lon);
-        if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
-        return nearbyUniversities.some((uni) => {
-          const distance = calculateDistance(lat, lon, uni.lat, uni.lon);
-          const travelTime = calculateTravelTime(distance);
-          return travelTime <= filters.maxUniversityTime;
-        });
-      });
-    }
-
-    if (filters.nearMosques && nearbyMosques.length > 0) {
-      filtered = filtered.filter((property) => {
-        const lat = Number(property.lat);
-        const lon = Number(property.lon);
-        if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
-        return nearbyMosques.some((mosque) => {
-          const distance = calculateDistance(lat, lon, mosque.lat, mosque.lon);
-          const travelTime = calculateTravelTime(distance);
-          return travelTime <= filters.maxMosqueTime;
-        });
-      });
-    }
-
-    return filtered;
-  }, [
-    baseProperties,
-    hasSearched,
-    filters.schoolGender,
-    filters.schoolLevel,
-    filters.maxSchoolTime,
-    filters.selectedUniversity,
-    filters.maxUniversityTime,
-    filters.nearMosques,
+  // Calculate nearby mosques
+  const nearbyMosques = useNearbyMosques(
+    allMosques,
+    propertiesCenterLocation,
     filters.maxMosqueTime,
-    nearbySchools,
-    nearbyUniversities,
-    nearbyMosques,
-  ]);
+    hasSearched,
+    filters.nearMosques
+  );
 
-  const displayedFavorites = displayedProperties.filter((p) => favorites.includes(p.id));
+  // Apply geographic filters
+  let displayedProperties = baseProperties;
+
+  // Filter by schools
+  if (hasSearched && schoolFilterActive && nearbySchools.length > 0) {
+    displayedProperties = usePropertiesNearSchools(displayedProperties, nearbySchools, filters.maxSchoolTime);
+  }
+
+  // Filter by universities
+  if (universityFilterActive && nearbyUniversities.length > 0) {
+    displayedProperties = usePropertiesNearUniversities(displayedProperties, nearbyUniversities, filters.maxUniversityTime);
+  }
+
+  // Filter by mosques
+  if (filters.nearMosques && nearbyMosques.length > 0) {
+    displayedProperties = usePropertiesNearMosques(displayedProperties, nearbyMosques, filters.maxMosqueTime);
+  }
+
+  // Favorites logic
+  const { displayedFavorites, favoritesCount, handleToggleFavorite, isPropertyFavorited } = useFavoritesLogic({
+    properties: displayedProperties,
+    favorites,
+    isFavorite,
+    toggleFavorite,
+    t,
+  });
+
   const hasActiveFilters =
     filters.propertyType ||
     filters.neighborhood ||
@@ -648,14 +383,6 @@ const RealEstateSearch = () => {
     setVisitedProperties((prev) => new Set(prev).add(property.id));
   };
 
-  const handleToggleFavorite = (propertyId: string) => {
-    toggleFavorite(propertyId);
-    if (isFavorite(propertyId)) {
-      toast({ title: t("removedFromFavorites") });
-    } else {
-      toast({ title: t("addedToFavorites") });
-    }
-  };
 
 
   if (!authChecked) {
@@ -762,10 +489,10 @@ const RealEstateSearch = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => setShowFavorites(true)} className="gap-2 relative hover:bg-red-50 hover:border-red-300 transition-all duration-300 hover:scale-105">
-                    <Heart className={`h-4 w-4 transition-all duration-300 ${favorites.length > 0 ? "fill-red-500 text-red-500" : ""}`} />
-                    {favorites.length > 0 && (
+                    <Heart className={`h-4 w-4 transition-all duration-300 ${favoritesCount > 0 ? "fill-red-500 text-red-500" : ""}`} />
+                    {favoritesCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse-glow">
-                        {favorites.length}
+                        {favoritesCount}
                       </span>
                     )}
                   </Button>
@@ -867,7 +594,7 @@ const RealEstateSearch = () => {
             setShowPropertyDialog(false);
             setSelectedProperty(null);
           }}
-          isFavorite={selectedProperty ? isFavorite(selectedProperty.id) : false}
+          isFavorite={selectedProperty ? isPropertyFavorited(selectedProperty.id) : false}
           onToggleFavorite={() => selectedProperty && handleToggleFavorite(selectedProperty.id)}
           selectedSchool={null}
           selectedUniversity={null}
@@ -892,8 +619,7 @@ const RealEstateSearch = () => {
           <div className="absolute bottom-24 right-4 z-10">
             <Button
               onClick={() => {
-                setShowChatbotResults(false);
-                setChatbotProperties([]);
+                clearChatbotResults();
                 setFilters((prev) => ({
                   ...prev,
                   schoolGender: "",
@@ -949,8 +675,7 @@ const RealEstateSearch = () => {
           onSendMessage={sendMessage}
           onClearChat={() => {
             clearChat();
-            setChatbotProperties([]);
-            setShowChatbotResults(false);
+            clearChatbotResults();
           }}
           onSearchModeSelect={handleSearchModeSelection}
         />
