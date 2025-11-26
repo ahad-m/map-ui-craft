@@ -1,15 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
-import { Search, MapPin, X, Languages, ArrowLeft, Heart, Loader2, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import riyalEstateLogo from "@/assets/riyal-estate-logo.jpg";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
@@ -17,6 +13,9 @@ import { PropertyMap } from "@/components/realestate/PropertyMap";
 import { FilterSheet } from "@/components/realestate/FilterSheet";
 import { ChatbotPanel } from "@/components/realestate/ChatbotPanel";
 import { FavoritesSheet } from "@/components/realestate/FavoritesSheet";
+import { TopSearchBar } from "@/components/realestate/TopSearchBar";
+import { ResultsCounter } from "@/components/realestate/ResultsCounter";
+import { ClearChatbotButton } from "@/components/realestate/ClearChatbotButton";
 import { useChatbotSearch } from "@/hooks/useChatbotSearch";
 import { useFavoritesLogic } from "@/hooks/useFavoritesLogic";
 import {
@@ -455,136 +454,54 @@ const RealEstateSearch = () => {
         </div>
 
         {/* Top Search Bar */}
-        <div className="absolute top-4 left-4 right-4 z-10">
-          <Card className="p-6 glass-effect shadow-elevated border-primary/20 animate-fade-in backdrop-blur-md card-shine">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3 pb-4 border-b border-border/40">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={async () => {
-                    try {
-                      await supabase.auth.signOut();
-                      navigate("/", { replace: true });
-                      toast({ title: t("loggedOut") || "Logged out successfully" });
-                    } catch (error) {
-                      console.error("Logout error:", error);
-                      navigate("/", { replace: true });
-                    }
-                  }}
-                  className="hover:bg-primary/10 transition-all duration-300 hover:scale-110"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <img
-                  src={riyalEstateLogo}
-                  alt="RiyalEstate"
-                  className="h-16 w-16 rounded-full object-cover ring-2 ring-primary/40 shadow-elegant transition-all duration-300 hover:ring-primary hover:scale-110"
-                />
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold gradient-text">
-                    {t("riyalEstate")}
-                  </h1>
-                  <p className="text-sm text-muted-foreground font-medium">{t("propertySearch")}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowFavorites(true)} className="gap-2 relative hover:bg-red-50 hover:border-red-300 transition-all duration-300 hover:scale-105">
-                    <Heart className={`h-4 w-4 transition-all duration-300 ${favoritesCount > 0 ? "fill-red-500 text-red-500" : ""}`} />
-                    {favoritesCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse-glow">
-                        {favoritesCount}
-                      </span>
-                    )}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={toggleLanguage} className="gap-2 hover:bg-accent-light hover:border-primary transition-all duration-300 hover:scale-105">
-                    <Languages className="h-4 w-4" />
-                    {i18n.language === "en" ? "ع" : "EN"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate("/profile")}
-                    className="gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary transition-all duration-300 hover:scale-105"
-                  >
-                    <User className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  variant={transactionType === "sale" ? "default" : "outline"}
-                  size="lg"
-                  className={`flex-1 transition-all duration-300 font-semibold text-base ${
-                    transactionType === "sale"
-                      ? "bg-gradient-to-r from-primary to-accent shadow-glow hover:shadow-elevated hover:scale-105"
-                      : "hover:border-primary/50 hover:bg-accent-light/50"
-                  }`}
-                  onClick={() => setTransactionType("sale")}
-                >
-                  {t("forSale")}
-                </Button>
-                <Button
-                  variant={transactionType === "rent" ? "default" : "outline"}
-                  size="lg"
-                  className={`flex-1 transition-all duration-300 font-semibold text-base ${
-                    transactionType === "rent"
-                      ? "bg-gradient-to-r from-primary to-accent shadow-glow hover:shadow-elevated hover:scale-105"
-                      : "hover:border-primary/50 hover:bg-accent-light/50"
-                  }`}
-                  onClick={() => setTransactionType("rent")}
-                >
-                  {t("forRent")}
-                </Button>
-              </div>
-
-              <div className="flex gap-2">
-                <div className="flex-1 relative group">
-                  <MapPin
-                    className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-all duration-300 group-hover:scale-125 ${i18n.language === "ar" ? "right-3" : "left-3"}`}
-                  />
-                  <Input
-                    placeholder={t("searchLocation")}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && setHasSearched(true)}
-                    className={`bg-background/90 backdrop-blur-sm border-border/60 focus-visible:ring-primary focus-visible:border-primary focus-visible:shadow-glow transition-all duration-300 h-12 ${i18n.language === "ar" ? "pr-10" : "pl-10"}`}
-                  />
-                </div>
-                <Button
-                  size="icon"
-                  onClick={() => setHasSearched(true)}
-                  className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent shadow-elevated hover:scale-110 hover:rotate-12 transition-all duration-300 border-2 border-primary/20 relative group overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                  <Search className="h-5 w-5 text-primary-foreground relative z-10 group-hover:scale-110 transition-transform duration-300" />
-                </Button>
-                <FilterSheet
-                  isOpen={showFilters}
-                  onOpenChange={setShowFilters}
-                  filters={filters}
-                  setFilters={setFilters}
-                  customSearchTerms={customSearchTerms}
-                  setCustomSearchTerms={setCustomSearchTerms}
-                  allPropertyTypes={allPropertyTypes}
-                  neighborhoods={neighborhoods}
-                  allSchoolGenders={allSchoolGenders}
-                  allSchoolLevels={allSchoolLevels}
-                  allUniversities={allUniversities}
-                  nearbySchools={nearbySchools}
-                  nearbyUniversities={nearbyUniversities}
-                  resetFilters={resetFilters}
-                  onApply={() => {
-                    setShowFilters(false);
-                    setHasSearched(true);
-                  }}
-                  t={t}
-                  language={i18n.language}
-                />
-              </div>
-            </div>
-          </Card>
-        </div>
+        <TopSearchBar
+          transactionType={transactionType}
+          searchQuery={searchQuery}
+          favoritesCount={favoritesCount}
+          language={i18n.language}
+          onTransactionTypeChange={setTransactionType}
+          onSearchQueryChange={setSearchQuery}
+          onSearchExecute={() => setHasSearched(true)}
+          onToggleLanguage={toggleLanguage}
+          onToggleFavorites={() => setShowFavorites(true)}
+          onProfileClick={() => navigate("/profile")}
+          onBack={async () => {
+            try {
+              await supabase.auth.signOut();
+              navigate("/", { replace: true });
+              toast({ title: t("loggedOut") || "Logged out successfully" });
+            } catch (error) {
+              console.error("Logout error:", error);
+              navigate("/", { replace: true });
+            }
+          }}
+          filterButton={
+            <FilterSheet
+              isOpen={showFilters}
+              onOpenChange={setShowFilters}
+              filters={filters}
+              setFilters={setFilters}
+              customSearchTerms={customSearchTerms}
+              setCustomSearchTerms={setCustomSearchTerms}
+              allPropertyTypes={allPropertyTypes}
+              neighborhoods={neighborhoods}
+              allSchoolGenders={allSchoolGenders}
+              allSchoolLevels={allSchoolLevels}
+              allUniversities={allUniversities}
+              nearbySchools={nearbySchools}
+              nearbyUniversities={nearbyUniversities}
+              resetFilters={resetFilters}
+              onApply={() => {
+                setShowFilters(false);
+                setHasSearched(true);
+              }}
+              t={t}
+              language={i18n.language}
+            />
+          }
+          t={t}
+          isRTL={i18n.language === "ar"}
+        />
 
         {/* Property Details Dialog */}
         <PropertyDetailsDialog
@@ -615,55 +532,28 @@ const RealEstateSearch = () => {
         />
 
         {/* Clear Chatbot Results Button */}
-        {showChatbotResults && (
-          <div className="absolute bottom-24 right-4 z-10">
-            <Button
-              onClick={() => {
-                clearChatbotResults();
-                setFilters((prev) => ({
-                  ...prev,
-                  schoolGender: "",
-                  schoolLevel: "",
-                  maxSchoolTime: 15,
-                }));
-              }}
-              variant="outline"
-              className="bg-white/95 backdrop-blur-sm shadow-lg"
-            >
-              <X className="h-4 w-4 mr-2" />
-              {i18n.language === "ar" ? "إلغاء نتائج المساعد" : "Clear Assistant Results"}
-            </Button>
-          </div>
-        )}
+        <ClearChatbotButton
+          isVisible={showChatbotResults}
+          language={i18n.language}
+          onClear={() => {
+            clearChatbotResults();
+            setFilters((prev) => ({
+              ...prev,
+              schoolGender: "",
+              schoolLevel: "",
+              maxSchoolTime: 15,
+            }));
+          }}
+        />
 
-        {/* Results Count */}
-        {!selectedProperty && hasSearched && (
-          <div className="absolute bottom-24 left-4 right-4 z-10 animate-slide-up">
-            <Card className="glass-effect shadow-elevated border-primary/30 backdrop-blur-md card-shine">
-              <div className="p-4">
-                <div className="text-center">
-                  {isLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                      <p className="text-sm font-bold gradient-text">
-                        {t("loading")}
-                      </p>
-                    </div>
-                  ) : displayedProperties.length === 0 ? (
-                    <div className="space-y-1">
-                      <p className="text-sm font-bold text-destructive">{t("noPropertiesFound")}</p>
-                      <p className="text-xs text-muted-foreground font-medium">{t("tryAdjustingFilters")}</p>
-                    </div>
-                  ) : (
-                    <p className="text-base font-extrabold gradient-text">
-                      {`${displayedProperties.length} ${t("propertiesFound")}`}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
+        {/* Results Counter */}
+        <ResultsCounter
+          isLoading={isLoading}
+          propertiesCount={displayedProperties.length}
+          hasSearched={hasSearched}
+          selectedProperty={selectedProperty}
+          t={t}
+        />
 
         {/* Chatbot Panel */}
         <ChatbotPanel
