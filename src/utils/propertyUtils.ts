@@ -1,12 +1,25 @@
 /**
- * Utility functions for property data processing
+ * Property Utility Functions
+ * 
+ * Collection of utility functions for processing and formatting property data.
+ * Provides consistent formatting for prices, areas, and property information display.
+ * 
+ * @module utils/propertyUtils
  */
 
 /**
- * Format price with currency
- * @param price - Price value
- * @param currency - Currency symbol
- * @returns Formatted price string
+ * Format price with currency symbol
+ * 
+ * Formats a numeric price value with thousands separators (Arabic locale)
+ * and appends the currency symbol.
+ * 
+ * @param price - Price value to format
+ * @param currency - Currency symbol (default: Saudi Riyal 'ر.س')
+ * @returns Formatted price string with currency
+ * 
+ * @example
+ * formatPrice(500000) // "500,000 ر.س"
+ * formatPrice(1234567.89, "USD") // "1,234,567.89 USD"
  */
 export const formatPrice = (price: number, currency: string = 'ر.س'): string => {
   return `${price.toLocaleString('ar-SA')} ${currency}`;
@@ -14,8 +27,16 @@ export const formatPrice = (price: number, currency: string = 'ر.س'): string =
 
 /**
  * Format area in square meters
- * @param area - Area value
- * @returns Formatted area string
+ * 
+ * Formats an area value with thousands separators (Arabic locale)
+ * and appends the square meters unit (م²).
+ * 
+ * @param area - Area value to format
+ * @returns Formatted area string with unit
+ * 
+ * @example
+ * formatArea(250) // "250 م²"
+ * formatArea(1500) // "1,500 م²"
  */
 export const formatArea = (area: number): string => {
   return `${area.toLocaleString('ar-SA')} م²`;
@@ -23,8 +44,17 @@ export const formatArea = (area: number): string => {
 
 /**
  * Check if property has valid coordinates
- * @param property - Property object
- * @returns True if coordinates are valid
+ * 
+ * Validates that a property object contains valid latitude and longitude values.
+ * Ensures coordinates are not null, NaN, or zero (which would indicate missing data).
+ * 
+ * @param property - Property object to check
+ * @returns True if property has valid coordinates, false otherwise
+ * 
+ * @example
+ * hasValidCoordinates({ lat: 24.7136, lon: 46.6753 }) // true
+ * hasValidCoordinates({ lat: 0, lon: 0 }) // false (invalid)
+ * hasValidCoordinates({ lat: null, lon: null }) // false
  */
 export const hasValidCoordinates = (property: any): boolean => {
   const lat = Number(property.lat);
@@ -34,8 +64,16 @@ export const hasValidCoordinates = (property: any): boolean => {
 
 /**
  * Get property display name
+ * 
+ * Returns the property title if available, otherwise returns a default name.
+ * Useful for displaying property names in lists and cards.
+ * 
  * @param property - Property object
- * @returns Display name or default
+ * @returns Property display name or default text
+ * 
+ * @example
+ * getPropertyDisplayName({ title: "فيلا فاخرة" }) // "فيلا فاخرة"
+ * getPropertyDisplayName({ title: null }) // "عقار"
  */
 export const getPropertyDisplayName = (property: any): string => {
   return property.title || 'عقار';
@@ -43,12 +81,32 @@ export const getPropertyDisplayName = (property: any): string => {
 
 /**
  * Get property location string
+ * 
+ * Constructs a formatted location string from district and city.
+ * Returns components separated by comma, or default text if no location data.
+ * 
  * @param property - Property object
- * @returns Location string
+ * @returns Formatted location string
+ * 
+ * @example
+ * getPropertyLocation({ district: "العليا", city: "الرياض" }) 
+ * // "العليا, الرياض"
+ * 
+ * getPropertyLocation({ district: "العليا" }) 
+ * // "العليا"
+ * 
+ * getPropertyLocation({}) 
+ * // "موقع غير محدد"
  */
 export const getPropertyLocation = (property: any): string => {
   const parts = [];
+  
+  // Add district if available
   if (property.district) parts.push(property.district);
+  
+  // Add city if available
   if (property.city) parts.push(property.city);
+  
+  // Join with comma or return default message
   return parts.join(', ') || 'موقع غير محدد';
 };
