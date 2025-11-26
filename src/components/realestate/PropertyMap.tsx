@@ -135,9 +135,9 @@ export const PropertyMap = ({
                 isVisited ? "scale-75 opacity-70" : "group-hover:scale-125 group-hover:-translate-y-2"
               )}>
                 <Pin
-                  background={isVisited ? "#94a3b8" : (transactionType === "sale" ? "#065f46" : "#10b981")}
-                  borderColor={isVisited ? "#64748b" : (transactionType === "sale" ? "#064e3b" : "#059669")}
-                  glyphColor={"#ffffff"}
+                  background={isVisited ? "hsl(215 16% 47%)" : (transactionType === "sale" ? "hsl(var(--primary))" : "hsl(142 76% 36%)")}
+                  borderColor={isVisited ? "hsl(215 20% 35%)" : (transactionType === "sale" ? "hsl(var(--primary))" : "hsl(142 80% 25%)")}
+                  glyphColor="hsl(var(--primary-foreground))"
                 />
               </div>
               {!isVisited && (
@@ -147,13 +147,13 @@ export const PropertyMap = ({
                 />
               )}
               {isVisited && (
-                <div className="absolute -top-1 -right-1 bg-blue-600 rounded-full p-0.5 shadow-lg border-2 border-white">
-                  <Check className="h-3 w-3 text-white" />
+                <div className="absolute -top-1 -right-1 rounded-full p-0.5 shadow-lg border-2" style={{ backgroundColor: "hsl(221 83% 53%)", borderColor: "hsl(var(--background))" }}>
+                  <Check className="h-3 w-3" style={{ color: "hsl(var(--primary-foreground))" }} />
                 </div>
               )}
               {isFavorite && (
                 <div className="absolute -top-2 -left-2 animate-pulse-glow">
-                  <Heart className="h-4 w-4 fill-red-500 text-red-500 drop-shadow-lg" />
+                  <Heart className="h-4 w-4 drop-shadow-lg" style={{ fill: "hsl(0 84% 60%)", color: "hsl(0 84% 60%)" }} />
                 </div>
               )}
             </div>
@@ -173,13 +173,13 @@ export const PropertyMap = ({
               <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                 <div
                   className="p-2 rounded-full shadow-elevated"
-                  style={{ backgroundColor: "#84cc16" }}
+                  style={{ backgroundColor: "hsl(84 81% 44%)" }}
                 >
-                  <School className="h-5 w-5 text-white" />
+                  <School className="h-5 w-5" style={{ color: "hsl(var(--primary-foreground))" }} />
                 </div>
                 <div
                   className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                  style={{ backgroundColor: "rgba(132, 204, 22, 0.3)", animationDuration: "1.5s" }}
+                  style={{ backgroundColor: "hsl(84 81% 44% / 0.3)", animationDuration: "1.5s" }}
                 />
               </div>
             </TooltipTrigger>
@@ -207,13 +207,13 @@ export const PropertyMap = ({
               <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                 <div
                   className="p-2 rounded-full shadow-elevated"
-                  style={{ backgroundColor: "#0d9488" }}
+                  style={{ backgroundColor: "hsl(173 80% 40%)" }}
                 >
-                  <GraduationCap className="h-5 w-5 text-white" />
+                  <GraduationCap className="h-5 w-5" style={{ color: "hsl(var(--primary-foreground))" }} />
                 </div>
                 <div
                   className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                  style={{ backgroundColor: "rgba(13, 148, 136, 0.3)", animationDuration: "1.5s" }}
+                  style={{ backgroundColor: "hsl(173 80% 40% / 0.3)", animationDuration: "1.5s" }}
                 />
               </div>
             </TooltipTrigger>
@@ -241,15 +241,15 @@ export const PropertyMap = ({
             <TooltipTrigger asChild>
               <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                 <div
-                  className="p-2 rounded-full shadow-elevated border-2 border-white"
-                  style={{ backgroundColor: "#16a34a" }}
+                  className="p-2 rounded-full shadow-elevated border-2"
+                  style={{ backgroundColor: "hsl(142 76% 36%)", borderColor: "hsl(var(--background))" }}
                 >
                   <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
                 </div>
                 <div
                   className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
                   style={{
-                    backgroundColor: "rgba(22, 163, 74, 0.3)",
+                    backgroundColor: "hsl(142 76% 36% / 0.3)",
                     animationDuration: "1.5s",
                   }}
                 />
@@ -280,14 +280,14 @@ export const PropertyMap = ({
             <TooltipTrigger asChild>
               <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
                 <div
-                  className="p-2 rounded-full shadow-elevated border-2 border-white"
-                  style={{ backgroundColor: "#16a34a" }}
+                  className="p-2 rounded-full shadow-elevated border-2"
+                  style={{ backgroundColor: "hsl(142 76% 36%)", borderColor: "hsl(var(--background))" }}
                 >
                   <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
                 </div>
                 <div
                   className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                  style={{ backgroundColor: "rgba(22, 163, 74, 0.3)", animationDuration: "1.5s" }}
+                  style={{ backgroundColor: "hsl(142 76% 36% / 0.3)", animationDuration: "1.5s" }}
                 />
               </div>
             </TooltipTrigger>
