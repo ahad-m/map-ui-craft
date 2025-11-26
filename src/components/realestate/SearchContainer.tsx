@@ -101,8 +101,8 @@ export const SearchContainer = ({
     customSearchTerms,
   });
 
-  // Apply price, area, and metro filters
-  const properties = useFilteredProperties(rawProperties, {
+  // Apply price, area, and metro filters (ensure arrays are never undefined)
+  const properties = useFilteredProperties(rawProperties || [], {
     minPrice: filters.minPrice,
     maxPrice: filters.maxPrice,
     areaMin: filters.areaMin,
@@ -111,30 +111,30 @@ export const SearchContainer = ({
     minMetroTime: filters.minMetroTime,
   });
 
-  // Base properties (chatbot or filtered)
+  // Base properties (chatbot or filtered) - ensure always an array
   const baseProperties = showChatbotResults ? chatbotProperties : properties;
 
   // Calculate properties center location
   const propertiesCenterLocation = usePropertiesCenter(baseProperties);
 
-  // Calculate nearby schools
+  // Calculate nearby schools - ensure arrays are never undefined
   const schoolFilterActive = !!(filters.schoolGender || filters.schoolLevel || currentCriteria?.school_requirements?.required);
   const nearbySchools = useNearbySchools(
-    allSchools,
+    allSchools || [],
     propertiesCenterLocation,
     filters.maxSchoolTime,
     hasSearched,
     schoolFilterActive
   );
 
-  // Calculate nearby universities
+  // Calculate nearby universities - ensure arrays are never undefined
   const universityFilterActive = !!(
     filters.selectedUniversity ||
     filters.maxUniversityTime < 30 ||
     currentCriteria?.university_requirements
   );
   const nearbyUniversities = useNearbyUniversities(
-    allUniversities,
+    allUniversities || [],
     propertiesCenterLocation,
     filters.selectedUniversity,
     filters.maxUniversityTime,
@@ -142,9 +142,9 @@ export const SearchContainer = ({
     universityFilterActive
   );
 
-  // Calculate nearby mosques
+  // Calculate nearby mosques - ensure arrays are never undefined
   const nearbyMosques = useNearbyMosques(
-    allMosques,
+    allMosques || [],
     propertiesCenterLocation,
     filters.maxMosqueTime,
     hasSearched,
@@ -166,10 +166,10 @@ export const SearchContainer = ({
     displayedProperties = usePropertiesNearMosques(displayedProperties, nearbyMosques, filters.maxMosqueTime);
   }
 
-  // Favorites logic
+  // Favorites logic - ensure arrays are never undefined
   const { displayedFavorites, favoritesCount, handleToggleFavorite, isPropertyFavorited } = useFavoritesLogic({
-    properties: displayedProperties,
-    favorites,
+    properties: displayedProperties || [],
+    favorites: favorites || [],
     isFavorite,
     toggleFavorite,
     t,

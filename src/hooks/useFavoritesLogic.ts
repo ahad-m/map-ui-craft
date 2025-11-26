@@ -25,20 +25,23 @@ export const useFavoritesLogic = ({
 }: FavoritesLogicProps) => {
   /**
    * Filter displayed properties to show only favorites
+   * Ensure properties and favorites are always arrays
    */
   const displayedFavorites = useMemo(() => {
-    return properties.filter((p) => favorites.includes(p.id));
+    const propsArray = properties || [];
+    const favsArray = favorites || [];
+    return propsArray.filter((p) => favsArray.includes(p.id));
   }, [properties, favorites]);
 
   /**
    * Check if any properties are favorited
    */
-  const hasFavorites = favorites.length > 0;
+  const hasFavorites = (favorites || []).length > 0;
 
   /**
    * Get count of favorited properties
    */
-  const favoritesCount = favorites.length;
+  const favoritesCount = (favorites || []).length;
 
   /**
    * Handle toggling favorite status with toast notification
