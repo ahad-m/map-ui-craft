@@ -5,7 +5,6 @@
  * display, and interaction handlers for favorited properties.
  */
 
-import { useMemo } from "react";
 import { toast } from "@/hooks/use-toast";
 
 interface FavoritesLogicProps {
@@ -27,11 +26,9 @@ export const useFavoritesLogic = ({
    * Filter displayed properties to show only favorites
    * Ensure properties and favorites are always arrays
    */
-  const displayedFavorites = useMemo(() => {
-    const propsArray = properties || [];
-    const favsArray = favorites || [];
-    return propsArray.filter((p) => favsArray.includes(p.id));
-  }, [properties, favorites]);
+  const propsArray = properties || [];
+  const favsArray = favorites || [];
+  const displayedFavorites = propsArray.filter((p) => favsArray.includes(p.id));
 
   /**
    * Check if any properties are favorited
