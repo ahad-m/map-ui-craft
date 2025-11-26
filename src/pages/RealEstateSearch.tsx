@@ -1,19 +1,16 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { APIProvider, Map, AdvancedMarker, Pin, useMap } from "@vis.gl/react-google-maps";
+import { APIProvider } from "@vis.gl/react-google-maps";
 import {
   Search,
   MapPin,
-  MessageCircle,
   SlidersHorizontal,
   X,
-  Sparkles,
   Languages,
   ArrowLeft,
   Bed,
   Bath,
   Maximize,
   School,
-  GraduationCap,
   Check,
   ChevronsUpDown,
   Heart,
@@ -43,22 +40,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import riyalEstateLogo from "@/assets/riyal-estate-logo.jpg";
-import mosqueIcon from "@/assets/mosque-icon.png";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
 import { arabicTextMatches } from "@/utils/arabicUtils";
-
-// Component to save map reference - MUST be defined outside to avoid React hook errors
-const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.Map | null> }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (map) {
-      mapRef.current = map;
-    }
-  }, [map, mapRef]);
-  return null;
-};
+import { PropertyMap } from "@/components/realestate/PropertyMap";
 
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
@@ -73,11 +59,8 @@ const RealEstateSearch = () => {
   const [openSchoolCombobox, setOpenSchoolCombobox] = useState(false);
   const [openUniversityCombobox, setOpenUniversityCombobox] = useState(false);
   const [openNeighborhoodCombobox, setOpenNeighborhoodCombobox] = useState(false);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 24.7136, lng: 46.6753 });
-  const [mapZoom, setMapZoom] = useState(12);
   const [showPropertyDialog, setShowPropertyDialog] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
-  const mapRef = useRef<google.maps.Map | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const [visitedProperties, setVisitedProperties] = useState<Set<string>>(new Set());
 
@@ -788,35 +771,6 @@ const RealEstateSearch = () => {
     }
   };
 
-  useEffect(() => {
-    if (!mapRef.current) return;
-    if (showChatbotResults && chatbotProperties.length > 0) {
-      const lats = chatbotProperties.map((p) => Number(p.lat)).filter((lat) => !isNaN(lat) && lat !== 0);
-      const lngs = chatbotProperties.map((p) => Number(p.lon)).filter((lng) => !isNaN(lng) && lng !== 0);
-
-      if (lats.length > 0 && lngs.length > 0) {
-        const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-        const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-        mapRef.current.setCenter({ lat: avgLat, lng: avgLng });
-        mapRef.current.setZoom(13);
-      }
-    }
-  }, [showChatbotResults, chatbotProperties]);
-
-  useEffect(() => {
-    if (!mapRef.current || displayedProperties.length === 0 || !hasSearched) return;
-    const bounds = new google.maps.LatLngBounds();
-    displayedProperties.forEach((property) => {
-      const lat = Number(property.lat);
-      const lng = Number(property.lon);
-      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-        bounds.extend({ lat, lng });
-      }
-    });
-    if (!bounds.isEmpty()) {
-      mapRef.current.fitBounds(bounds);
-    }
-  }, [displayedProperties, hasSearched]);
 
   if (!authChecked) {
     return (
@@ -869,226 +823,22 @@ const RealEstateSearch = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_hsl(142_76%_48%/0.05)_0%,_transparent_50%)]" />
         
         <div className="absolute inset-0">
-          <Map
-            defaultCenter={mapCenter}
-            defaultZoom={mapZoom}
-            mapId="real-estate-map"
-            gestureHandling="greedy"
-            disableDefaultUI={false}
-          >
-            <MapRefHandler mapRef={mapRef} />
-            {displayedProperties.map((property) => {
-              const lat = Number(property.lat);
-              const lon = Number(property.lon);
-              if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return null;
-              
-              const isVisited = visitedProperties.has(property.id);
-
-              return (
-                <AdvancedMarker
-                  key={property.id}
-                  position={{ lat, lng: lon }}
-                  onClick={() => handlePropertyClick(property)}
-                  zIndex={100}
-                >
-                  <div className="relative group cursor-pointer">
-                    <div className={cn(
-                      "transition-all duration-500",
-                      isVisited ? "scale-75 opacity-70" : "group-hover:scale-125 group-hover:-translate-y-2"
-                    )}>
-                      <Pin
-                        background={isVisited ? "#94a3b8" : (transactionType === "sale" ? "#065f46" : "#10b981")}
-                        borderColor={isVisited ? "#64748b" : (transactionType === "sale" ? "#064e3b" : "#059669")}
-                        glyphColor={"#ffffff"}
-                      />
-                    </div>
-                    {!isVisited && (
-                      <div
-                        className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100"
-                        style={{ animationDuration: "1.5s" }}
-                      />
-                    )}
-                    {isVisited && (
-                      <div className="absolute -top-1 -right-1 bg-blue-600 rounded-full p-0.5 shadow-lg border-2 border-white">
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    )}
-                    {isFavorite(property.id) && (
-                      <div className="absolute -top-2 -left-2 animate-pulse-glow">
-                        <Heart className="h-4 w-4 fill-red-500 text-red-500 drop-shadow-lg" />
-                      </div>
-                    )}
-                  </div>
-                </AdvancedMarker>
-              );
-            })}
-
-            {hasSearched &&
-              nearbySchools.map((school) => (
-                <AdvancedMarker key={`school-${school.id}`} position={{ lat: school.lat, lng: school.lon }} zIndex={50}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "#84cc16" }}
-                        >
-                          <School className="h-5 w-5 text-white" />
-                        </div>
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "rgba(132, 204, 22, 0.3)", animationDuration: "1.5s" }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">{school.name}</p>
-                      {school.travelTime !== undefined && (
-                        <p className="text-xs text-muted-foreground">
-                          {t("maxTravelTime")}: {school.travelTime} {t("minutes")}
-                        </p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </AdvancedMarker>
-              ))}
-
-            {hasSearched &&
-              nearbyUniversities.map((university) => (
-                <AdvancedMarker
-                  key={`university-${university.name_ar}`}
-                  position={{ lat: university.lat, lng: university.lon }}
-                  zIndex={50}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "#14b8a6" }}
-                        >
-                          <GraduationCap className="h-5 w-5 text-white" />
-                        </div>
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "rgba(20, 184, 166, 0.3)", animationDuration: "1.5s" }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </AdvancedMarker>
-              ))}
-
-            {/* University markers from Backend */}
-            {hasSearched &&
-              nearbyUniversitiesFromBackend.map((university, index) => (
-                <AdvancedMarker
-                  key={`university-backend-${index}`}
-                  position={{ lat: university.lat, lng: university.lon }}
-                  zIndex={50}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated"
-                          style={{ backgroundColor: "#0d9488" }}
-                        >
-                          <GraduationCap className="h-5 w-5 text-white" />
-                        </div>
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "rgba(13, 148, 136, 0.3)", animationDuration: "1.5s" }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">{i18n.language === "ar" ? university.name_ar : university.name_en}</p>
-                      {university.drive_minutes !== undefined && (
-                        <p className="text-xs text-muted-foreground">
-                          {t("drivingTime") || "وقت القيادة"}: {Math.round(university.drive_minutes)}{" "}
-                          {t("minutes") || "دقيقة"}
-                        </p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </AdvancedMarker>
-              ))}
-
-            {/* [FIXED HERE] Mosque markers from Backend - تم إضافة هذا الجزء الناقص */}
-            {hasSearched &&
-              nearbyMosquesFromBackend.map((mosque, index) => (
-                <AdvancedMarker
-                  key={`mosque-backend-${index}`}
-                  position={{ lat: Number(mosque.lat), lng: Number(mosque.lon) }}
-                  zIndex={50}
-                >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated border-2 border-white"
-                          style={{ backgroundColor: "#16a34a" }}
-                        >
-                          <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
-                        </div>
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{
-                            backgroundColor: "rgba(22, 163, 74, 0.3)",
-                            animationDuration: "1.5s",
-                          }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">{mosque.name}</p>
-                      {(mosque.walk_minutes !== undefined || mosque.drive_minutes !== undefined) && (
-                        <p className="text-xs text-muted-foreground">
-                          {mosque.walk_minutes
-                            ? `${t("walkingTime") || "وقت المشي"}: ${Math.round(mosque.walk_minutes)} ${t("minutes") || "دقيقة"}`
-                            : `${t("drivingTime") || "وقت القيادة"}: ${Math.round(mosque.drive_minutes)} ${t("minutes") || "دقيقة"}`}
-                        </p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </AdvancedMarker>
-              ))}
-
-            {/* Standard Mosque markers (Manual Filters) */}
-            {hasSearched &&
-              nearbyMosques.map((mosque) => (
-                <AdvancedMarker key={`mosque-${mosque.id}`} position={{ lat: mosque.lat, lng: mosque.lon }} zIndex={50}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative group cursor-pointer transition-all duration-300 hover:scale-125 hover:-translate-y-2">
-                        <div
-                          className="p-2 rounded-full shadow-elevated border-2 border-white"
-                          style={{ backgroundColor: "#16a34a" }}
-                        >
-                          <img src={mosqueIcon} alt="Mosque" className="h-5 w-5 invert" />
-                        </div>
-                        <div
-                          className="absolute inset-0 rounded-full animate-ping opacity-0 group-hover:opacity-100"
-                          style={{ backgroundColor: "rgba(22, 163, 74, 0.3)", animationDuration: "1.5s" }}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">{mosque.name}</p>
-                      {mosque.travelTime !== undefined && (
-                        <p className="text-xs text-muted-foreground">
-                          {t("maxTravelTime")}: {mosque.travelTime} {t("minutes")}
-                        </p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </AdvancedMarker>
-              ))}
-          </Map>
+          <PropertyMap
+            properties={displayedProperties}
+            transactionType={transactionType}
+            visitedProperties={visitedProperties}
+            favorites={favorites}
+            hasSearched={hasSearched}
+            nearbySchools={nearbySchools}
+            nearbyUniversities={nearbyUniversities}
+            nearbyMosquesFromBackend={nearbyMosquesFromBackend}
+            nearbyMosques={nearbyMosques}
+            defaultCenter={{ lat: 24.7136, lng: 46.6753 }}
+            defaultZoom={12}
+            language={i18n.language}
+            onPropertyClick={handlePropertyClick}
+            t={t}
+          />
         </div>
 
         {/* Top Search Bar */}
