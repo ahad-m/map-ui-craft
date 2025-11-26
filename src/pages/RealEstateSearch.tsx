@@ -47,6 +47,7 @@ import { arabicTextMatches } from "@/utils/arabicUtils";
 import { PropertyMap } from "@/components/realestate/PropertyMap";
 import { FilterSheet } from "@/components/realestate/FilterSheet";
 import { calculateDistance, calculateTravelTime } from "@/utils/geolocationUtils";
+import { ChatbotPanel } from "@/components/realestate/ChatbotPanel";
 
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
@@ -74,10 +75,7 @@ const RealEstateSearch = () => {
   } = useRealEstateAssistant();
 
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatInput, setChatInput] = useState("");
-  const [isListening, setIsListening] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
   // Filter states
@@ -137,10 +135,6 @@ const RealEstateSearch = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Auto-scroll messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   useEffect(() => {
     if (searchQuery.trim() !== "") {
@@ -216,12 +210,6 @@ const RealEstateSearch = () => {
     return [];
   }, [chatbotProperties]);
 
-  const handleSendMessage = async () => {
-    if (!chatInput.trim() || isChatLoading) return;
-    await sendMessage(chatInput);
-    setChatInput("");
-  };
-
   const handleSearchModeSelection = async (mode: "exact" | "similar") => {
     await selectSearchMode(mode);
   };
@@ -236,77 +224,6 @@ const RealEstateSearch = () => {
     i18n.changeLanguage(newLang);
   };
 
-  const handleVoiceInput = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast({
-        title: "غير مدعوم",
-        description: "متصفحك لا يدعم ميزة الإدخال الصوتي. جرب متصفح Chrome أو Edge.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "ar-SA";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    let finalTranscript = "";
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setChatInput("...جاري الاستماع");
-    };
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      finalTranscript = transcript;
-      setChatInput(transcript);
-    };
-
-    recognition.onnomatch = () => {
-      toast({
-        title: "لم يتم التعرف على الكلام",
-        description: "حاول التحدث بوضوح أكثر.",
-        variant: "destructive",
-      });
-    };
-
-    recognition.onerror = (event: any) => {
-      if (event.error === "not-allowed") {
-        toast({
-          title: "المايكروفون محجوب",
-          description: "تحتاج إلى السماح بالوصول إلى المايكروفون في إعدادات المتصفح (علامة القفل 🔒).",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "خطأ في الصوت",
-          description: `حدث خطأ: ${event.error}. حاول مرة أخرى.`,
-          variant: "destructive",
-        });
-      }
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      if (finalTranscript === "") {
-        setChatInput("");
-      }
-    };
-
-    try {
-      recognition.start();
-    } catch (e) {
-      setIsListening(false);
-      setChatInput("");
-      toast({
-        title: "خطأ",
-        description: "لم يتمكن من بدء خدمة التعرف على الصوت. قد تكون قيد الاستخدام.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const predefinedPropertyTypes = ["استوديو", "شقق", "فلل", "تاون هاوس", "دوبلكس", "دور", "عمائر"];
 
@@ -1105,145 +1022,21 @@ const RealEstateSearch = () => {
           </div>
         )}
 
-        {/* Chatbot Floating Button */}
-        <div className="fixed bottom-6 left-6 z-50 animate-float">
-          <div className="relative">
-            <Button
-              onClick={() => setIsChatOpen(!isChatOpen)}
-              className="h-16 w-16 rounded-full shadow-elevated bg-gradient-to-br from-green-600 via-green-700 to-green-800 hover:from-green-700 hover:to-green-900 hover-lift relative group overflow-hidden border-2 border-white/30"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-              <Bot className="h-7 w-7 text-white relative z-10 group-hover:scale-125 transition-transform duration-300 drop-shadow-lg" />
-              {isBackendOnline && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-400 rounded-full border-2 border-white animate-pulse-glow shadow-glow" />
-              )}
-            </Button>
-          </div>
-        </div>
-
         {/* Chatbot Panel */}
-        {isChatOpen && (
-          <div className="fixed bottom-24 left-6 w-96 h-[500px] glass-effect rounded-2xl shadow-elevated z-50 flex flex-col animate-slide-up overflow-hidden">
-            <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4 rounded-t-2xl flex items-center justify-between relative">
-              <div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer pointer-events-none"
-                style={{ backgroundSize: "200% 100%" }}
-              />
-              <div className="flex items-center gap-2 relative z-10">
-                <Bot className="h-5 w-5 animate-float" />
-                <span className="font-semibold">المساعد العقاري الذكي</span>
-              </div>
-              <div className="flex items-center gap-2 relative z-10">
-                {isBackendOnline ? (
-                  <span className="text-xs bg-green-500 px-2 py-1 rounded-full">متصل</span>
-                ) : (
-                  <span className="text-xs bg-red-500 px-2 py-1 rounded-full">غير متصل</span>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    clearChat();
-                    setChatInput("");
-                    setChatbotProperties([]);
-                    setShowChatbotResults(false);
-                  }}
-                  className="text-white hover:bg-white/20 h-8 w-8 relative z-20"
-                  title="إعادة المحادثة"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsChatOpen(false)}
-                  className="text-white hover:bg-white/20 h-8 w-8 relative z-20"
-                  title="إغلاق"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      msg.type === "user" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-900"
-                    }`}
-                  >
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      {msg.criteria && msg.type === "assistant" && (
-                        <div className="mt-3 space-y-2">
-                          <Button
-                            onClick={() => handleSearchModeSelection("exact")}
-                            disabled={isChatLoading}
-                            className="w-full bg-white text-green-600 hover:bg-gray-50 border border-green-600"
-                            size="sm"
-                          >
-                            بس المطابق
-                          </Button>
-                          <Button
-                            onClick={() => handleSearchModeSelection("similar")}
-                            disabled={isChatLoading}
-                            className="w-full bg-green-600 text-white hover:bg-green-700"
-                            size="sm"
-                          >
-                            اللي يشبهه
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {isChatLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 rounded-lg p-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-green-600" />
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-
-            <div className="p-4 border-t">
-              <div className="flex gap-2">
-                <Input
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                  placeholder={isListening ? "...جاري الاستماع" : "اكتب طلبك هنا..."}
-                  disabled={isChatLoading || !isBackendOnline || isListening}
-                  className="flex-1"
-                  dir="rtl"
-                />
-                <Button
-                  onClick={handleVoiceInput}
-                  disabled={isChatLoading || !isBackendOnline || isListening}
-                  variant="outline"
-                  size="icon"
-                  className={cn(
-                    "h-10 w-10",
-                    isListening && "animate-pulse bg-green-100 border-green-300 text-green-700",
-                  )}
-                >
-                  <Mic className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={isChatLoading || !isBackendOnline || !chatInput.trim() || isListening}
-                  className="bg-green-600 hover:bg-green-700"
-                  size="icon"
-                >
-                  {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ChatbotPanel
+          isOpen={isChatOpen}
+          onOpenChange={setIsChatOpen}
+          messages={messages}
+          isLoading={isChatLoading}
+          isBackendOnline={isBackendOnline}
+          onSendMessage={sendMessage}
+          onClearChat={() => {
+            clearChat();
+            setChatbotProperties([]);
+            setShowChatbotResults(false);
+          }}
+          onSearchModeSelect={handleSearchModeSelection}
+        />
       </div>
     </APIProvider>
   );
