@@ -56,6 +56,7 @@ export const OptimizedSearchContainer = memo(({
   const [hasSearched, setHasSearched] = useState(false);
   const [visitedProperties, setVisitedProperties] = useState<Set<string>>(new Set());
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Hooks
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
@@ -82,7 +83,7 @@ export const OptimizedSearchContainer = memo(({
     clearChatbotResults,
   } = useChatbotSearch(chatSearchResults, currentCriteria);
 
-  // Optimized data fetching with caching (deferred until map loads)
+  // Optimized data fetching with aggressive caching - start immediately
   const {
     allPropertyTypes,
     neighborhoods,
@@ -98,7 +99,7 @@ export const OptimizedSearchContainer = memo(({
     filters,
     searchQuery,
     customSearchTerms,
-    enabled: mapLoaded,
+    enabled: true, // Always enabled for instant loading
   });
 
   // Memoized filtered properties
@@ -240,6 +241,14 @@ export const OptimizedSearchContainer = memo(({
     }
   }, [searchQuery]);
 
+  // Mark initial load as complete once we have properties
+  useEffect(() => {
+    if (rawProperties.length > 0 && isInitialLoad) {
+      setIsInitialLoad(false);
+      console.log(`⚡ Initial load complete: ${rawProperties.length} properties loaded`);
+    }
+  }, [rawProperties.length, isInitialLoad]);
+
   useEffect(() => {
     if (chatSearchResults.length > 0) {
       setHasSearched(true);
@@ -329,12 +338,12 @@ export const OptimizedSearchContainer = memo(({
           t={t}
         />
         
-        {/* Loading overlay until map and pins are ready */}
-        {!mapLoaded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
-            <div className="flex flex-col items-center gap-4">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="text-lg font-medium text-foreground">{t("loadingMap") || "Loading map..."}</p>
+        {/* Simple loading indicator for pins only */}
+        {isLoadingProperties && validDisplayedProperties.length === 0 && (
+          <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-50">
+            <div className="bg-background/95 backdrop-blur-md rounded-full px-6 py-3 shadow-lg border border-primary/20 flex items-center gap-3 animate-slide-down">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="text-sm font-medium text-foreground">{t("loadingProperties") || "Loading properties..."}</p>
             </div>
           </div>
         )}

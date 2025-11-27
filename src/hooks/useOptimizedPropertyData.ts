@@ -51,12 +51,12 @@ export const useOptimizedPropertyData = ({
   customSearchTerms,
   enabled = true,
 }: UseOptimizedPropertyDataProps) => {
-  // Debounce search queries for performance
-  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
-  const debouncedPropertyTypeSearch = useDebouncedValue(customSearchTerms.propertyType, 300);
-  const debouncedNeighborhoodSearch = useDebouncedValue(customSearchTerms.neighborhood, 300);
-  const debouncedSchoolSearch = useDebouncedValue(customSearchTerms.school, 300);
-  const debouncedUniversitySearch = useDebouncedValue(customSearchTerms.university, 300);
+  // Debounce search queries for performance (reduced for faster response)
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 200);
+  const debouncedPropertyTypeSearch = useDebouncedValue(customSearchTerms.propertyType, 200);
+  const debouncedNeighborhoodSearch = useDebouncedValue(customSearchTerms.neighborhood, 200);
+  const debouncedSchoolSearch = useDebouncedValue(customSearchTerms.school, 200);
+  const debouncedUniversitySearch = useDebouncedValue(customSearchTerms.university, 200);
 
   // Predefined options (memoized)
   const predefinedOptions = useMemo(() => ({
@@ -65,7 +65,7 @@ export const useOptimizedPropertyData = ({
     schoolLevels: ["nursery", "kindergarten", "elementary", "middle", "high"],
   }), []);
 
-  // Main properties query - fresh data on every search
+  // Main properties query with aggressive caching for instant loading
   const { data: rawProperties = [], isLoading: isLoadingProperties } = useQuery({
     queryKey: ["properties", transactionType, filters, debouncedSearchQuery],
     queryFn: async () => {
@@ -83,9 +83,9 @@ export const useOptimizedPropertyData = ({
       return data || [];
     },
     enabled,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 5 * 60 * 1000, // Keep in memory for 5 minutes
-    refetchOnMount: true, // Always refetch on mount
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes for instant loading
+    gcTime: 30 * 60 * 1000, // Keep in memory for 30 minutes
+    refetchOnMount: false, // Don't refetch on every mount
     refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
@@ -158,7 +158,7 @@ export const useOptimizedPropertyData = ({
     gcTime: 30 * 60 * 1000,
   });
 
-  // Schools query (static data with moderate caching)
+  // Schools query (static data with long caching)
   const { data: allSchools = [] } = useQuery({
     queryKey: ["schools", filters.schoolGender, filters.schoolLevel, debouncedSchoolSearch],
     queryFn: async () => {
@@ -169,30 +169,30 @@ export const useOptimizedPropertyData = ({
       );
       return data || [];
     },
-    staleTime: 10 * 60 * 1000,
-    gcTime: 20 * 60 * 1000,
+    staleTime: 30 * 60 * 1000, // Cache for 30 minutes
+    gcTime: 60 * 60 * 1000, // Keep in memory for 1 hour
   });
 
-  // Universities query (static data with moderate caching)
+  // Universities query (static data with long caching)
   const { data: allUniversities = [] } = useQuery({
     queryKey: ["universities", debouncedUniversitySearch],
     queryFn: async () => {
       const data = await fetchUniversities(debouncedUniversitySearch);
       return data || [];
     },
-    staleTime: 10 * 60 * 1000,
-    gcTime: 20 * 60 * 1000,
+    staleTime: 30 * 60 * 1000, // Cache for 30 minutes
+    gcTime: 120 * 60 * 1000, // Keep in memory for 2 hours
   });
 
-  // Mosques query (static data with long caching)
+  // Mosques query (static data with very long caching)
   const { data: allMosques = [] } = useQuery({
     queryKey: ["mosques"],
     queryFn: async () => {
       const data = await fetchMosques();
       return data || [];
     },
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 60 * 60 * 1000, // Cache for 1 hour
+    gcTime: 240 * 60 * 1000, // Keep in memory for 4 hours
   });
 
   // Memoized combined property types
