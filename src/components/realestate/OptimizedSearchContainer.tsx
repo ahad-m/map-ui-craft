@@ -193,9 +193,28 @@ export const OptimizedSearchContainer = memo(({
     filters.maxMosqueTime,
   ]);
 
-  // Optimized favorites logic
+  // Filter properties with valid coordinates only (for accurate count and map display)
+  const validDisplayedProperties = useMemo(() => {
+    const valid = displayedProperties.filter((property) => {
+      const lat = Number(property.lat);
+      const lon = Number(property.lon);
+      return !isNaN(lat) && !isNaN(lon) && !(lat === 0 && lon === 0);
+    });
+    
+    // Log mismatch for debugging
+    if (valid.length !== displayedProperties.length) {
+      console.warn(`Property count mismatch: ${displayedProperties.length} total, ${valid.length} valid coordinates, ${displayedProperties.length - valid.length} invalid`);
+    }
+    
+    // Log final count for verification
+    console.log(`✓ Synchronized count: ${valid.length} properties (map pins = results counter)`);
+    
+    return valid;
+  }, [displayedProperties]);
+
+  // Optimized favorites logic (use validDisplayedProperties for accurate counts)
   const { displayedFavorites, favoritesCount, handleToggleFavorite, isPropertyFavorited } = useOptimizedFavoritesLogic({
-    properties: displayedProperties,
+    properties: validDisplayedProperties,
     favorites,
     isFavorite,
     toggleFavorite,
@@ -281,7 +300,7 @@ export const OptimizedSearchContainer = memo(({
     <>
       <div className="absolute inset-0">
         <PropertyMap
-          properties={displayedProperties}
+          properties={validDisplayedProperties}
           transactionType={transactionType}
           visitedProperties={visitedProperties}
           favorites={favorites}
@@ -385,7 +404,7 @@ export const OptimizedSearchContainer = memo(({
       {/* Results Counter */}
       <ResultsCounter
         isLoading={isLoadingProperties}
-        propertiesCount={displayedProperties.length}
+        propertiesCount={validDisplayedProperties.length}
         hasSearched={hasSearched}
         selectedProperty={selectedProperty}
         t={t}
