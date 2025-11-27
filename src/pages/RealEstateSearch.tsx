@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from "@vis.gl/react-google-maps";
+import { MapBoundsHandler } from "@/components/MapBoundsHandler";
+import { useViewportProperties } from "@/hooks/useViewportProperties";
 import {
   Search,
   MapPin,
@@ -371,67 +373,12 @@ const RealEstateSearch = () => {
     },
   });
 
-  const { data: properties = [], isLoading } = useQuery({
-    queryKey: ["properties", transactionType, filters, searchQuery, customSearchTerms],
-    queryFn: async () => {
-      let query = supabase
-        .from("properties")
-        .select("*")
-        .eq("purpose", transactionType === "sale" ? "للبيع" : "للايجار")
-        .not("final_lat", "is", null)
-        .not("final_lon", "is", null);
-
-      if (filters.propertyType) query = query.eq("property_type", filters.propertyType);
-      if (filters.neighborhood) query = query.eq("district", filters.neighborhood);
-      if (searchQuery) {
-        query = query.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
-      }
-      if (filters.bedrooms && filters.bedrooms !== "other") {
-        const count = parseInt(filters.bedrooms);
-        if (!isNaN(count)) query = query.eq("rooms", count);
-      }
-      if (filters.bathrooms && filters.bathrooms !== "other") {
-        const count = parseInt(filters.bathrooms);
-        if (!isNaN(count)) query = query.eq("baths", count);
-      }
-      if (filters.livingRooms && filters.livingRooms !== "other") {
-        const count = parseInt(filters.livingRooms);
-        if (!isNaN(count)) query = query.eq("halls", count);
-      }
-
-      const { data, error } = await query.limit(1000);
-      if (error) throw error;
-
-      return (data || []).filter((property) => {
-        const priceValue = property.price_num as any;
-        const price = typeof priceValue === "string" ? parseFloat(priceValue.replace(/,/g, "")) : Number(priceValue) || 0;
-        const areaValue = property.area_m2 as any;
-        const area = typeof areaValue === "string" ? parseFloat(areaValue.replace(/,/g, "")) : Number(areaValue) || 0;
-
-        let priceMatch = true;
-        if (filters.minPrice > 0 && filters.maxPrice > 0) priceMatch = price >= filters.minPrice && price <= filters.maxPrice;
-        else if (filters.minPrice > 0) priceMatch = price >= filters.minPrice;
-        else if (filters.maxPrice > 0) priceMatch = price <= filters.maxPrice;
-
-        let areaMatch = true;
-        if (filters.areaMin > 0 && filters.areaMax > 0) areaMatch = area >= filters.areaMin && area <= filters.areaMax;
-        else if (filters.areaMin > 0) areaMatch = area >= filters.areaMin;
-        else if (filters.areaMax > 0) areaMatch = area <= filters.areaMax;
-
-        let metroMatch = true;
-        if (filters.nearMetro) {
-          if (!property.time_to_metro_min) metroMatch = false;
-          else {
-            const metroTime =
-              typeof property.time_to_metro_min === "string"
-                ? parseFloat(property.time_to_metro_min)
-                : Number(property.time_to_metro_min);
-            metroMatch = !isNaN(metroTime) && metroTime <= filters.minMetroTime;
-          }
-        }
-        return priceMatch && areaMatch && metroMatch;
-      });
-    },
+  // Use viewport-based property fetching
+  const { properties, isLoading, updateBounds } = useViewportProperties({
+    transactionType,
+    filters,
+    searchQuery,
+    enabled: true,
   });
 
   const predefinedSchoolGenders = ["Boys", "Girls"];
@@ -877,6 +824,7 @@ const RealEstateSearch = () => {
             disableDefaultUI={false}
           >
             <MapRefHandler mapRef={mapRef} />
+            <MapBoundsHandler onBoundsChange={updateBounds} />
             {displayedProperties.map((property) => {
               const lat = Number(property.lat);
               const lon = Number(property.lon);
