@@ -399,7 +399,7 @@ const RealEstateSearch = () => {
         if (!isNaN(count)) query = query.eq("halls", count);
       }
 
-      const { data, error } = await query.limit(1000);
+      const { data, error } = await query.limit(500);
       if (error) throw error;
 
       return (data || []).filter((property) => {
