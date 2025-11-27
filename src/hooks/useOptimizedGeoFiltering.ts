@@ -201,30 +201,32 @@ export const useNearbyMosques = (
   hasSearched: boolean,
   filterActive: boolean
 ): any[] => {
-  const safeMosques = mosques || [];
+  return useMemo(() => {
+    const safeMosques = mosques || [];
 
-  if (!hasSearched || !filterActive || safeMosques.length === 0) return [];
+    if (!hasSearched || !filterActive || safeMosques.length === 0) return [];
 
-  const referenceLocation = centerLocation || { lat: 24.7136, lon: 46.6753 };
+    const referenceLocation = centerLocation || { lat: 24.7136, lon: 46.6753 };
 
-  return safeMosques
-    .map((mosque) => {
-      const distance = calculateDistance(
-        referenceLocation.lat,
-        referenceLocation.lon,
-        mosque.lat,
-        mosque.lon
-      );
-      const travelTime = calculateTravelTime(distance);
-      return { ...mosque, travelTime };
-    })
-    .filter((mosque) => mosque.travelTime <= maxTravelTime);
+    return safeMosques
+      .map((mosque) => {
+        const distance = calculateDistance(
+          referenceLocation.lat,
+          referenceLocation.lon,
+          mosque.lat,
+          mosque.lon
+        );
+        const travelTime = calculateTravelTime(distance);
+        return { ...mosque, travelTime };
+      })
+      .filter((mosque) => mosque.travelTime <= maxTravelTime);
+  }, [mosques, centerLocation, maxTravelTime, hasSearched, filterActive]);
 };
 
 /**
- * Filters properties near schools (memoized)
+ * Filters properties near schools (pure function)
  */
-export const usePropertiesNearSchools = (
+export const filterPropertiesNearSchools = (
   properties: any[],
   nearbySchools: any[],
   maxSchoolTime: number
@@ -249,9 +251,9 @@ export const usePropertiesNearSchools = (
 };
 
 /**
- * Filters properties near universities (memoized)
+ * Filters properties near universities (pure function)
  */
-export const usePropertiesNearUniversities = (
+export const filterPropertiesNearUniversities = (
   properties: any[],
   nearbyUniversities: any[],
   maxUniversityTime: number
@@ -276,9 +278,9 @@ export const usePropertiesNearUniversities = (
 };
 
 /**
- * Filters properties near mosques
+ * Filters properties near mosques (pure function)
  */
-export const usePropertiesNearMosques = (
+export const filterPropertiesNearMosques = (
   properties: any[],
   nearbyMosques: any[],
   maxMosqueTime: number
