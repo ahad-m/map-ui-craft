@@ -65,7 +65,7 @@ export const useOptimizedPropertyData = ({
     schoolLevels: ["nursery", "kindergarten", "elementary", "middle", "high"],
   }), []);
 
-  // Main properties query with aggressive caching (deferred until map loads)
+  // Main properties query - fresh data on every search
   const { data: rawProperties = [], isLoading: isLoadingProperties } = useQuery({
     queryKey: ["properties", transactionType, filters, debouncedSearchQuery],
     queryFn: async () => {
@@ -83,8 +83,10 @@ export const useOptimizedPropertyData = ({
       return data || [];
     },
     enabled,
-    staleTime: 15 * 60 * 1000, // 15 minutes - instant cache hit
-    gcTime: 30 * 60 * 1000, // 30 minutes - keep in memory
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 5 * 60 * 1000, // Keep in memory for 5 minutes
+    refetchOnMount: true, // Always refetch on mount
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
   // Property types query
@@ -156,7 +158,7 @@ export const useOptimizedPropertyData = ({
     gcTime: 30 * 60 * 1000,
   });
 
-  // Schools query (fetched immediately for static data)
+  // Schools query (static data with moderate caching)
   const { data: allSchools = [] } = useQuery({
     queryKey: ["schools", filters.schoolGender, filters.schoolLevel, debouncedSchoolSearch],
     queryFn: async () => {
@@ -167,30 +169,30 @@ export const useOptimizedPropertyData = ({
       );
       return data || [];
     },
-    staleTime: 15 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 20 * 60 * 1000,
   });
 
-  // Universities query (fetched immediately for static data)
+  // Universities query (static data with moderate caching)
   const { data: allUniversities = [] } = useQuery({
     queryKey: ["universities", debouncedUniversitySearch],
     queryFn: async () => {
       const data = await fetchUniversities(debouncedUniversitySearch);
       return data || [];
     },
-    staleTime: 15 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 20 * 60 * 1000,
   });
 
-  // Mosques query (static data, long cache, fetched immediately)
+  // Mosques query (static data with long caching)
   const { data: allMosques = [] } = useQuery({
     queryKey: ["mosques"],
     queryFn: async () => {
       const data = await fetchMosques();
       return data || [];
     },
-    staleTime: 60 * 60 * 1000, // 1 hour
-    gcTime: 120 * 60 * 1000, // 2 hours
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   // Memoized combined property types
