@@ -201,26 +201,24 @@ export const useNearbyMosques = (
   hasSearched: boolean,
   filterActive: boolean
 ): any[] => {
-  return useMemo(() => {
-    const safeMosques = mosques || [];
+  const safeMosques = mosques || [];
 
-    if (!hasSearched || !filterActive || safeMosques.length === 0) return [];
+  if (!hasSearched || !filterActive || safeMosques.length === 0) return [];
 
-    const referenceLocation = centerLocation || { lat: 24.7136, lon: 46.6753 };
+  const referenceLocation = centerLocation || { lat: 24.7136, lon: 46.6753 };
 
-    return safeMosques
-      .map((mosque) => {
-        const distance = calculateDistance(
-          referenceLocation.lat,
-          referenceLocation.lon,
-          mosque.lat,
-          mosque.lon
-        );
-        const travelTime = calculateTravelTime(distance);
-        return { ...mosque, travelTime };
-      })
-      .filter((mosque) => mosque.travelTime <= maxTravelTime);
-  }, [mosques, centerLocation, maxTravelTime, hasSearched, filterActive]);
+  return safeMosques
+    .map((mosque) => {
+      const distance = calculateDistance(
+        referenceLocation.lat,
+        referenceLocation.lon,
+        mosque.lat,
+        mosque.lon
+      );
+      const travelTime = calculateTravelTime(distance);
+      return { ...mosque, travelTime };
+    })
+    .filter((mosque) => mosque.travelTime <= maxTravelTime);
 };
 
 /**
@@ -231,25 +229,23 @@ export const usePropertiesNearSchools = (
   nearbySchools: any[],
   maxSchoolTime: number
 ): any[] => {
-  return useMemo(() => {
-    const safeProperties = properties || [];
-    const safeNearbySchools = nearbySchools || [];
+  const safeProperties = properties || [];
+  const safeNearbySchools = nearbySchools || [];
 
-    if (safeNearbySchools.length === 0) return safeProperties;
+  if (safeNearbySchools.length === 0) return safeProperties;
 
-    return safeProperties.filter((property) => {
-      const lat = Number(property.lat);
-      const lon = Number(property.lon);
+  return safeProperties.filter((property) => {
+    const lat = Number(property.lat);
+    const lon = Number(property.lon);
 
-      if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
+    if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
-      return safeNearbySchools.some((school) => {
-        const distance = calculateDistance(lat, lon, school.lat, school.lon);
-        const travelTime = calculateTravelTime(distance);
-        return travelTime <= maxSchoolTime;
-      });
+    return safeNearbySchools.some((school) => {
+      const distance = calculateDistance(lat, lon, school.lat, school.lon);
+      const travelTime = calculateTravelTime(distance);
+      return travelTime <= maxSchoolTime;
     });
-  }, [properties, nearbySchools, maxSchoolTime]);
+  });
 };
 
 /**
@@ -260,52 +256,48 @@ export const usePropertiesNearUniversities = (
   nearbyUniversities: any[],
   maxUniversityTime: number
 ): any[] => {
-  return useMemo(() => {
-    const safeProperties = properties || [];
-    const safeNearbyUniversities = nearbyUniversities || [];
+  const safeProperties = properties || [];
+  const safeNearbyUniversities = nearbyUniversities || [];
 
-    if (safeNearbyUniversities.length === 0) return safeProperties;
+  if (safeNearbyUniversities.length === 0) return safeProperties;
 
-    return safeProperties.filter((property) => {
-      const lat = Number(property.lat);
-      const lon = Number(property.lon);
+  return safeProperties.filter((property) => {
+    const lat = Number(property.lat);
+    const lon = Number(property.lon);
 
-      if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
+    if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
-      return safeNearbyUniversities.some((uni) => {
-        const distance = calculateDistance(lat, lon, uni.lat, uni.lon);
-        const travelTime = calculateTravelTime(distance);
-        return travelTime <= maxUniversityTime;
-      });
+    return safeNearbyUniversities.some((uni) => {
+      const distance = calculateDistance(lat, lon, uni.lat, uni.lon);
+      const travelTime = calculateTravelTime(distance);
+      return travelTime <= maxUniversityTime;
     });
-  }, [properties, nearbyUniversities, maxUniversityTime]);
+  });
 };
 
 /**
- * Filters properties near mosques (memoized)
+ * Filters properties near mosques
  */
 export const usePropertiesNearMosques = (
   properties: any[],
   nearbyMosques: any[],
   maxMosqueTime: number
 ): any[] => {
-  return useMemo(() => {
-    const safeProperties = properties || [];
-    const safeNearbyMosques = nearbyMosques || [];
+  const safeProperties = properties || [];
+  const safeNearbyMosques = nearbyMosques || [];
 
-    if (safeNearbyMosques.length === 0) return safeProperties;
+  if (safeNearbyMosques.length === 0) return safeProperties;
 
-    return safeProperties.filter((property) => {
-      const lat = Number(property.lat);
-      const lon = Number(property.lon);
+  return safeProperties.filter((property) => {
+    const lat = Number(property.lat);
+    const lon = Number(property.lon);
 
-      if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
+    if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return false;
 
-      return safeNearbyMosques.some((mosque) => {
-        const distance = calculateDistance(lat, lon, mosque.lat, mosque.lon);
-        const travelTime = calculateTravelTime(distance);
-        return travelTime <= maxMosqueTime;
-      });
+    return safeNearbyMosques.some((mosque) => {
+      const distance = calculateDistance(lat, lon, mosque.lat, mosque.lon);
+      const travelTime = calculateTravelTime(distance);
+      return travelTime <= maxMosqueTime;
     });
-  }, [properties, nearbyMosques, maxMosqueTime]);
+  });
 };
