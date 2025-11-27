@@ -25,24 +25,20 @@ export const useOptimizedFavoritesLogic = ({
   toggleFavorite,
   t,
 }: OptimizedFavoritesLogicProps) => {
-  // Memoize displayed favorites
-  const displayedFavorites = useMemo(() => {
-    const propsArray = properties || [];
-    const favsArray = favorites || [];
-    return propsArray.filter((p) => favsArray.includes(p.id));
-  }, [properties, favorites]);
+  // Always work with safe arrays to avoid undefined issues
+  const propsArray = Array.isArray(properties) ? properties : [];
+  const favsArray = Array.isArray(favorites) ? favorites : [];
 
-  // Memoize favorites count
-  const favoritesCount = useMemo(() => (favorites || []).length, [favorites]);
-
-  // Memoize hasFavorites check
-  const hasFavorites = useMemo(() => favoritesCount > 0, [favoritesCount]);
+  // Compute favorites synchronously (cheap vs. risk of hook dependency bugs)
+  const displayedFavorites = propsArray.filter((p) => favsArray.includes(p.id));
+  const favoritesCount = favsArray.length;
+  const hasFavorites = favoritesCount > 0;
 
   // Memoized toggle handler
   const handleToggleFavorite = useCallback(
     (propertyId: string) => {
       toggleFavorite(propertyId);
-      
+
       if (isFavorite(propertyId)) {
         toast({ title: t("removedFromFavorites") });
       } else {
