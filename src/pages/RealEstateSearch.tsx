@@ -123,6 +123,10 @@ const RealEstateSearch = () => {
     maxMosqueTime: 30,
   });
 
+  // Applied filters - only these trigger property refetch
+  const [appliedFilters, setAppliedFilters] = useState(filters);
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
+
   const [customSearchTerms, setCustomSearchTerms] = useState({
     propertyType: "",
     neighborhood: "",
@@ -167,6 +171,7 @@ const RealEstateSearch = () => {
   useEffect(() => {
     if (searchQuery.trim() !== "") {
       setHasSearched(true);
+      setAppliedSearchQuery(searchQuery);
     }
   }, [searchQuery]);
 
@@ -372,7 +377,7 @@ const RealEstateSearch = () => {
   });
 
   const { data: properties = [], isLoading } = useQuery({
-    queryKey: ["properties", transactionType, filters, searchQuery, customSearchTerms],
+    queryKey: ["properties", transactionType, appliedFilters, appliedSearchQuery],
     queryFn: async () => {
       let query = supabase
         .from("properties")
@@ -381,21 +386,21 @@ const RealEstateSearch = () => {
         .not("final_lat", "is", null)
         .not("final_lon", "is", null);
 
-      if (filters.propertyType) query = query.eq("property_type", filters.propertyType);
-      if (filters.neighborhood) query = query.eq("district", filters.neighborhood);
-      if (searchQuery) {
-        query = query.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
+      if (appliedFilters.propertyType) query = query.eq("property_type", appliedFilters.propertyType);
+      if (appliedFilters.neighborhood) query = query.eq("district", appliedFilters.neighborhood);
+      if (appliedSearchQuery) {
+        query = query.or(`city.ilike.%${appliedSearchQuery}%,district.ilike.%${appliedSearchQuery}%,title.ilike.%${appliedSearchQuery}%`);
       }
-      if (filters.bedrooms && filters.bedrooms !== "other") {
-        const count = parseInt(filters.bedrooms);
+      if (appliedFilters.bedrooms && appliedFilters.bedrooms !== "other") {
+        const count = parseInt(appliedFilters.bedrooms);
         if (!isNaN(count)) query = query.eq("rooms", count);
       }
-      if (filters.bathrooms && filters.bathrooms !== "other") {
-        const count = parseInt(filters.bathrooms);
+      if (appliedFilters.bathrooms && appliedFilters.bathrooms !== "other") {
+        const count = parseInt(appliedFilters.bathrooms);
         if (!isNaN(count)) query = query.eq("baths", count);
       }
-      if (filters.livingRooms && filters.livingRooms !== "other") {
-        const count = parseInt(filters.livingRooms);
+      if (appliedFilters.livingRooms && appliedFilters.livingRooms !== "other") {
+        const count = parseInt(appliedFilters.livingRooms);
         if (!isNaN(count)) query = query.eq("halls", count);
       }
 
@@ -409,24 +414,24 @@ const RealEstateSearch = () => {
         const area = typeof areaValue === "string" ? parseFloat(areaValue.replace(/,/g, "")) : Number(areaValue) || 0;
 
         let priceMatch = true;
-        if (filters.minPrice > 0 && filters.maxPrice > 0) priceMatch = price >= filters.minPrice && price <= filters.maxPrice;
-        else if (filters.minPrice > 0) priceMatch = price >= filters.minPrice;
-        else if (filters.maxPrice > 0) priceMatch = price <= filters.maxPrice;
+        if (appliedFilters.minPrice > 0 && appliedFilters.maxPrice > 0) priceMatch = price >= appliedFilters.minPrice && price <= appliedFilters.maxPrice;
+        else if (appliedFilters.minPrice > 0) priceMatch = price >= appliedFilters.minPrice;
+        else if (appliedFilters.maxPrice > 0) priceMatch = price <= appliedFilters.maxPrice;
 
         let areaMatch = true;
-        if (filters.areaMin > 0 && filters.areaMax > 0) areaMatch = area >= filters.areaMin && area <= filters.areaMax;
-        else if (filters.areaMin > 0) areaMatch = area >= filters.areaMin;
-        else if (filters.areaMax > 0) areaMatch = area <= filters.areaMax;
+        if (appliedFilters.areaMin > 0 && appliedFilters.areaMax > 0) areaMatch = area >= appliedFilters.areaMin && area <= appliedFilters.areaMax;
+        else if (appliedFilters.areaMin > 0) areaMatch = area >= appliedFilters.areaMin;
+        else if (appliedFilters.areaMax > 0) areaMatch = area <= appliedFilters.areaMax;
 
         let metroMatch = true;
-        if (filters.nearMetro) {
+        if (appliedFilters.nearMetro) {
           if (!property.time_to_metro_min) metroMatch = false;
           else {
             const metroTime =
               typeof property.time_to_metro_min === "string"
                 ? parseFloat(property.time_to_metro_min)
                 : Number(property.time_to_metro_min);
-            metroMatch = !isNaN(metroTime) && metroTime <= filters.minMetroTime;
+            metroMatch = !isNaN(metroTime) && metroTime <= appliedFilters.minMetroTime;
           }
         }
         return priceMatch && areaMatch && metroMatch;
@@ -544,7 +549,7 @@ const RealEstateSearch = () => {
   const nearbySchools = useMemo(() => {
     if (!hasSearched) return [];
     const requestedFromChatbot = currentCriteria?.school_requirements?.required;
-    const requestedFromFilters = filters.schoolGender || filters.schoolLevel;
+    const requestedFromFilters = appliedFilters.schoolGender || appliedFilters.schoolLevel;
     if (!requestedFromChatbot && !requestedFromFilters) return [];
     if (allSchools.length === 0) return [];
 
@@ -562,13 +567,13 @@ const RealEstateSearch = () => {
         const travelTime = calculateTravelTime(distance);
         return { ...school, travelTime };
       })
-      .filter((school) => school.travelTime <= filters.maxSchoolTime);
+      .filter((school) => school.travelTime <= appliedFilters.maxSchoolTime);
   }, [
     allSchools,
     propertiesCenterLocation,
-    filters.maxSchoolTime,
-    filters.schoolGender,
-    filters.schoolLevel,
+    appliedFilters.maxSchoolTime,
+    appliedFilters.schoolGender,
+    appliedFilters.schoolLevel,
     hasSearched,
     currentCriteria,
   ]);
@@ -598,8 +603,8 @@ const RealEstateSearch = () => {
   const nearbyUniversities = useMemo(() => {
     if (!hasSearched) return [];
 
-    const hasSelectedUniversity = !!filters.selectedUniversity;
-    const timeFilterChanged = filters.maxUniversityTime < 30;
+    const hasSelectedUniversity = !!appliedFilters.selectedUniversity;
+    const timeFilterChanged = appliedFilters.maxUniversityTime < 30;
     const requestedFromChatbot = !!currentCriteria?.university_requirements;
 
     // University filter is active if: specific university selected, or time slider adjusted (not at default 30), or chatbot requested it
@@ -610,7 +615,7 @@ const RealEstateSearch = () => {
     // otherwise the selected university can be excluded incorrectly. We only filter by name here;
     // the time filter is applied later per-property in displayedProperties.
     if (hasSelectedUniversity) {
-      const searchTerm = filters.selectedUniversity!;
+      const searchTerm = appliedFilters.selectedUniversity!;
 
       // Use property center if available, otherwise fallback to Riyadh center (24.7136, 46.6753)
       const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
@@ -647,12 +652,12 @@ const RealEstateSearch = () => {
         const travelTime = calculateTravelTime(distance);
         return { ...university, travelTime };
       })
-      .filter((university) => university.travelTime <= filters.maxUniversityTime);
+      .filter((university) => university.travelTime <= appliedFilters.maxUniversityTime);
   }, [
     allUniversities,
     propertiesCenterLocation,
-    filters.maxUniversityTime,
-    filters.selectedUniversity,
+    appliedFilters.maxUniversityTime,
+    appliedFilters.selectedUniversity,
     hasSearched,
     currentCriteria,
   ]);
@@ -676,7 +681,7 @@ const RealEstateSearch = () => {
   });
 
   const nearbyMosques = useMemo(() => {
-    if (!hasSearched || !filters.nearMosques || allMosques.length === 0) return [];
+    if (!hasSearched || !appliedFilters.nearMosques || allMosques.length === 0) return [];
     
     // Use property center if available, otherwise fallback to Riyadh center (24.7136, 46.6753)
     const referenceLocation = propertiesCenterLocation || { lat: 24.7136, lon: 46.6753 };
@@ -692,14 +697,14 @@ const RealEstateSearch = () => {
         const travelTime = calculateTravelTime(distance);
         return { ...mosque, travelTime };
       })
-      .filter((mosque) => mosque.travelTime <= filters.maxMosqueTime);
+      .filter((mosque) => mosque.travelTime <= appliedFilters.maxMosqueTime);
     return nearby;
-  }, [allMosques, propertiesCenterLocation, filters.maxMosqueTime, filters.nearMosques, hasSearched]);
+  }, [allMosques, propertiesCenterLocation, appliedFilters.maxMosqueTime, appliedFilters.nearMosques, hasSearched]);
 
   const displayedProperties = useMemo(() => {
     let filtered = [...baseProperties];
 
-    if (hasSearched && (filters.schoolGender || filters.schoolLevel) && nearbySchools.length > 0) {
+    if (hasSearched && (appliedFilters.schoolGender || appliedFilters.schoolLevel) && nearbySchools.length > 0) {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
@@ -707,13 +712,13 @@ const RealEstateSearch = () => {
         return nearbySchools.some((school) => {
           const distance = calculateDistance(lat, lon, school.lat, school.lon);
           const travelTime = calculateTravelTime(distance);
-          return travelTime <= filters.maxSchoolTime;
+          return travelTime <= appliedFilters.maxSchoolTime;
         });
       });
     }
 
     // Filter by university if filter is active (specific university OR time slider adjusted)
-    const universityFilterActive = filters.selectedUniversity || filters.maxUniversityTime < 30;
+    const universityFilterActive = appliedFilters.selectedUniversity || appliedFilters.maxUniversityTime < 30;
     if (universityFilterActive && nearbyUniversities.length > 0) {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
@@ -722,12 +727,12 @@ const RealEstateSearch = () => {
         return nearbyUniversities.some((uni) => {
           const distance = calculateDistance(lat, lon, uni.lat, uni.lon);
           const travelTime = calculateTravelTime(distance);
-          return travelTime <= filters.maxUniversityTime;
+          return travelTime <= appliedFilters.maxUniversityTime;
         });
       });
     }
 
-    if (filters.nearMosques && nearbyMosques.length > 0) {
+    if (appliedFilters.nearMosques && nearbyMosques.length > 0) {
       filtered = filtered.filter((property) => {
         const lat = Number(property.lat);
         const lon = Number(property.lon);
@@ -735,7 +740,7 @@ const RealEstateSearch = () => {
         return nearbyMosques.some((mosque) => {
           const distance = calculateDistance(lat, lon, mosque.lat, mosque.lon);
           const travelTime = calculateTravelTime(distance);
-          return travelTime <= filters.maxMosqueTime;
+          return travelTime <= appliedFilters.maxMosqueTime;
         });
       });
     }
@@ -744,13 +749,13 @@ const RealEstateSearch = () => {
   }, [
     baseProperties,
     hasSearched,
-    filters.schoolGender,
-    filters.schoolLevel,
-    filters.maxSchoolTime,
-    filters.selectedUniversity,
-    filters.maxUniversityTime,
-    filters.nearMosques,
-    filters.maxMosqueTime,
+    appliedFilters.schoolGender,
+    appliedFilters.schoolLevel,
+    appliedFilters.maxSchoolTime,
+    appliedFilters.selectedUniversity,
+    appliedFilters.maxUniversityTime,
+    appliedFilters.nearMosques,
+    appliedFilters.maxMosqueTime,
     nearbySchools,
     nearbyUniversities,
     nearbyMosques,
@@ -827,7 +832,7 @@ const RealEstateSearch = () => {
   }
 
   const resetFilters = () => {
-    setFilters({
+    const resetState = {
       propertyType: "",
       city: "الرياض",
       neighborhood: "",
@@ -848,7 +853,11 @@ const RealEstateSearch = () => {
       nearHospitals: false,
       nearMosques: false,
       maxMosqueTime: 30,
-    });
+    };
+    setFilters(resetState);
+    setAppliedFilters(resetState);
+    setSearchQuery("");
+    setAppliedSearchQuery("");
     setCustomSearchTerms({
       propertyType: "",
       neighborhood: "",
@@ -1957,6 +1966,8 @@ const RealEstateSearch = () => {
                           size="lg"
                           className="flex-1 h-12 bg-gradient-to-r from-primary to-accent shadow-glow hover:shadow-elevated hover:scale-105 transition-all duration-300 font-bold"
                           onClick={() => {
+                            setAppliedFilters(filters);
+                            setAppliedSearchQuery(searchQuery);
                             setShowFilters(false);
                             setHasSearched(true);
                           }}
