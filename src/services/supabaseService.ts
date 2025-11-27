@@ -18,15 +18,21 @@ export const fetchProperties = async (
     bedrooms?: string;
     bathrooms?: string;
     livingRooms?: string;
+    city?: string;
   },
   searchQuery: string
 ) => {
   let query = supabase
     .from("properties")
-    .select("id, lat, lon, final_lat, final_lon, title, price_num, property_type, district, image_url, rooms, baths, area_m2, purpose")
+    .select("id, lat, lon, final_lat, final_lon, title, price_num, property_type, district, image_url, rooms, baths, area_m2, purpose, city")
     .eq("purpose", transactionType === "sale" ? "للبيع" : "للايجار")
     .not("final_lat", "is", null)
     .not("final_lon", "is", null);
+
+  // Apply city filter (Riyadh only)
+  if (filters.city) {
+    query = query.eq("city", filters.city);
+  }
 
   if (filters.propertyType) query = query.eq("property_type", filters.propertyType);
   if (filters.neighborhood) query = query.eq("district", filters.neighborhood);
