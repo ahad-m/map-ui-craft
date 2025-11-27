@@ -1,40 +1,24 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from '@vis.gl/react-google-maps';
-import {
-  Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Plus,
-  Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart,
-  MapPin, Camera, Edit, Star, MessageSquare, Scissors, Store,
-  Stethoscope, Candy, MoreHorizontal, Languages, User, Search, Mic, X
-} from 'lucide-react';
+import { Search, Mic, User, Home, UtensilsCrossed, Shirt, ShoppingBag, Navigation, Languages, Plus, Coffee, Building2, GraduationCap, Hospital, Fuel, ShoppingCart, MapPin, Camera, Edit, Star, MessageSquare, X, Scissors, Store, Stethoscope, Candy, MoreHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
+import { supabase } from '@/integrations/supabase/client';
 
-// Import refactored components
-import { SearchBar } from '@/components/map/SearchBar';
-import { CategoryButtons } from '@/components/map/CategoryButtons';
-import { UserProfileSheet } from '@/components/map/UserProfileSheet';
-import { ExploreSheet } from '@/components/map/ExploreSheet';
-import { useMapControls } from '@/hooks/useMapControls';
-
-/**
- * MapContent component - Main content for map screen
- * Handles location search, categories, and map interactions
- */
 const MapContent = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  
-  // State management
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState({ lat: 24.7136, lng: 46.6753 });
+  const [mapZoom, setMapZoom] = useState(12);
   const [showExploreSheet, setShowExploreSheet] = useState(false);
   const [showContributeSheet, setShowContributeSheet] = useState(false);
   const [searchResults, setSearchResults] = useState<google.maps.places.AutocompletePrediction[]>([]);
@@ -42,10 +26,6 @@ const MapContent = () => {
   const [selectedPlace, setSelectedPlace] = useState<google.maps.places.PlaceResult | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
-  // Custom hook for map controls
-  const { mapCenter, mapZoom, updateMapState, resetMapToDefault, centerMapOn } = useMapControls();
-  
-  // Google Places API
   const places = useMapsLibrary('places');
   const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
   const placesService = useRef<google.maps.places.PlacesService | null>(null);
@@ -130,23 +110,21 @@ const MapContent = () => {
             lng: position.coords.longitude,
           };
           setUserLocation(location);
-          centerMapOn(location.lat, location.lng, 15);
+          setMapCenter(location);
+          setMapZoom(15);
         },
         (error) => {
           console.log('Location access denied or unavailable', error);
         }
       );
     }
-  }, [centerMapOn]);
+  }, []);
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'ar' : 'en';
     i18n.changeLanguage(newLang);
   };
 
-  /**
-   * Handle search execution
-   */
   const handleSearch = () => {
     if (searchQuery.trim() && searchResults.length > 0) {
       const firstResult = searchResults[0];
@@ -163,16 +141,14 @@ const MapContent = () => {
     }
   };
 
-  /**
-   * Handle place selection from search results
-   */
   const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
     if (place && place.geometry && place.geometry.location) {
       const location = {
         lat: place.geometry.location.lat(),
         lng: place.geometry.location.lng(),
       };
-      centerMapOn(location.lat, location.lng, 17);
+      setMapCenter(location);
+      setMapZoom(17);
       setSelectedPlace(place);
       setSearchQuery(place.name || '');
       setShowSearchResults(false);
@@ -191,13 +167,12 @@ const MapContent = () => {
     toast.info(t('voiceSearchNotAvailable') || 'Voice search is not available yet');
   };
 
-  /**
-   * Handle category button click
-   */
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
     if (category === t('home')) {
-      resetMapToDefault();
+      // Reset to default Riyadh location
+      setMapCenter({ lat: 24.7136, lng: 46.6753 });
+      setMapZoom(12);
       clearSearch();
       toast.info(t('backToHome') || 'Back to home location');
     } else {
@@ -206,9 +181,6 @@ const MapContent = () => {
     }
   };
 
-  /**
-   * Get user's current location
-   */
   const handleMyLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -218,7 +190,9 @@ const MapContent = () => {
             lng: position.coords.longitude,
           };
           setUserLocation(location);
-          centerMapOn(location.lat, location.lng, 16);
+          setMapCenter(location);
+          setMapZoom(16);
+          
           toast.success(t('locationFound') || 'Location found');
         },
         () => {
@@ -229,25 +203,6 @@ const MapContent = () => {
       toast.error(t('locationNotSupported') || 'Geolocation is not supported');
     }
   };
-
-  // Get user location on mount
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setUserLocation(location);
-          centerMapOn(location.lat, location.lng, 15);
-        },
-        (error) => {
-          console.log('Location access denied or unavailable', error);
-        }
-      );
-    }
-  }, [centerMapOn]);
 
   const handleContribute = () => {
     setShowContributeSheet(true);
