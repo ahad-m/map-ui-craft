@@ -111,6 +111,14 @@ export const OptimizedSearchContainer = memo(({
     minMetroTime: filters.minMetroTime,
   });
 
+  // Log filtering pipeline for debugging
+  useEffect(() => {
+    console.log(`🔍 Property filtering pipeline:
+      - Raw from DB: ${rawProperties.length}
+      - After price/area filters: ${properties.length}
+      - Transaction type: ${transactionType}`);
+  }, [rawProperties.length, properties.length, transactionType]);
+
   // Base properties (chatbot or filtered)
   const baseProperties = useMemo(
     () => (showChatbotResults ? chatbotProperties : properties),
@@ -201,16 +209,20 @@ export const OptimizedSearchContainer = memo(({
       return !isNaN(lat) && !isNaN(lon) && !(lat === 0 && lon === 0);
     });
     
-    // Log mismatch for debugging
+    // Comprehensive logging for debugging
     if (valid.length !== displayedProperties.length) {
-      console.warn(`Property count mismatch: ${displayedProperties.length} total, ${valid.length} valid coordinates, ${displayedProperties.length - valid.length} invalid`);
+      console.warn(`⚠️ Property count mismatch: ${displayedProperties.length} total, ${valid.length} valid coordinates, ${displayedProperties.length - valid.length} invalid`);
     }
     
-    // Log final count for verification
-    console.log(`✓ Synchronized count: ${valid.length} properties (map pins = results counter)`);
+    // Log final synchronized count
+    console.log(`✓ Final synchronized count: ${valid.length} properties
+      - Base properties: ${baseProperties.length}
+      - After geo filters: ${displayedProperties.length}
+      - Valid coordinates: ${valid.length}
+      - Map pins will show: ${valid.length}`);
     
     return valid;
-  }, [displayedProperties]);
+  }, [displayedProperties, baseProperties.length]);
 
   // Optimized favorites logic (use validDisplayedProperties for accurate counts)
   const { displayedFavorites, favoritesCount, handleToggleFavorite, isPropertyFavorited } = useOptimizedFavoritesLogic({
