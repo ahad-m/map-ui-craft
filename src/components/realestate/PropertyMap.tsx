@@ -8,25 +8,11 @@
  */
 
 import { useEffect, useRef } from "react";
-import { Map, AdvancedMarker, Pin, useMap } from "@vis.gl/react-google-maps";
+import { Map, AdvancedMarker, Pin } from "@vis.gl/react-google-maps";
 import { School, GraduationCap, Check, Heart } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import mosqueIcon from "@/assets/mosque-icon.png";
-
-/**
- * Component to capture map reference
- * Must be inside Map component to access map instance
- */
-const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.Map | null> }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (map) {
-      mapRef.current = map;
-    }
-  }, [map, mapRef]);
-  return null;
-};
 
 interface PropertyMapProps {
   /** Properties to display as markers */
@@ -55,6 +41,8 @@ interface PropertyMapProps {
   language: string;
   /** Callback when property marker is clicked */
   onPropertyClick: (property: any) => void;
+  /** Callback when map finishes loading */
+  onMapLoad: () => void;
   /** Translation function */
   t: (key: string) => string;
 }
@@ -79,6 +67,7 @@ export const PropertyMap = ({
   defaultZoom,
   language,
   onPropertyClick,
+  onMapLoad,
   t,
 }: PropertyMapProps) => {
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -110,8 +99,13 @@ export const PropertyMap = ({
       mapId="real-estate-map"
       gestureHandling="greedy"
       disableDefaultUI={false}
+      onCameraChanged={(ev) => {
+        if (ev.map && !mapRef.current) {
+          mapRef.current = ev.map;
+          onMapLoad();
+        }
+      }}
     >
-      <MapRefHandler mapRef={mapRef} />
       
       {/* Property Markers */}
       {properties.map((property) => {

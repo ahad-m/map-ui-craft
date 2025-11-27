@@ -38,6 +38,7 @@ interface UseOptimizedPropertyDataProps {
     schoolGender: string;
     schoolLevel: string;
   };
+  enabled?: boolean;
 }
 
 /**
@@ -48,6 +49,7 @@ export const useOptimizedPropertyData = ({
   filters,
   searchQuery,
   customSearchTerms,
+  enabled = true,
 }: UseOptimizedPropertyDataProps) => {
   // Debounce search queries for performance
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
@@ -63,7 +65,7 @@ export const useOptimizedPropertyData = ({
     schoolLevels: ["nursery", "kindergarten", "elementary", "middle", "high"],
   }), []);
 
-  // Main properties query with aggressive caching
+  // Main properties query with aggressive caching (deferred until map loads)
   const { data: rawProperties = [], isLoading: isLoadingProperties } = useQuery({
     queryKey: ["properties", transactionType, filters, debouncedSearchQuery],
     queryFn: async () => {
@@ -80,8 +82,9 @@ export const useOptimizedPropertyData = ({
       );
       return data || [];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled,
+    staleTime: 15 * 60 * 1000, // 15 minutes - instant cache hit
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep in memory
   });
 
   // Property types query
@@ -153,7 +156,7 @@ export const useOptimizedPropertyData = ({
     gcTime: 30 * 60 * 1000,
   });
 
-  // Schools query
+  // Schools query (fetched immediately for static data)
   const { data: allSchools = [] } = useQuery({
     queryKey: ["schools", filters.schoolGender, filters.schoolLevel, debouncedSchoolSearch],
     queryFn: async () => {
@@ -164,30 +167,30 @@ export const useOptimizedPropertyData = ({
       );
       return data || [];
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 15 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 
-  // Universities query
+  // Universities query (fetched immediately for static data)
   const { data: allUniversities = [] } = useQuery({
     queryKey: ["universities", debouncedUniversitySearch],
     queryFn: async () => {
       const data = await fetchUniversities(debouncedUniversitySearch);
       return data || [];
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 15 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 
-  // Mosques query (static data, long cache)
+  // Mosques query (static data, long cache, fetched immediately)
   const { data: allMosques = [] } = useQuery({
     queryKey: ["mosques"],
     queryFn: async () => {
       const data = await fetchMosques();
       return data || [];
     },
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 120 * 60 * 1000, // 2 hours
   });
 
   // Memoized combined property types
