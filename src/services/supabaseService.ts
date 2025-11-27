@@ -23,7 +23,7 @@ export const fetchProperties = async (
 ) => {
   let query = supabase
     .from("properties")
-    .select("*")
+    .select("id, lat, lon, final_lat, final_lon, title, price_num, property_type, district, image_url, rooms, baths, area_m2, purpose")
     .eq("purpose", transactionType === "sale" ? "للبيع" : "للايجار")
     .not("final_lat", "is", null)
     .not("final_lon", "is", null);
@@ -46,7 +46,8 @@ export const fetchProperties = async (
     if (!isNaN(count)) query = query.eq("halls", count);
   }
 
-  const { data, error } = await query.limit(1000);
+  // No limit - return ALL matching records
+  const { data, error } = await query;
   if (error) throw error;
 
   return data || [];
