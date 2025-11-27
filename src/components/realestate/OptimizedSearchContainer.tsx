@@ -27,9 +27,9 @@ import {
   useNearbySchools,
   useNearbyUniversities,
   useNearbyMosques,
-  usePropertiesNearSchools,
-  usePropertiesNearUniversities,
-  usePropertiesNearMosques,
+  filterPropertiesNearSchools,
+  filterPropertiesNearUniversities,
+  filterPropertiesNearMosques,
 } from "@/hooks/useOptimizedGeoFiltering";
 import { useOptimizedPropertyData } from "@/hooks/useOptimizedPropertyData";
 import { useFilterState } from "@/hooks/useFilterState";
@@ -167,15 +167,15 @@ export const OptimizedSearchContainer = memo(({
     let result = baseProperties;
 
     if (hasSearched && schoolFilterActive && nearbySchools.length > 0) {
-      result = usePropertiesNearSchools(result, nearbySchools, filters.maxSchoolTime);
+      result = filterPropertiesNearSchools(result, nearbySchools, filters.maxSchoolTime);
     }
 
     if (universityFilterActive && nearbyUniversities.length > 0) {
-      result = usePropertiesNearUniversities(result, nearbyUniversities, filters.maxUniversityTime);
+      result = filterPropertiesNearUniversities(result, nearbyUniversities, filters.maxUniversityTime);
     }
 
     if (filters.nearMosques && nearbyMosques.length > 0) {
-      result = usePropertiesNearMosques(result, nearbyMosques, filters.maxMosqueTime);
+      result = filterPropertiesNearMosques(result, nearbyMosques, filters.maxMosqueTime);
     }
 
     return result;
