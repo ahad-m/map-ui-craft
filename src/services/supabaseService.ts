@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Fetches properties based on transaction type and filters
- * Implements pagination to ensure ALL matching records are returned
  */
 export const fetchProperties = async (
   transactionType: "rent" | "sale",
@@ -22,67 +21,36 @@ export const fetchProperties = async (
   },
   searchQuery: string
 ) => {
-  const PAGE_SIZE = 1000; // Supabase default limit
-  let allProperties: any[] = [];
-  let page = 0;
-  let hasMore = true;
+  let query = supabase
+    .from("properties")
+    .select("id, lat, lon, final_lat, final_lon, title, price_num, property_type, district, image_url, rooms, baths, area_m2, purpose")
+    .eq("purpose", transactionType === "sale" ? "للبيع" : "للايجار")
+    .not("final_lat", "is", null)
+    .not("final_lon", "is", null);
 
-  while (hasMore) {
-    let query = supabase
-      .from("properties")
-      .select("id, lat, lon, final_lat, final_lon, title, price_num, property_type, district, image_url, rooms, baths, area_m2, purpose", { count: 'exact' })
-      .eq("purpose", transactionType === "sale" ? "للبيع" : "للايجار")
-      .not("final_lat", "is", null)
-      .not("final_lon", "is", null);
-
-    if (filters.propertyType) query = query.eq("property_type", filters.propertyType);
-    if (filters.neighborhood) query = query.eq("district", filters.neighborhood);
-    if (searchQuery) {
-      query = query.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
-    }
-    if (filters.bedrooms && filters.bedrooms !== "other") {
-      const count = parseInt(filters.bedrooms);
-      if (!isNaN(count)) query = query.eq("rooms", count);
-    }
-    if (filters.bathrooms && filters.bathrooms !== "other") {
-      const count = parseInt(filters.bathrooms);
-      if (!isNaN(count)) query = query.eq("baths", count);
-    }
-    if (filters.livingRooms && filters.livingRooms !== "other") {
-      const count = parseInt(filters.livingRooms);
-      if (!isNaN(count)) query = query.eq("halls", count);
-    }
-
-    // Apply pagination
-    query = query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-
-    const { data, error, count } = await query;
-    if (error) throw error;
-
-    if (data && data.length > 0) {
-      allProperties = [...allProperties, ...data];
-      
-      // Log pagination progress
-      console.log(`📊 Fetched page ${page + 1}: ${data.length} properties (Total so far: ${allProperties.length})`);
-      
-      // Check if there are more records
-      hasMore = data.length === PAGE_SIZE;
-      page++;
-    } else {
-      hasMore = false;
-    }
-
-    // Safety check to prevent infinite loops
-    if (page > 100) {
-      console.warn('⚠️ Pagination limit reached (100 pages). Some results may be missing.');
-      break;
-    }
+  if (filters.propertyType) query = query.eq("property_type", filters.propertyType);
+  if (filters.neighborhood) query = query.eq("district", filters.neighborhood);
+  if (searchQuery) {
+    query = query.or(`city.ilike.%${searchQuery}%,district.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`);
+  }
+  if (filters.bedrooms && filters.bedrooms !== "other") {
+    const count = parseInt(filters.bedrooms);
+    if (!isNaN(count)) query = query.eq("rooms", count);
+  }
+  if (filters.bathrooms && filters.bathrooms !== "other") {
+    const count = parseInt(filters.bathrooms);
+    if (!isNaN(count)) query = query.eq("baths", count);
+  }
+  if (filters.livingRooms && filters.livingRooms !== "other") {
+    const count = parseInt(filters.livingRooms);
+    if (!isNaN(count)) query = query.eq("halls", count);
   }
 
-  // Final logging
-  console.log(`✅ fetchProperties completed: ${allProperties.length} total properties returned`);
-  
-  return allProperties;
+  // No limit - return ALL matching records
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return data || [];
 };
 
 /**
@@ -96,8 +64,7 @@ export const fetchPropertyTypes = async (searchTerm: string) => {
     .select("property_type")
     .not("property_type", "is", null)
     .not("property_type", "eq", "")
-    .ilike("property_type", `%${searchTerm}%`)
-    .limit(10000); // High limit to get all unique types
+    .ilike("property_type", `%${searchTerm}%`);
 
   if (error) throw error;
   return data || [];
@@ -117,7 +84,7 @@ export const fetchNeighborhoods = async (searchTerm?: string) => {
     query = query.ilike("district", `%${searchTerm}%`);
   }
 
-  const { data, error } = await query.limit(10000); // High limit to get all unique districts
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
 };
@@ -148,7 +115,7 @@ export const fetchSchools = async (
     query = query.or(`name.ilike.%${searchTerm}%,district.ilike.%${searchTerm}%`);
   }
 
-  const { data, error } = await query.order("name", { ascending: true }).limit(50000); // High limit for all schools
+  const { data, error } = await query.order("name", { ascending: true });
   if (error) throw error;
   return data || [];
 };
@@ -203,7 +170,7 @@ export const fetchUniversities = async (searchTerm?: string) => {
     query = query.or(`name_ar.ilike.%${searchTerm}%,name_en.ilike.%${searchTerm}%`);
   }
 
-  const { data, error } = await query.order("name_ar", { ascending: true }).limit(10000); // High limit for all universities
+  const { data, error } = await query.order("name_ar", { ascending: true });
   if (error) throw error;
   return data || [];
 };
@@ -217,8 +184,7 @@ export const fetchMosques = async () => {
     .select("*")
     .not("lat", "is", null)
     .not("lon", "is", null)
-    .not("name", "is", null)
-    .limit(50000); // High limit for all mosques
+    .not("name", "is", null);
 
   if (error) {
     console.error("Error fetching mosques:", error);
