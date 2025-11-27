@@ -22,6 +22,7 @@ interface UseOptimizedPropertyDataProps {
   transactionType: "rent" | "sale";
   filters: {
     propertyType: string;
+    city: string;
     neighborhood: string;
     bedrooms: string;
     bathrooms: string;
@@ -78,6 +79,7 @@ export const useOptimizedPropertyData = ({
           bedrooms: filters.bedrooms,
           bathrooms: filters.bathrooms,
           livingRooms: filters.livingRooms,
+          city: filters.city,
         },
         debouncedSearchQuery
       );
