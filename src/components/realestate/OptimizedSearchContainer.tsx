@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
-import { PropertyMap } from "@/components/realestate/PropertyMap";
+import { ClusteredPropertyMap } from "@/components/realestate/ClusteredPropertyMap";
 import { FilterSheet } from "@/components/realestate/FilterSheet";
 import { OptimizedChatbotPanel } from "@/components/realestate/OptimizedChatbotPanel";
 import { FavoritesSheet } from "@/components/realestate/FavoritesSheet";
@@ -21,18 +21,9 @@ import { ResultsCounter } from "@/components/realestate/ResultsCounter";
 import { ClearChatbotButton } from "@/components/realestate/ClearChatbotButton";
 import { useChatbotSearch } from "@/hooks/useChatbotSearch";
 import { useOptimizedFavoritesLogic } from "@/hooks/useOptimizedFavoritesLogic";
-import {
-  usePropertiesCenter,
-  useFilteredProperties,
-  useNearbySchools,
-  useNearbyUniversities,
-  useNearbyMosques,
-  usePropertiesNearSchools,
-  usePropertiesNearUniversities,
-  usePropertiesNearMosques,
-} from "@/hooks/useOptimizedGeoFiltering";
-import { useOptimizedPropertyData } from "@/hooks/useOptimizedPropertyData";
+import { useViewportProperties } from "@/hooks/useViewportProperties";
 import { useFilterState } from "@/hooks/useFilterState";
+import { useFilterData } from "@/hooks/useFilterData";
 
 interface OptimizedSearchContainerProps {
   transactionType: "rent" | "sale";
@@ -55,6 +46,7 @@ export const OptimizedSearchContainer = memo(({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [visitedProperties, setVisitedProperties] = useState<Set<string>>(new Set());
+  const [viewport, setViewport] = useState<{ north: number; south: number; east: number; west: number } | null>(null);
 
   // Hooks
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
@@ -81,115 +73,46 @@ export const OptimizedSearchContainer = memo(({
     clearChatbotResults,
   } = useChatbotSearch(chatSearchResults, currentCriteria);
 
-  // Optimized data fetching with caching
+  // Viewport-based property loading (optimized for fast initial load)
+  const {
+    properties: viewportProperties,
+    isLoading: isLoadingViewport,
+    isMapReady,
+    handleMapReady,
+  } = useViewportProperties({
+    transactionType,
+    viewport,
+    filters: {
+      propertyType: filters.propertyType,
+      neighborhood: filters.neighborhood,
+    },
+  });
+
+  // For filters data (lightweight queries)
   const {
     allPropertyTypes,
     neighborhoods,
-    rawProperties,
     allSchoolGenders,
     allSchoolLevels,
     allSchools,
     allUniversities,
     allMosques,
-    isLoadingProperties,
-  } = useOptimizedPropertyData({
-    transactionType,
-    filters,
-    searchQuery,
+  } = useFilterData({
     customSearchTerms,
+    filters: {
+      schoolGender: filters.schoolGender,
+      schoolLevel: filters.schoolLevel,
+    },
   });
 
-  // Memoized filtered properties
-  const properties = useFilteredProperties(rawProperties, {
-    minPrice: filters.minPrice,
-    maxPrice: filters.maxPrice,
-    areaMin: filters.areaMin,
-    areaMax: filters.areaMax,
-    nearMetro: filters.nearMetro,
-    minMetroTime: filters.minMetroTime,
-  });
-
-  // Base properties (chatbot or filtered)
+  // Base properties (viewport-based or chatbot results)
   const baseProperties = useMemo(
-    () => (showChatbotResults ? chatbotProperties : properties),
-    [showChatbotResults, chatbotProperties, properties]
+    () => (showChatbotResults ? chatbotProperties : viewportProperties),
+    [showChatbotResults, chatbotProperties, viewportProperties]
   );
 
-  // Calculate properties center
-  const propertiesCenterLocation = usePropertiesCenter(baseProperties);
-
-  // Calculate nearby schools
-  const schoolFilterActive = useMemo(
-    () => !!(filters.schoolGender || filters.schoolLevel || currentCriteria?.school_requirements?.required),
-    [filters.schoolGender, filters.schoolLevel, currentCriteria]
-  );
-  
-  const nearbySchools = useNearbySchools(
-    allSchools,
-    propertiesCenterLocation,
-    filters.maxSchoolTime,
-    hasSearched,
-    schoolFilterActive
-  );
-
-  // Calculate nearby universities
-  const universityFilterActive = useMemo(
-    () => !!(
-      filters.selectedUniversity ||
-      filters.maxUniversityTime < 30 ||
-      currentCriteria?.university_requirements
-    ),
-    [filters.selectedUniversity, filters.maxUniversityTime, currentCriteria]
-  );
-  
-  const nearbyUniversities = useNearbyUniversities(
-    allUniversities,
-    propertiesCenterLocation,
-    filters.selectedUniversity,
-    filters.maxUniversityTime,
-    hasSearched,
-    universityFilterActive
-  );
-
-  // Calculate nearby mosques
-  const nearbyMosques = useNearbyMosques(
-    allMosques,
-    propertiesCenterLocation,
-    filters.maxMosqueTime,
-    hasSearched,
-    filters.nearMosques
-  );
-
-  // Apply geographic filters with memoization
-  const displayedProperties = useMemo(() => {
-    let result = baseProperties;
-
-    if (hasSearched && schoolFilterActive && nearbySchools.length > 0) {
-      result = usePropertiesNearSchools(result, nearbySchools, filters.maxSchoolTime);
-    }
-
-    if (universityFilterActive && nearbyUniversities.length > 0) {
-      result = usePropertiesNearUniversities(result, nearbyUniversities, filters.maxUniversityTime);
-    }
-
-    if (filters.nearMosques && nearbyMosques.length > 0) {
-      result = usePropertiesNearMosques(result, nearbyMosques, filters.maxMosqueTime);
-    }
-
-    return result;
-  }, [
-    baseProperties,
-    hasSearched,
-    schoolFilterActive,
-    nearbySchools,
-    filters.maxSchoolTime,
-    universityFilterActive,
-    nearbyUniversities,
-    filters.maxUniversityTime,
-    filters.nearMosques,
-    nearbyMosques,
-    filters.maxMosqueTime,
-  ]);
+  // Displayed properties (viewport-based for fast loading)
+  const displayedProperties = baseProperties;
 
   // Optimized favorites logic
   const { displayedFavorites, favoritesCount, handleToggleFavorite, isPropertyFavorited } = useOptimizedFavoritesLogic({
@@ -275,24 +198,23 @@ export const OptimizedSearchContainer = memo(({
     clearChatbotResults();
   }, [clearChat, clearChatbotResults]);
 
+  const handleViewportChange = useCallback((bounds: { north: number; south: number; east: number; west: number }) => {
+    setViewport(bounds);
+  }, []);
+
   return (
     <>
       <div className="absolute inset-0">
-        <PropertyMap
+        <ClusteredPropertyMap
           properties={displayedProperties}
-          transactionType={transactionType}
+          isLoading={isLoadingViewport}
+          onViewportChange={handleViewportChange}
+          onPropertyClick={handlePropertyClick}
+          onMapReady={handleMapReady}
           visitedProperties={visitedProperties}
           favorites={favorites}
-          hasSearched={hasSearched}
-          nearbySchools={nearbySchools}
-          nearbyUniversities={nearbyUniversities}
-          nearbyMosquesFromBackend={nearbyMosquesFromBackend}
-          nearbyMosques={nearbyMosques}
           defaultCenter={{ lat: 24.7136, lng: 46.6753 }}
           defaultZoom={12}
-          language={i18n.language}
-          onPropertyClick={handlePropertyClick}
-          t={t}
         />
       </div>
 
@@ -322,8 +244,8 @@ export const OptimizedSearchContainer = memo(({
             allSchoolGenders={allSchoolGenders}
             allSchoolLevels={allSchoolLevels}
             allUniversities={allUniversities}
-            nearbySchools={nearbySchools}
-            nearbyUniversities={nearbyUniversities}
+            nearbySchools={[]}
+            nearbyUniversities={[]}
             resetFilters={resetFilters}
             onApply={handleFiltersApply}
             t={t}
@@ -371,7 +293,7 @@ export const OptimizedSearchContainer = memo(({
 
       {/* Results Counter */}
       <ResultsCounter
-        isLoading={isLoadingProperties}
+        isLoading={isLoadingViewport}
         propertiesCount={displayedProperties.length}
         hasSearched={hasSearched}
         selectedProperty={selectedProperty}
