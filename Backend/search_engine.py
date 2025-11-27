@@ -118,9 +118,6 @@ class SearchEngine:
         self.db = db
         self.exact_limit = 30
         self.similar_limit = 100
-        # Import cache manager
-        from cache_manager import cache_manager
-        self.cache = cache_manager
     
     def _get_entity_location(self, entity_name: str, table_name: str) -> Optional[tuple]:
         """جلب إحداثيات كيان (جامعة/مسجد) بالاسم"""
@@ -145,23 +142,12 @@ class SearchEngine:
             return None
 
     def search(self, criteria: PropertyCriteria, mode: SearchMode = SearchMode.EXACT) -> List[Property]:
-        """نقطة الدخول الرئيسية للبحث مع Cache"""
+        """نقطة الدخول الرئيسية للبحث"""
         try:
-            # Check cache first
-            criteria_dict = criteria.dict()
-            cached_results = self.cache.get_cached_search(criteria_dict, mode.value)
-            if cached_results:
-                logger.info(f"✅ Using cached search results ({len(cached_results)} properties)")
-                return [self._row_to_property(row) for row in cached_results]
-            
-            # Perform search
             if mode == SearchMode.EXACT:
                 results = self._exact_search(criteria)
             else:
                 results = self._flexible_search(criteria)
-            
-            # Cache the results
-            self.cache.cache_search_results(criteria_dict, mode.value, results)
             
             # تحويل النتائج إلى Property objects
             properties = [self._row_to_property(row) for row in results]

@@ -8,6 +8,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 import logging
 
+
+
 from config import settings
 from models import (
     UserQuery, SearchModeSelection, SearchResponse, 
@@ -16,7 +18,6 @@ from models import (
 )
 from llm_parser import llm_parser
 from search_engine import search_engine
-from performance_middleware import PerformanceMiddleware
 
 # إعداد logging
 logging.basicConfig(
@@ -40,9 +41,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Add performance monitoring middleware
-app.add_middleware(PerformanceMiddleware)
 
 
 @app.get("/")
