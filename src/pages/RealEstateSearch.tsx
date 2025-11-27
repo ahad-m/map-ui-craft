@@ -3,7 +3,7 @@ import { APIProvider } from "@vis.gl/react-google-maps";
 import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import { useAuthManagement } from "@/hooks/useAuthManagement";
-import { SearchContainer } from "@/components/realestate/SearchContainer";
+import { OptimizedSearchContainer } from "@/components/realestate/OptimizedSearchContainer";
 
 const RealEstateSearch = () => {
   const { t, i18n } = useTranslation();
@@ -36,8 +36,8 @@ const RealEstateSearch = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_hsl(142_76%_48%/0.08)_0%,_transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_hsl(142_76%_48%/0.05)_0%,_transparent_50%)]" />
         
-        {/* Main search container with all logic */}
-        <SearchContainer
+        {/* Optimized main search container */}
+        <OptimizedSearchContainer
           transactionType={transactionType}
           onTransactionTypeChange={setTransactionType}
         />
