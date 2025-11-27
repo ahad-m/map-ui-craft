@@ -244,6 +244,7 @@ export const SearchContainer = ({
           defaultZoom={12}
           language={i18n.language}
           onPropertyClick={handlePropertyClick}
+          onMapLoad={() => {}}
           t={t}
         />
       </div>
