@@ -40,10 +40,10 @@ export const PropertyMarkers = memo(({
             onClick={() => onPropertyClick(property)}
             zIndex={100}
           >
-            {/* PERFORMANCE: Animations temporarily disabled for speed */}
-            <div className="relative cursor-pointer">
+            <div className="relative group cursor-pointer">
               <div className={cn(
-                isVisited ? "scale-75 opacity-70" : ""
+                "transition-all duration-500",
+                isVisited ? "scale-75 opacity-70" : "group-hover:scale-125 group-hover:-translate-y-2"
               )}>
                 <Pin
                   background={isVisited ? "#94a3b8" : (transactionType === "sale" ? "#065f46" : "#10b981")}
@@ -51,13 +51,19 @@ export const PropertyMarkers = memo(({
                   glyphColor="#ffffff"
                 />
               </div>
+              {!isVisited && (
+                <div
+                  className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100"
+                  style={{ animationDuration: "1.5s" }}
+                />
+              )}
               {isVisited && (
                 <div className="absolute -top-1 -right-1 bg-blue-600 rounded-full p-0.5 shadow-lg border-2 border-white">
                   <Check className="h-3 w-3 text-white" />
                 </div>
               )}
               {isFavorite && (
-                <div className="absolute -top-2 -left-2">
+                <div className="absolute -top-2 -left-2 animate-pulse-glow">
                   <Heart className="h-4 w-4 fill-red-500 text-red-500 drop-shadow-lg" />
                 </div>
               )}
