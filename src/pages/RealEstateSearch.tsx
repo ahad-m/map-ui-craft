@@ -437,10 +437,6 @@ const RealEstateSearch = () => {
         return priceMatch && areaMatch && metroMatch;
       });
     },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: false, // Don't refetch on component remount if data is cached
   });
 
   const predefinedSchoolGenders = ["Boys", "Girls"];
@@ -515,10 +511,6 @@ const RealEstateSearch = () => {
       if (error) throw error;
       return data || [];
     },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: false, // Don't refetch on component remount if data is cached
   });
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
