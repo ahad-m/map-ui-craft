@@ -327,7 +327,7 @@ const MapContent = () => {
                   key={cat.label}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2 whitespace-nowrap rounded-full transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+                  className="flex items-center gap-2 whitespace-nowrap rounded-full"
                   onClick={() => {
                     if (cat.searchTerm) {
                       setSearchQuery(cat.searchTerm);
@@ -340,7 +340,7 @@ const MapContent = () => {
                     }
                   }}
                 >
-                  <cat.icon className="h-4 w-4 transition-transform duration-200 group-hover:rotate-12" />
+                  <cat.icon className="h-4 w-4" />
                   {cat.label}
                 </Button>
               ))}
@@ -361,12 +361,7 @@ const MapContent = () => {
             {/* User Location Marker */}
             {userLocation && (
               <AdvancedMarker position={userLocation}>
-                <div className="relative">
-                  {/* Blue circle for user location */}
-                  <div className="w-5 h-5 bg-blue-500 rounded-full border-4 border-white shadow-lg" />
-                  {/* Outer pulse circle */}
-                  <div className="absolute inset-0 w-5 h-5 bg-blue-400/30 rounded-full animate-ping" />
-                </div>
+                <div className="w-5 h-5 bg-blue-500 rounded-full border-4 border-white shadow-lg" />
               </AdvancedMarker>
             )}
 
