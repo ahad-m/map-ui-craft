@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from "@vis.gl/react-google-maps";
 import {
   Search,
@@ -47,7 +47,9 @@ import mosqueIcon from "@/assets/mosque-icon.png";
 import { PropertyDetailsDialog } from "@/components/PropertyDetailsDialog";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useRealEstateAssistant } from "@/hooks/useRealEstateAssistant";
+import { useDebounce } from "@/hooks/useDebounce";
 import { arabicTextMatches } from "@/utils/arabicUtils";
+import { PropertyMarkers } from "@/components/PropertyMarkers";
 
 // Component to save map reference - MUST be defined outside to avoid React hook errors
 const MapRefHandler = ({ mapRef }: { mapRef: React.MutableRefObject<google.maps.Map | null> }) => {
@@ -80,6 +82,9 @@ const RealEstateSearch = () => {
   const mapRef = useRef<google.maps.Map | null>(null);
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const [visitedProperties, setVisitedProperties] = useState<Set<string>>(new Set());
+
+  // Debounce search query for performance
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   const {
     messages,
@@ -334,6 +339,7 @@ const RealEstateSearch = () => {
 
   const { data: additionalPropertyTypes = [] } = useQuery({
     queryKey: ["propertyTypes", customSearchTerms.propertyType],
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
     queryFn: async () => {
       if (!customSearchTerms.propertyType) return [];
       let query = supabase
@@ -359,6 +365,7 @@ const RealEstateSearch = () => {
 
   const { data: neighborhoods = [] } = useQuery({
     queryKey: ["neighborhoods", customSearchTerms.neighborhood],
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
     queryFn: async () => {
       let query = supabase.from("properties").select("district").not("district", "is", null).not("district", "eq", "");
       if (customSearchTerms.neighborhood) {
@@ -372,7 +379,9 @@ const RealEstateSearch = () => {
   });
 
   const { data: properties = [], isLoading } = useQuery({
-    queryKey: ["properties", transactionType, filters, searchQuery, customSearchTerms],
+    queryKey: ["properties", transactionType, filters, debouncedSearchQuery, customSearchTerms],
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     queryFn: async () => {
       let query = supabase
         .from("properties")
@@ -877,51 +886,15 @@ const RealEstateSearch = () => {
             disableDefaultUI={false}
           >
             <MapRefHandler mapRef={mapRef} />
-            {displayedProperties.map((property) => {
-              const lat = Number(property.lat);
-              const lon = Number(property.lon);
-              if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return null;
-              
-              const isVisited = visitedProperties.has(property.id);
-
-              return (
-                <AdvancedMarker
-                  key={property.id}
-                  position={{ lat, lng: lon }}
-                  onClick={() => handlePropertyClick(property)}
-                  zIndex={100}
-                >
-                  <div className="relative group cursor-pointer">
-                    <div className={cn(
-                      "transition-all duration-500",
-                      isVisited ? "scale-75 opacity-70" : "group-hover:scale-125 group-hover:-translate-y-2"
-                    )}>
-                      <Pin
-                        background={isVisited ? "#94a3b8" : (transactionType === "sale" ? "#065f46" : "#10b981")}
-                        borderColor={isVisited ? "#64748b" : (transactionType === "sale" ? "#064e3b" : "#059669")}
-                        glyphColor={"#ffffff"}
-                      />
-                    </div>
-                    {!isVisited && (
-                      <div
-                        className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100"
-                        style={{ animationDuration: "1.5s" }}
-                      />
-                    )}
-                    {isVisited && (
-                      <div className="absolute -top-1 -right-1 bg-blue-600 rounded-full p-0.5 shadow-lg border-2 border-white">
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    )}
-                    {isFavorite(property.id) && (
-                      <div className="absolute -top-2 -left-2 animate-pulse-glow">
-                        <Heart className="h-4 w-4 fill-red-500 text-red-500 drop-shadow-lg" />
-                      </div>
-                    )}
-                  </div>
-                </AdvancedMarker>
-              );
-            })}
+            
+            {/* Optimized Property Markers */}
+            <PropertyMarkers 
+              properties={displayedProperties}
+              onPropertyClick={handlePropertyClick}
+              visitedProperties={visitedProperties}
+              favoriteIds={new Set(favorites)}
+              transactionType={transactionType}
+            />
 
             {hasSearched &&
               nearbySchools.map((school) => (
