@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     
     # إعدادات النموذج اللغوي
-    LLM_MODEL: str = "gpt-4o-mini"  # يمكن التبديل إلى "gemini-2.5-flash" أو "gpt-4.1-nano"
+    LLM_MODEL: str = "gpt-4o-mini"  
     LLM_TEMPERATURE: float = 0.1  # منخفضة للدقة العالية
     LLM_MAX_TOKENS: int = 1000
     
