@@ -124,30 +124,52 @@ export const PropertyMap = ({
             zIndex={100}
           >
             <div className="relative group cursor-pointer">
-              <div className={cn(
-                "transition-all duration-500",
-                isVisited ? "scale-75 opacity-70" : "group-hover:scale-125 group-hover:-translate-y-2"
-              )}>
+              <div
+                className={cn(
+                  "transition-transform duration-300",
+                  isVisited
+                    ? "scale-75 opacity-70"
+                    : "group-hover:scale-125 group-hover:-translate-y-2"
+                )}
+              >
                 <Pin
-                  background={isVisited ? "hsl(215 16% 47%)" : (transactionType === "sale" ? "hsl(var(--primary))" : "hsl(142 76% 36%)")}
-                  borderColor={isVisited ? "hsl(215 20% 35%)" : (transactionType === "sale" ? "hsl(var(--primary))" : "hsl(142 80% 25%)")}
+                  background={
+                    isVisited
+                      ? "hsl(215 16% 47%)"
+                      : transactionType === "sale"
+                        ? "hsl(var(--primary))"
+                        : "hsl(142 76% 36%)"
+                  }
+                  borderColor={
+                    isVisited
+                      ? "hsl(215 20% 35%)"
+                      : transactionType === "sale"
+                        ? "hsl(var(--primary))"
+                        : "hsl(142 80% 25%)"
+                  }
                   glyphColor="hsl(var(--primary-foreground))"
                 />
               </div>
-              {!isVisited && (
-                <div
-                  className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100"
-                  style={{ animationDuration: "1.5s" }}
-                />
-              )}
               {isVisited && (
-                <div className="absolute -top-1 -right-1 rounded-full p-0.5 shadow-lg border-2" style={{ backgroundColor: "hsl(221 83% 53%)", borderColor: "hsl(var(--background))" }}>
-                  <Check className="h-3 w-3" style={{ color: "hsl(var(--primary-foreground))" }} />
+                <div
+                  className="absolute -top-1 -right-1 rounded-full p-0.5 shadow-lg border-2"
+                  style={{
+                    backgroundColor: "hsl(221 83% 53%)",
+                    borderColor: "hsl(var(--background))",
+                  }}
+                >
+                  <Check
+                    className="h-3 w-3"
+                    style={{ color: "hsl(var(--primary-foreground))" }}
+                  />
                 </div>
               )}
               {isFavorite && (
                 <div className="absolute -top-2 -left-2 animate-pulse-glow">
-                  <Heart className="h-4 w-4 drop-shadow-lg" style={{ fill: "hsl(0 84% 60%)", color: "hsl(0 84% 60%)" }} />
+                  <Heart
+                    className="h-4 w-4 drop-shadow-lg"
+                    style={{ fill: "hsl(0 84% 60%)", color: "hsl(0 84% 60%)" }}
+                  />
                 </div>
               )}
             </div>
