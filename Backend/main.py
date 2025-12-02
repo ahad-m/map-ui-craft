@@ -1,6 +1,6 @@
 """
 المساعد العقاري الذكي - Backend API
-FastAPI Application
+FastAPI Application - مع دعم المحادثة التفاعلية (Multi-Turn)
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,13 +8,11 @@ from pydantic import BaseModel
 from typing import List, Optional
 import logging
 
-
-
 from config import settings
 from models import (
     UserQuery, SearchModeSelection, SearchResponse, 
     CriteriaExtractionResponse, ChatMessage, SearchMode,
-    PropertyCriteria, Property
+    PropertyCriteria, Property, ActionType
 )
 from llm_parser import llm_parser
 from search_engine import search_engine
@@ -30,7 +28,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="مساعد عقاري ذكي يستخدم الذكاء الاصطناعي لفهم طلبات المستخدمين بالعربية واللهجات السعودية"
+    description="مساعد عقاري ذكي يستخدم الذكاء الاصطناعي لفهم طلبات المستخدمين بالعربية واللهجات السعودية - مع دعم المحادثة التفاعلية"
 )
 
 # إعداد CORS
@@ -50,7 +48,13 @@ async def root():
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "status": "running",
-        "message": "مرحباً بك في المساعد العقاري الذكي! 🏡"
+        "message": "مرحباً بك في المساعد العقاري الذكي! 🏡",
+        "features": [
+            "دعم المحادثة التفاعلية (Multi-Turn)",
+            "فهم تعديلات المستخدم على الطلب السابق",
+            "البحث الهجين (SQL + Vector Search)",
+            "دعم اللهجة السعودية"
+        ]
     }
 
 
@@ -59,7 +63,8 @@ async def health_check():
     """فحص صحة التطبيق"""
     return {
         "status": "healthy",
-        "model": settings.LLM_MODEL
+        "model": settings.LLM_MODEL,
+        "multi_turn_support": True  # [جديد] إشارة لدعم المحادثة التفاعلية
     }
 
 
@@ -67,35 +72,58 @@ async def health_check():
 async def welcome_message():
     """رسالة الترحيب الأولية"""
     return {
-        "message": "مرحباً فيك! أنا مساعدك العقاري الذكي 🏡\nاطلب اللي تبي وأنا بجيبه لك",
+        "message": "مرحباً فيك! أنا مساعدك العقاري الذكي 🏡\nاطلب اللي تبي وأنا بجيبه لك\n\n💡 ميزة جديدة: تقدر تعدّل طلبك بسهولة! مثلاً قل:\n• 'هونت، أبي أربع غرف بدل ثلاث'\n• 'غيرت رأيي، خله إيجار مو بيع'",
         "type": "welcome"
     }
 
 
+# ═══════════════════════════════════════════════════════════
+# [محدّث] نقطة معالجة الطلب - مع دعم المعايير السابقة
+# ═══════════════════════════════════════════════════════════
 @app.post("/api/chat/query", response_model=CriteriaExtractionResponse)
 async def process_user_query(query: UserQuery):
     """
     معالجة طلب المستخدم واستخراج المعايير
     
+    يدعم الآن المحادثة التفاعلية:
+    - إذا أُرسل previous_criteria، سيحاول النظام فهم إذا كانت الرسالة تعديل أو بحث جديد
+    - يُرجع action_type لتحديد نوع الإجراء
+    
     Args:
-        query: طلب المستخدم
+        query: طلب المستخدم (يتضمن message و previous_criteria اختيارياً)
     
     Returns:
-        CriteriaExtractionResponse مع المعايير المستخرجة ورسالة التأكيد
+        CriteriaExtractionResponse مع المعايير المستخرجة ونوع الإجراء
     """
     try:
-        logger.info(f"استلام طلب: {query.message}")
+        logger.info(f"📩 استلام طلب: {query.message}")
         
-        # استخراج المعايير باستخدام LLM
-        result = llm_parser.extract_criteria(query.message)
-        #result = hf_parser.extract_criteria(query.message )
+        # [جديد] تسجيل وجود المعايير السابقة
+        if query.previous_criteria:
+            logger.info(f"🔄 يوجد معايير سابقة - وضع المحادثة التفاعلية")
+            logger.info(f"   المعايير السابقة: {query.previous_criteria.dict(exclude_none=True)}")
+        else:
+            logger.info(f"🆕 لا توجد معايير سابقة - بحث جديد")
         
-        logger.info(f"نتيجة الاستخراج: success={result.success}, needs_clarification={result.needs_clarification}")
+        # استخراج المعايير باستخدام LLM مع المعايير السابقة
+        result = llm_parser.extract_criteria(
+            user_query=query.message,
+            previous_criteria=query.previous_criteria  # [جديد] تمرير المعايير السابقة
+        )
+        
+        logger.info(f"✅ نتيجة الاستخراج:")
+        logger.info(f"   - success={result.success}")
+        logger.info(f"   - action_type={result.action_type}")
+        logger.info(f"   - needs_clarification={result.needs_clarification}")
+        if result.changes_summary:
+            logger.info(f"   - changes_summary={result.changes_summary}")
         
         return result
         
     except Exception as e:
-        logger.error(f"خطأ في معالجة الطلب: {e}")
+        logger.error(f"❌ خطأ في معالجة الطلب: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -111,7 +139,8 @@ async def search_properties(selection: SearchModeSelection):
         SearchResponse مع نتائج البحث
     """
     try:
-        logger.info(f"بدء البحث: mode={selection.mode}, criteria={selection.criteria.dict()}")
+        logger.info(f"🔍 بدء البحث: mode={selection.mode}")
+        logger.info(f"   المعايير: {selection.criteria.dict(exclude_none=True)}")
         
         # البحث عن العقارات
         properties = search_engine.search(selection.criteria, selection.mode)
@@ -138,7 +167,9 @@ async def search_properties(selection: SearchModeSelection):
         )
         
     except Exception as e:
-        logger.error(f"خطأ في البحث: {e}")
+        logger.error(f"❌ خطأ في البحث: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -166,7 +197,7 @@ async def get_property_details(property_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"خطأ في الحصول على تفاصيل العقار: {e}")
+        logger.error(f"❌ خطأ في الحصول على تفاصيل العقار: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -182,7 +213,7 @@ async def submit_feedback(feedback: dict):
         رسالة تأكيد
     """
     try:
-        logger.info(f"استلام ملاحظات: {feedback}")
+        logger.info(f"📝 استلام ملاحظات: {feedback}")
         
         # في الإنتاج، يمكن حفظ الملاحظات في قاعدة البيانات
         
@@ -192,7 +223,7 @@ async def submit_feedback(feedback: dict):
         }
         
     except Exception as e:
-        logger.error(f"خطأ في حفظ الملاحظات: {e}")
+        logger.error(f"❌ خطأ في حفظ الملاحظات: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -204,3 +235,4 @@ if __name__ == "__main__":
         port=8000,
         reload=settings.DEBUG
     )
+    

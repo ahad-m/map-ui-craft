@@ -1,184 +1,272 @@
 /**
- * Hook لإدارة المساعد العقاري الذكي
+ * useRealEstateAssistant Hook
+ * 
+ * Hook رئيسي للتواصل مع المساعد العقاري الذكي
+ * 
+ * النسخة المحدثة: دعم المحادثة التفاعلية (Multi-Turn)
+ * - يحتفظ بـ lastCriteria لدعم التعديلات على الطلب السابق
+ * - يمرر المعايير السابقة مع كل طلب جديد
+ * - يتتبع نوع الإجراء (NEW_SEARCH / UPDATE_CRITERIA)
  */
-import { useState, useEffect, useCallback } from 'react';
+
+import { useState, useCallback, useEffect } from 'react';
 import {
-  getWelcomeMessage,
   sendUserQuery,
   searchProperties,
+  getWelcomeMessage,
   checkBackendHealth,
+  type PropertyCriteria,
   type AssistantMessage,
   type Property,
-  type PropertyCriteria,
-} from '../api/realEstateAssistant';
+  type ActionType,
+} from '@/api/realEstateAssistant';
 
-export interface ChatMessage {
+interface Message {
   id: string;
   type: 'user' | 'assistant';
   content: string;
-  timestamp: Date;
   criteria?: PropertyCriteria;
+  // [جديد] حقول المحادثة التفاعلية
+  actionType?: ActionType;
+  changesSummary?: string | null;
 }
 
-export interface UseRealEstateAssistantReturn {
-  messages: ChatMessage[];
+interface UseRealEstateAssistantReturn {
+  // State
+  messages: Message[];
   isLoading: boolean;
   isBackendOnline: boolean;
-  currentCriteria: PropertyCriteria | null;
+  currentCriteria: PropertyCriteria | undefined;
   searchResults: Property[];
+  
+  // [جديد] للمحادثة التفاعلية
+  lastCriteria: PropertyCriteria | null;
+  lastActionType: ActionType | null;
+  
+  // Actions
   sendMessage: (message: string) => Promise<void>;
   selectSearchMode: (mode: 'exact' | 'similar') => Promise<void>;
   clearChat: () => void;
+  clearLastCriteria: () => void;
 }
 
 export function useRealEstateAssistant(): UseRealEstateAssistantReturn {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // ============================================
+  // State
+  // ============================================
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isBackendOnline, setIsBackendOnline] = useState(false);
-  const [currentCriteria, setCurrentCriteria] = useState<PropertyCriteria | null>(null);
+  const [isBackendOnline, setIsBackendOnline] = useState(true);
+  const [currentCriteria, setCurrentCriteria] = useState<PropertyCriteria | undefined>();
   const [searchResults, setSearchResults] = useState<Property[]>([]);
+  
+  // [جديد] State للمحادثة التفاعلية
+  const [lastCriteria, setLastCriteria] = useState<PropertyCriteria | null>(null);
+  const [lastActionType, setLastActionType] = useState<ActionType | null>(null);
 
-  // فحص حالة Backend عند التحميل
+  // ============================================
+  // Backend Health Check
+  // ============================================
   useEffect(() => {
     const checkHealth = async () => {
       const isOnline = await checkBackendHealth();
       setIsBackendOnline(isOnline);
-
-      if (isOnline) {
-        // الحصول على رسالة الترحيب
-        try {
-          const welcome = await getWelcomeMessage();
-          addAssistantMessage(welcome.message);
-        } catch (error) {
-          console.error('Failed to get welcome message:', error);
-          addAssistantMessage('مرحباً! أنا مساعدك العقاري الذكي 🏡');
-        }
-      } else {
-        addAssistantMessage(
-          '⚠️ عذراً، لا يمكن الاتصال بالمساعد الذكي حالياً.\n\nتأكد من تشغيل Backend على http://localhost:8000'
-        );
-      }
     };
-
+    
     checkHealth();
+    const interval = setInterval(checkHealth, 30000); // كل 30 ثانية
+    
+    return () => clearInterval(interval);
   }, []);
 
-  // إضافة رسالة من المساعد
-  const addAssistantMessage = useCallback((content: string, criteria?: PropertyCriteria) => {
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'assistant',
-      content,
-      timestamp: new Date(),
-      criteria,
+  // ============================================
+  // Welcome Message
+  // ============================================
+  useEffect(() => {
+    const fetchWelcome = async () => {
+      try {
+        const welcomeResponse = await getWelcomeMessage();
+        const welcomeMessage: Message = {
+          id: `welcome-${Date.now()}`,
+          type: 'assistant',
+          content: welcomeResponse.message,
+          actionType: welcomeResponse.action_type || 'GREETING',
+        };
+        setMessages([welcomeMessage]);
+      } catch (error) {
+        console.error('Error fetching welcome message:', error);
+        // رسالة افتراضية
+        const defaultWelcome: Message = {
+          id: `welcome-${Date.now()}`,
+          type: 'assistant',
+          content: 'مرحباً فيك! 🏡\n\nأنا مساعدك العقاري الذكي.\nاطلب اللي تبي وأنا بجيبه لك!\n\n💡 تقدر تعدّل طلبك بسهولة! مثلاً:\n• "هونت، أبي أربع غرف"\n• "نسيت، أبي قريب من مدرسة"',
+          actionType: 'GREETING',
+        };
+        setMessages([defaultWelcome]);
+      }
     };
-    setMessages((prev) => [...prev, newMessage]);
+    
+    fetchWelcome();
   }, []);
 
-  // إضافة رسالة من المستخدم
-  const addUserMessage = useCallback((content: string) => {
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
+  // ============================================
+  // Send Message
+  // ============================================
+  const sendMessage = useCallback(async (message: string) => {
+    if (!message.trim() || isLoading) return;
+
+    setIsLoading(true);
+
+    // إضافة رسالة المستخدم
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
       type: 'user',
-      content,
-      timestamp: new Date(),
+      content: message,
     };
-    setMessages((prev) => [...prev, newMessage]);
-  }, []);
+    setMessages(prev => [...prev, userMessage]);
 
-  // إرسال رسالة
-  const sendMessage = useCallback(
-    async (message: string) => {
-      if (!message.trim() || !isBackendOnline) return;
+    try {
+      // [محدث] إرسال الرسالة مع المعايير السابقة
+      console.log('📤 Sending message with previous criteria:', {
+        message,
+        hasPreviousCriteria: !!lastCriteria,
+      });
 
-      setIsLoading(true);
-      addUserMessage(message);
+      const response: AssistantMessage = await sendUserQuery(message, lastCriteria);
 
-      try {
-        // إرسال الطلب للـ Backend
-        const response: AssistantMessage = await sendUserQuery(message);
+      // [جديد] تسجيل نوع الإجراء
+      console.log('📥 Response received:', {
+        actionType: response.action_type,
+        changesSummary: response.changes_summary,
+        success: response.success,
+      });
 
-        if (response.success) {
-          // حفظ المعايير
-          if (response.criteria) {
-            setCurrentCriteria(response.criteria);
-          }
+      // إضافة رسالة المساعد
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        type: 'assistant',
+        content: response.message,
+        criteria: response.criteria,
+        actionType: response.action_type,
+        changesSummary: response.changes_summary,
+      };
+      setMessages(prev => [...prev, assistantMessage]);
 
-          // إضافة رد المساعد
-          addAssistantMessage(response.message, response.criteria);
-        } else {
-          addAssistantMessage(
-            response.message || 'عذراً، حدث خطأ في فهم طلبك. حاول مرة أخرى.'
-          );
-        }
-      } catch (error) {
-        console.error('Error sending message:', error);
-        addAssistantMessage('عذراً، حدث خطأ في الاتصال. حاول مرة أخرى.');
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [isBackendOnline, addUserMessage, addAssistantMessage]
-  );
-
-  // اختيار نمط البحث
-  const selectSearchMode = useCallback(
-    async (mode: 'exact' | 'similar') => {
-      if (!currentCriteria) {
-        addAssistantMessage('لم يتم تحديد معايير البحث بعد.');
-        return;
+      // [محدث] تحديث المعايير والـ state
+      if (response.success && response.criteria) {
+        setCurrentCriteria(response.criteria);
+        setLastCriteria(response.criteria); // [جديد] حفظ للطلب القادم
+        setLastActionType(response.action_type || 'NEW_SEARCH');
+        
+        console.log('✅ Criteria saved for next request:', response.criteria);
       }
 
-      setIsLoading(true);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        type: 'assistant',
+        content: 'عذراً، حدث خطأ في الاتصال. حاول مرة ثانية. 🔄',
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoading, lastCriteria]);
 
-      try {
-        // البحث عن العقارات
-        const response = await searchProperties(currentCriteria, mode);
+  // ============================================
+  // Select Search Mode
+  // ============================================
+  const selectSearchMode = useCallback(async (mode: 'exact' | 'similar') => {
+    if (!currentCriteria) {
+      console.warn('No criteria available for search');
+      return;
+    }
 
-        if (response.success && response.properties && response.properties.length > 0) {
-          setSearchResults(response.properties);
+    setIsLoading(true);
 
-          const modeText = mode === 'exact' ? 'المطابقة' : 'المشابهة';
-          addAssistantMessage(
-            `تمام! وجدت ${response.total_count} عقار ${modeText} لطلبك 🎉\n\nشوف النتائج على الخريطة!`
-          );
-        } else {
-          setSearchResults([]);
-          addAssistantMessage(
-            `للأسف ما لقيت عقارات ${mode === 'exact' ? 'مطابقة' : 'مشابهة'} لطلبك 😔\n\nتبي تجرب ${
-              mode === 'exact' ? 'العقارات المشابهة' : 'معايير مختلفة'
-            }؟`
-          );
-        }
-      } catch (error) {
-        console.error('Error searching properties:', error);
-        setSearchResults([]);
-        addAssistantMessage('عذراً، حدث خطأ في البحث. حاول مرة أخرى.');
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [currentCriteria, addAssistantMessage]
-  );
+    try {
+      console.log('🔍 Starting search:', { mode, criteria: currentCriteria });
+      
+      const searchResponse = await searchProperties(currentCriteria, mode);
+      
+      setSearchResults(searchResponse.properties as Property[]);
 
-  // مسح المحادثة
+      // إضافة رسالة النتائج
+      const resultsMessage: Message = {
+        id: `results-${Date.now()}`,
+        type: 'assistant',
+        content: searchResponse.message || `لقيت لك ${searchResponse.total_count} عقار! 🎉\n\nشوفهم على الخريطة 👇`,
+      };
+      setMessages(prev => [...prev, resultsMessage]);
+
+      console.log('✅ Search completed:', { count: searchResponse.total_count });
+
+    } catch (error) {
+      console.error('Error searching properties:', error);
+      
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        type: 'assistant',
+        content: 'عذراً، حدث خطأ في البحث. حاول مرة ثانية. 🔄',
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentCriteria]);
+
+  // ============================================
+  // Clear Chat
+  // ============================================
   const clearChat = useCallback(() => {
     setMessages([]);
-    setCurrentCriteria(null);
+    setCurrentCriteria(undefined);
     setSearchResults([]);
+    setLastCriteria(null); // [جديد] مسح المعايير السابقة
+    setLastActionType(null);
+    
+    // إعادة رسالة الترحيب
+    const welcomeMessage: Message = {
+      id: `welcome-${Date.now()}`,
+      type: 'assistant',
+      content: 'مرحباً فيك من جديد! 🏡\n\nكيف أقدر أساعدك؟',
+      actionType: 'GREETING',
+    };
+    setMessages([welcomeMessage]);
+    
+    console.log('🗑️ Chat cleared, criteria reset');
+  }, []);
 
-    // إضافة رسالة ترحيب جديدة
-    addAssistantMessage('مرحباً! كيف أقدر أساعدك اليوم؟ 🏡');
-  }, [addAssistantMessage]);
+  // ============================================
+  // [جديد] Clear Last Criteria Only
+  // ============================================
+  const clearLastCriteria = useCallback(() => {
+    setLastCriteria(null);
+    setLastActionType(null);
+    console.log('🗑️ Last criteria cleared (starting fresh search)');
+  }, []);
 
+  // ============================================
+  // Return
+  // ============================================
   return {
+    // State
     messages,
     isLoading,
     isBackendOnline,
     currentCriteria,
     searchResults,
+    
+    // [جديد] للمحادثة التفاعلية
+    lastCriteria,
+    lastActionType,
+    
+    // Actions
     sendMessage,
     selectSearchMode,
     clearChat,
+    clearLastCriteria,
   };
 }

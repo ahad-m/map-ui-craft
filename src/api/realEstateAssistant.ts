@@ -1,19 +1,33 @@
 /**
  * Real Estate Assistant API
  * للاتصال بالمساعد العقاري الذكي (Backend)
+ * 
+ * النسخة المحدثة: دعم المحادثة التفاعلية (Multi-Turn)
  */
 
+// ═══════════════════════════════════════════════════════════
 // تعريف الأنواع (Types)
+// ═══════════════════════════════════════════════════════════
+
 export interface UserMessage {
   message: string;
 }
 
+// [جديد] نوع الإجراء للمحادثة التفاعلية
+export type ActionType = 'NEW_SEARCH' | 'UPDATE_CRITERIA' | 'CLARIFICATION' | 'GREETING';
+
+// [محدث] رسالة المساعد مع حقول المحادثة التفاعلية
 export interface AssistantMessage {
   success: boolean;
   message: string;
   criteria?: PropertyCriteria;
   needs_clarification?: boolean;
   clarification_questions?: string[];
+  
+  // [جديد] حقول المحادثة التفاعلية
+  action_type?: ActionType;
+  changes_summary?: string | null;
+  previous_criteria?: PropertyCriteria | null;
 }
 
 export interface PropertyCriteria {
@@ -25,17 +39,49 @@ export interface PropertyCriteria {
   baths?: RangeFilter;
   halls?: RangeFilter;
   area_m2?: RangeFilter;
-  price?: RangeFilter;
+  price?: PriceFilter;
   metro_time_max?: number;
-  school_requirements?: any;
-  university_requirements?: any;
-  original_query: string;
+  school_requirements?: SchoolRequirements;
+  university_requirements?: UniversityRequirements;
+  mosque_requirements?: MosqueRequirements;
+  original_query?: string;
 }
 
 export interface RangeFilter {
   exact?: number;
   min?: number;
   max?: number;
+}
+
+export interface PriceFilter {
+  min?: number;
+  max?: number;
+  currency?: string;
+  period?: string;
+}
+
+// [جديد] متطلبات المدارس
+export interface SchoolRequirements {
+  required: boolean;
+  levels?: string[];
+  gender?: string;
+  max_distance_minutes?: number;
+  walking?: boolean;
+}
+
+// [جديد] متطلبات الجامعات
+export interface UniversityRequirements {
+  required: boolean;
+  university_name?: string;
+  max_distance_minutes?: number;
+}
+
+// [جديد] متطلبات المساجد
+export interface MosqueRequirements {
+  required: boolean;
+  mosque_name?: string;
+  max_distance_minutes?: number;
+  walking?: boolean;
 }
 
 export interface SearchRequest {
@@ -85,6 +131,7 @@ export interface Property {
   halls?: number;
   nearby_schools?: School[];
   nearby_universities?: University[];
+  nearby_mosques?: any[];
 }
 
 export interface SearchResponse {
@@ -95,8 +142,14 @@ export interface SearchResponse {
   message?: string;
 }
 
+// ═══════════════════════════════════════════════════════════
 // إعدادات API
-const API_BASE_URL = "https://riyal-estate-56q6.onrender.com";
+// ═══════════════════════════════════════════════════════════
+
+//const API_BASE_URL = "https://riyal-estate-56q6.onrender.com";
+const API_BASE_URL = "http://localhost:8000";
+
+
 /**
  * الحصول على رسالة الترحيب من المساعد
  */
@@ -120,29 +173,65 @@ export async function getWelcomeMessage(): Promise<AssistantMessage> {
     // رسالة افتراضية في حالة الخطأ
     return {
       success: true,
-      message: "مرحباً فيك! 🏡\n\nأنا مساعدك العقاري الذكي.\nاطلب اللي تبي وأنا بجيبه لك! 😊",
+      message: "مرحباً فيك! 🏡\n\nأنا مساعدك العقاري الذكي.\nاطلب اللي تبي وأنا بجيبه لك!\n\n💡 ميزة جديدة: تقدر تعدّل طلبك! مثلاً:\n• 'هونت، أبي أربع غرف بدل ثلاث'\n• 'نسيت، أبي قريب من مدرسة' 😊",
+      action_type: 'GREETING',
     };
   }
 }
 
 /**
  * إرسال طلب المستخدم واستخراج المعايير
+ * 
+ * [محدث] يدعم الآن المحادثة التفاعلية:
+ * - يمكن تمرير previous_criteria لدعم التعديلات
+ * - يُرجع action_type لتحديد نوع الإجراء
+ * 
+ * @param message رسالة المستخدم
+ * @param previousCriteria المعايير السابقة (اختياري) لدعم التعديلات
  */
-export async function sendUserQuery(message: string): Promise<AssistantMessage> {
+export async function sendUserQuery(
+  message: string,
+  previousCriteria?: PropertyCriteria | null
+): Promise<AssistantMessage> {
   try {
+    // [محدث] إرسال المعايير السابقة مع الطلب
+    const requestBody: {
+      message: string;
+      conversation_history: any[];
+      previous_criteria: PropertyCriteria | null;
+    } = {
+      message,
+      conversation_history: [],
+      previous_criteria: previousCriteria || null,
+    };
+
+    console.log('🚀 Sending request to backend:', {
+      message,
+      hasPreviousCriteria: !!previousCriteria,
+    });
+
     const response = await fetch(`${API_BASE_URL}/api/chat/query`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const result: AssistantMessage = await response.json();
+
+    // [جديد] تسجيل نوع الإجراء
+    console.log('✅ Response received:', {
+      success: result.success,
+      actionType: result.action_type,
+      changesSummary: result.changes_summary,
+    });
+
+    return result;
   } catch (error) {
     console.error("Error sending user query:", error);
     throw error;
@@ -157,6 +246,8 @@ export async function searchProperties(
   mode: "exact" | "similar" = "similar",
 ): Promise<SearchResponse> {
   try {
+    console.log('🔍 Searching properties:', { criteria, mode });
+
     const response = await fetch(`${API_BASE_URL}/api/search`, {
       method: "POST",
       headers: {
@@ -169,7 +260,10 @@ export async function searchProperties(
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('✅ Search results:', { count: result.total_count });
+
+    return result;
   } catch (error) {
     console.error("Error searching properties:", error);
     throw error;

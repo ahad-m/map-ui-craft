@@ -1,6 +1,6 @@
 """
 نماذج البيانات (Pydantic Models) للمساعد العقاري الذكي
-النسخة المحدّثة - مع إضافة حقول الخدمات القريبة (Fix)
+النسخة المحدّثة - مع دعم المحادثة التفاعلية (Multi-Turn)
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Literal, Dict, Any
@@ -37,6 +37,17 @@ class SchoolGender(str, Enum):
     BOYS = "بنين"
     GIRLS = "بنات"
     MIXED = "مختلط"
+
+
+# ═══════════════════════════════════════════════════════════
+# [جديد] نوع الإجراء للمحادثة التفاعلية
+# ═══════════════════════════════════════════════════════════
+class ActionType(str, Enum):
+    """نوع الإجراء الذي يجب اتخاذه"""
+    NEW_SEARCH = "NEW_SEARCH"           # بحث جديد من الصفر
+    UPDATE_CRITERIA = "UPDATE_CRITERIA" # تعديل على المعايير السابقة
+    CLARIFICATION = "CLARIFICATION"     # طلب توضيح من المستخدم
+    GREETING = "GREETING"               # تحية أو محادثة عامة
 
 
 class RangeFilter(BaseModel):
@@ -146,9 +157,21 @@ class ChatMessage(BaseModel):
     content: str
 
 
+# ═══════════════════════════════════════════════════════════
+# [محدّث] UserQuery - مع دعم المعايير السابقة
+# ═══════════════════════════════════════════════════════════
 class UserQuery(BaseModel):
-    message: str
-    conversation_history: Optional[List[ChatMessage]] = []
+    """طلب المستخدم مع السياق السابق"""
+    message: str = Field(..., description="رسالة المستخدم الحالية")
+    conversation_history: Optional[List[ChatMessage]] = Field(
+        default=[], 
+        description="تاريخ المحادثة (اختياري)"
+    )
+    # [جديد] المعايير السابقة للمحادثة التفاعلية
+    previous_criteria: Optional[PropertyCriteria] = Field(
+        default=None,
+        description="معايير البحث من الطلب السابق (إن وجدت)"
+    )
 
 
 class SearchModeSelection(BaseModel):
@@ -165,9 +188,27 @@ class SearchResponse(BaseModel):
     search_mode: Optional[SearchMode] = None
 
 
+# ═══════════════════════════════════════════════════════════
+# [محدّث] CriteriaExtractionResponse - مع نوع الإجراء
+# ═══════════════════════════════════════════════════════════
 class CriteriaExtractionResponse(BaseModel):
+    """استجابة استخراج المعايير مع دعم المحادثة التفاعلية"""
     success: bool
     message: str
     criteria: Optional[PropertyCriteria] = None
     needs_clarification: bool = False
     clarification_questions: Optional[List[str]] = None
+    
+    # [جديد] حقول المحادثة التفاعلية
+    action_type: ActionType = Field(
+        default=ActionType.NEW_SEARCH,
+        description="نوع الإجراء: بحث جديد أو تعديل"
+    )
+    changes_summary: Optional[str] = Field(
+        default=None,
+        description="ملخص التغييرات التي تمت (للتعديلات)"
+    )
+    previous_criteria: Optional[PropertyCriteria] = Field(
+        default=None,
+        description="المعايير السابقة قبل التعديل"
+    )

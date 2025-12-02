@@ -130,12 +130,19 @@ export interface NearbyMosque {
   drive_minutes?: number;
 }
 
+// ============================================
+// Nearby School Type (from Backend)
+// ============================================
+
 export interface NearbySchool {
   name: string;
   lat: number;
   lon: number;
+  gender?: string;
+  level?: string;
   walk_minutes?: number;
   drive_minutes?: number;
+  distance_meters?: number;
 }
 
 // ============================================
@@ -178,6 +185,12 @@ export interface CustomSearchTerms {
 }
 
 export type TransactionType = 'rent' | 'sale';
+
+// ============================================
+// Action Types (for Multi-Turn Conversations)
+// ============================================
+
+export type ActionType = 'NEW_SEARCH' | 'UPDATE_CRITERIA' | 'CLARIFICATION' | 'GREETING';
 
 // ============================================
 // Filter Section Props (for sub-components)
@@ -252,6 +265,25 @@ export interface PropertyMarkerProps {
   onClick: () => void;
 }
 
+// ✅ محدث: إضافة backendSchools
+export interface PropertyMapProps {
+  properties: Property[];
+  schools: SchoolWithTravelTime[];
+  universities: UniversityWithTravelTime[];
+  mosques: MosqueWithTravelTime[];
+  backendUniversities: NearbyUniversity[];
+  backendMosques: NearbyMosque[];
+  backendSchools: NearbySchool[];  // ✅ جديد
+  visitedProperties: Set<string>;
+  favoriteIds: string[];
+  transactionType: TransactionType;
+  hasSearched: boolean;
+  onPropertyClick: (property: Property) => void;
+  mapRef: React.MutableRefObject<google.maps.Map | null>;
+  mapCenter?: MapCenter;
+  mapZoom?: number;
+}
+
 // ============================================
 // Component Props
 // ============================================
@@ -283,21 +315,6 @@ export interface FiltersSheetProps {
   universities: University[];
   nearbySchoolsCount: number;
   nearbyUniversitiesCount: number;
-}
-
-export interface PropertyMapProps {
-  properties: Property[];
-  schools: SchoolWithTravelTime[];
-  universities: UniversityWithTravelTime[];
-  mosques: MosqueWithTravelTime[];
-  backendUniversities: NearbyUniversity[];
-  backendMosques: NearbyMosque[];
-  visitedProperties: Set<string>;
-  favoriteIds: string[];
-  transactionType: TransactionType;
-  hasSearched: boolean;
-  onPropertyClick: (property: Property) => void;
-  mapRef: React.MutableRefObject<google.maps.Map | null>;
 }
 
 export interface ChatPanelProps {

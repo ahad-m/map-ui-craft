@@ -19,6 +19,7 @@ import type {
   MosqueWithTravelTime,
   NearbyUniversity,
   NearbyMosque,
+  NearbySchool,
   TransactionType,
   MapCenter,
 } from '../../types';
@@ -46,6 +47,7 @@ interface PropertyMapProps {
   mosques: MosqueWithTravelTime[];
   backendUniversities: NearbyUniversity[];
   backendMosques: NearbyMosque[];
+  backendSchools: NearbySchool[];  // ✅ جديد
   visitedProperties: Set<string>;
   favoriteIds: string[];
   transactionType: TransactionType;
@@ -63,6 +65,7 @@ export const PropertyMap = memo(function PropertyMap({
   mosques,
   backendUniversities,
   backendMosques,
+  backendSchools,  // ✅ جديد
   visitedProperties,
   favoriteIds,
   transactionType,
@@ -95,10 +98,27 @@ export const PropertyMap = memo(function PropertyMap({
           />
         ))}
 
-        {/* School Markers */}
+        {/* School Markers (from local calculation) */}
         {hasSearched &&
           schools.map((school) => (
             <SchoolMarker key={`school-${school.id}`} school={school} />
+          ))}
+
+        {/* ✅ School Markers (from backend) - جديد */}
+        {hasSearched &&
+          backendSchools.map((school, index) => (
+            <SchoolMarker
+              key={`school-backend-${index}`}
+              school={{
+                id: `backend-${index}`,
+                name: school.name,
+                lat: school.lat,
+                lon: school.lon,
+                gender: 'both',  // سيتم تحديده من البيانات لاحقاً
+                primary_level: 'combined',
+                travelTime: school.walk_minutes || school.drive_minutes || 0,
+              }}
+            />
           ))}
 
         {/* University Markers (from local calculation) */}

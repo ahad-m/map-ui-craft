@@ -4,12 +4,14 @@
  * SOLID Principles:
  * - Single Responsibility: Wraps chat functionality
  * - Open/Closed: Extends useRealEstateAssistant without modifying it
+ * 
+ * النسخة المحدثة: دعم المحادثة التفاعلية (Multi-Turn)
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRealEstateAssistant } from '@/hooks/useRealEstateAssistant';
 import { toast } from '@/hooks/use-toast';
-import type { Property, PropertyFilters, SearchCriteria } from '../types';
+import type { Property, PropertyFilters, SearchCriteria, ActionType } from '../types';
 
 interface UseChatAssistantProps {
   onResultsReceived: (properties: Property[]) => void;
@@ -28,10 +30,17 @@ interface UseChatAssistantReturn {
     type: 'user' | 'assistant';
     content: string;
     criteria?: SearchCriteria;
+    actionType?: ActionType;
+    changesSummary?: string | null;
   }>;
   isLoading: boolean;
   isBackendOnline: boolean;
   currentCriteria?: SearchCriteria;
+  
+  // [جديد] للمحادثة التفاعلية
+  lastCriteria: SearchCriteria | null;
+  lastActionType: ActionType | null;
+  isModifyingPrevious: boolean;
   
   // Actions
   setIsChatOpen: (open: boolean) => void;
@@ -40,6 +49,7 @@ interface UseChatAssistantReturn {
   handleSearchModeSelection: (mode: 'exact' | 'similar') => Promise<void>;
   handleVoiceInput: () => void;
   clearChat: () => void;
+  clearLastCriteria: () => void;
   
   // Refs
   messagesEndRef: React.RefObject<HTMLDivElement>;
@@ -60,10 +70,16 @@ export function useChatAssistant({
     isBackendOnline,
     currentCriteria,
     searchResults,
+    lastCriteria,
+    lastActionType,
     sendMessage,
     selectSearchMode,
     clearChat: clearChatBase,
+    clearLastCriteria: clearLastCriteriaBase,
   } = useRealEstateAssistant();
+
+  // [جديد] حساب ما إذا كنا في وضع التعديل
+  const isModifyingPrevious = lastCriteria !== null;
 
   /**
    * Auto-scroll messages
@@ -86,12 +102,30 @@ export function useChatAssistant({
   }, [searchResults, currentCriteria, onResultsReceived, onFiltersSync]);
 
   /**
+   * [جديد] إظهار toast عند التعديل
+   */
+  useEffect(() => {
+    if (lastActionType === 'UPDATE_CRITERIA') {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage?.changesSummary) {
+        toast({
+          title: '✅ تم التعديل',
+          description: lastMessage.changesSummary,
+        });
+      }
+    }
+  }, [lastActionType, messages]);
+
+  /**
    * Send message to assistant
    */
   const handleSendMessage = useCallback(async () => {
     if (!chatInput.trim() || isLoading) return;
-    await sendMessage(chatInput);
-    setChatInput('');
+    
+    const messageToSend = chatInput;
+    setChatInput(''); // مسح الحقل فوراً
+    
+    await sendMessage(messageToSend);
   }, [chatInput, isLoading, sendMessage]);
 
   /**
@@ -190,6 +224,17 @@ export function useChatAssistant({
     setChatInput('');
   }, [clearChatBase]);
 
+  /**
+   * [جديد] Clear last criteria only (لبدء بحث جديد)
+   */
+  const clearLastCriteria = useCallback(() => {
+    clearLastCriteriaBase();
+    toast({
+      title: '🆕 بحث جديد',
+      description: 'تم إعادة تعيين البحث. ابدأ طلب جديد.',
+    });
+  }, [clearLastCriteriaBase]);
+
   return {
     // State
     isChatOpen,
@@ -202,6 +247,11 @@ export function useChatAssistant({
     isBackendOnline,
     currentCriteria,
     
+    // [جديد] للمحادثة التفاعلية
+    lastCriteria,
+    lastActionType,
+    isModifyingPrevious,
+    
     // Actions
     setIsChatOpen,
     setChatInput,
@@ -209,6 +259,7 @@ export function useChatAssistant({
     handleSearchModeSelection,
     handleVoiceInput,
     clearChat,
+    clearLastCriteria,
     
     // Refs
     messagesEndRef,

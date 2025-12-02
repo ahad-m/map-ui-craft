@@ -52,6 +52,7 @@ import type {
   TransactionType,
   NearbyUniversity,
   NearbyMosque,
+  NearbySchool,
 } from '@/features/real-estate/types';
 
 const RealEstateSearch = () => {
@@ -194,7 +195,7 @@ const RealEstateSearch = () => {
   });
 
   // ============================================
-  // Extract Backend Entities
+  // Extract Backend Entities (Universities, Mosques, Schools)
   // ============================================
   const nearbyUniversitiesFromBackend = useMemo((): NearbyUniversity[] => {
     if (chatbotProperties.length > 0 && chatbotProperties[0].nearby_universities) {
@@ -208,6 +209,28 @@ const RealEstateSearch = () => {
       return chatbotProperties[0].nearby_mosques;
     }
     return [];
+  }, [chatbotProperties]);
+
+  // ✅ جديد: استخراج المدارس القريبة من Backend
+  const nearbySchoolsFromBackend = useMemo((): NearbySchool[] => {
+    if (chatbotProperties.length === 0) return [];
+    
+    // جمع كل المدارس الفريدة من جميع العقارات
+    const schoolsMap = new Map<string, NearbySchool>();
+    
+    chatbotProperties.forEach(property => {
+      if (property.nearby_schools && Array.isArray(property.nearby_schools)) {
+        property.nearby_schools.forEach(school => {
+          // استخدام الاسم + الإحداثيات كمفتاح فريد
+          const key = `${school.name}-${school.lat}-${school.lon}`;
+          if (!schoolsMap.has(key)) {
+            schoolsMap.set(key, school);
+          }
+        });
+      }
+    });
+    
+    return Array.from(schoolsMap.values());
   }, [chatbotProperties]);
 
   // ============================================
@@ -290,6 +313,7 @@ const RealEstateSearch = () => {
           mosques={nearbyMosques}
           backendUniversities={nearbyUniversitiesFromBackend}
           backendMosques={nearbyMosquesFromBackend}
+          backendSchools={nearbySchoolsFromBackend}
           visitedProperties={visitedProperties}
           favoriteIds={favorites}
           transactionType={transactionType}
