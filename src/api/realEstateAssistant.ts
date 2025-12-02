@@ -1,7 +1,7 @@
 /**
  * Real Estate Assistant API
  * للاتصال بالمساعد العقاري الذكي (Backend)
- * 
+ *
  * النسخة المحدثة: دعم المحادثة التفاعلية (Multi-Turn)
  */
 
@@ -14,7 +14,7 @@ export interface UserMessage {
 }
 
 // [جديد] نوع الإجراء للمحادثة التفاعلية
-export type ActionType = 'NEW_SEARCH' | 'UPDATE_CRITERIA' | 'CLARIFICATION' | 'GREETING';
+export type ActionType = "NEW_SEARCH" | "UPDATE_CRITERIA" | "CLARIFICATION" | "GREETING";
 
 // [محدث] رسالة المساعد مع حقول المحادثة التفاعلية
 export interface AssistantMessage {
@@ -23,7 +23,7 @@ export interface AssistantMessage {
   criteria?: PropertyCriteria;
   needs_clarification?: boolean;
   clarification_questions?: string[];
-  
+
   // [جديد] حقول المحادثة التفاعلية
   action_type?: ActionType;
   changes_summary?: string | null;
@@ -146,9 +146,8 @@ export interface SearchResponse {
 // إعدادات API
 // ═══════════════════════════════════════════════════════════
 
-//const API_BASE_URL = "https://riyal-estate-56q6.onrender.com";
-const API_BASE_URL = "http://localhost:8000";
-
+const API_BASE_URL = "https://riyal-estate-56q6.onrender.com";
+//const API_BASE_URL = "http://localhost:8000";
 
 /**
  * الحصول على رسالة الترحيب من المساعد
@@ -173,25 +172,26 @@ export async function getWelcomeMessage(): Promise<AssistantMessage> {
     // رسالة افتراضية في حالة الخطأ
     return {
       success: true,
-      message: "مرحباً فيك! 🏡\n\nأنا مساعدك العقاري الذكي.\nاطلب اللي تبي وأنا بجيبه لك!\n\n💡 ميزة جديدة: تقدر تعدّل طلبك! مثلاً:\n• 'هونت، أبي أربع غرف بدل ثلاث'\n• 'نسيت، أبي قريب من مدرسة' 😊",
-      action_type: 'GREETING',
+      message:
+        "مرحباً فيك! 🏡\n\nأنا مساعدك العقاري الذكي.\nاطلب اللي تبي وأنا بجيبه لك!\n\n💡 ميزة جديدة: تقدر تعدّل طلبك! مثلاً:\n• 'هونت، أبي أربع غرف بدل ثلاث'\n• 'نسيت، أبي قريب من مدرسة' 😊",
+      action_type: "GREETING",
     };
   }
 }
 
 /**
  * إرسال طلب المستخدم واستخراج المعايير
- * 
+ *
  * [محدث] يدعم الآن المحادثة التفاعلية:
  * - يمكن تمرير previous_criteria لدعم التعديلات
  * - يُرجع action_type لتحديد نوع الإجراء
- * 
+ *
  * @param message رسالة المستخدم
  * @param previousCriteria المعايير السابقة (اختياري) لدعم التعديلات
  */
 export async function sendUserQuery(
   message: string,
-  previousCriteria?: PropertyCriteria | null
+  previousCriteria?: PropertyCriteria | null,
 ): Promise<AssistantMessage> {
   try {
     // [محدث] إرسال المعايير السابقة مع الطلب
@@ -205,7 +205,7 @@ export async function sendUserQuery(
       previous_criteria: previousCriteria || null,
     };
 
-    console.log('🚀 Sending request to backend:', {
+    console.log("🚀 Sending request to backend:", {
       message,
       hasPreviousCriteria: !!previousCriteria,
     });
@@ -225,7 +225,7 @@ export async function sendUserQuery(
     const result: AssistantMessage = await response.json();
 
     // [جديد] تسجيل نوع الإجراء
-    console.log('✅ Response received:', {
+    console.log("✅ Response received:", {
       success: result.success,
       actionType: result.action_type,
       changesSummary: result.changes_summary,
@@ -246,7 +246,7 @@ export async function searchProperties(
   mode: "exact" | "similar" = "similar",
 ): Promise<SearchResponse> {
   try {
-    console.log('🔍 Searching properties:', { criteria, mode });
+    console.log("🔍 Searching properties:", { criteria, mode });
 
     const response = await fetch(`${API_BASE_URL}/api/search`, {
       method: "POST",
@@ -261,7 +261,7 @@ export async function searchProperties(
     }
 
     const result = await response.json();
-    console.log('✅ Search results:', { count: result.total_count });
+    console.log("✅ Search results:", { count: result.total_count });
 
     return result;
   } catch (error) {
