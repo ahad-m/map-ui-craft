@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react'; // 1. تمت إضافة useMemo هنا
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrendingUp, Search, MapPin, Loader2 } from 'lucide-react'; // تمت إضافة Loader2
+import { TrendingUp, Search, MapPin, Loader2, Map } from 'lucide-react'; // تم إضافة Map
 import {
   Sheet,
   SheetContent,
@@ -13,36 +13,30 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { useMarketStats } from '../hooks/useMarketStats';
+// 1. استدعاء السياق
+import { useHeatmap } from '../context/HeatmapContext';
 
 export const MarketInsightsSheet = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'بيع' | 'إيجار'>('بيع');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // استدعاء الهوك
+  // 2. استخدام السياق للتحكم بالزر
+  const { isHeatmapVisible, toggleHeatmap } = useHeatmap();
+
   const { data: stats, isLoading } = useMarketStats(activeTab);
 
-  // 2. تم تغيير منطق الفلترة ليكون آمناً باستخدام useMemo
   const filteredStats = useMemo(() => {
-    // إذا لم تكن البيانات قد وصلت بعد، نعيد مصفوفة فارغة
     if (!stats) return [];
-
     return stats.filter(stat => {
-      // التحقق الأمني: هل اسم الحي موجود وهو نص؟
       const districtName = stat.district;
       if (!districtName || typeof districtName !== 'string') return false;
-
-      // إذا كان البحث فارغاً، نعيد الحي للعرض
       if (!searchTerm.trim()) return true;
-
-      // البحث الآمن
       return districtName.includes(searchTerm.trim());
     });
   }, [stats, searchTerm]);
 
-  // حساب أعلى سعر لضبط مقياس الـ Progress Bar
   const maxPrice = stats?.length ? Math.max(...stats.map(s => s.avg_price_per_m2 || 0)) : 0;
 
   const formatPrice = (price: number) => {
@@ -72,7 +66,6 @@ export const MarketInsightsSheet = () => {
           </SheetDescription>
         </SheetHeader>
 
-        {/* التبويبات والبحث */}
         <div className="space-y-4 flex-shrink-0">
           <Tabs value={activeTab} dir="rtl" onValueChange={(v) => setActiveTab(v as any)} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -90,9 +83,23 @@ export const MarketInsightsSheet = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
+          {/* 3. زر تفعيل الخريطة الحرارية الجديد */}
+          <Button 
+            variant={isHeatmapVisible ? "default" : "outline"} 
+            className={`w-full gap-2 transition-all duration-300 ${
+              isHeatmapVisible 
+                ? 'bg-gradient-to-r from-green-600 to-emerald-600 border-none shadow-lg hover:from-green-700 hover:to-emerald-700' 
+                : 'hover:border-primary/50'
+            }`}
+            onClick={toggleHeatmap}
+          >
+            <Map className="h-4 w-4" />
+            {isHeatmapVisible ? 'إخفاء الخريطة الحرارية' : 'عرض الخريطة الحرارية للأسعار'}
+          </Button>
+
         </div>
 
-        {/* منطقة النتائج */}
         <ScrollArea className="flex-1 mt-4 -mr-4 pr-4">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-40 gap-3 text-muted-foreground">

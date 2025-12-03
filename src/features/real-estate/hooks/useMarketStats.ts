@@ -6,13 +6,16 @@ export type MarketStat = {
   avg_price_per_m2: number;
   properties_count: number;
   purpose: string;
+  district_points: { lat: number; lng: number }[];
+  // الإضافات الجديدة: الإحداثيات لرسم الخريطة الحرارية
+  avg_lat: number;
+  avg_lon: number;
 };
 
 export const useMarketStats = (purpose: 'بيع' | 'إيجار') => {
   return useQuery({
     queryKey: ['market-stats', purpose],
     queryFn: async () => {
-      // التغيير هنا: قمنا بإضافة "as any" داخل الأقواس
       const { data, error } = await supabase
         .from('district_market_stats' as any) 
         .select('*')
@@ -21,7 +24,6 @@ export const useMarketStats = (purpose: 'بيع' | 'إيجار') => {
 
       if (error) throw error;
       
-      // هنا نقوم بتحويل البيانات إلى النوع الذي عرفناه بالأعلى
       return data as unknown as MarketStat[];
     },
     staleTime: 1000 * 60 * 60, 

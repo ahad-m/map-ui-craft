@@ -1,7 +1,6 @@
 /**
  * PropertyMap Component
- * 
- * SOLID Principles:
+ * * SOLID Principles:
  * - Single Responsibility: Handles map rendering with all markers
  * - Dependency Inversion: Uses marker components through composition
  */
@@ -12,6 +11,12 @@ import { PropertyMarker } from './PropertyMarker';
 import { SchoolMarker } from './SchoolMarker';
 import { UniversityMarker } from './UniversityMarker';
 import { MosqueMarker } from './MosqueMarker';
+// 1. استدعاء مكون الخريطة الحرارية
+import { HeatmapLayer } from './HeatmapLayer';
+// 2. استدعاء السياق والـ Hook
+import { useHeatmap } from '../../context/HeatmapContext';
+import { useMarketStats } from '../../hooks/useMarketStats';
+
 import type {
   Property,
   SchoolWithTravelTime,
@@ -47,7 +52,7 @@ interface PropertyMapProps {
   mosques: MosqueWithTravelTime[];
   backendUniversities: NearbyUniversity[];
   backendMosques: NearbyMosque[];
-  backendSchools: NearbySchool[];  // ✅ جديد
+  backendSchools: NearbySchool[];
   visitedProperties: Set<string>;
   favoriteIds: string[];
   transactionType: TransactionType;
@@ -65,7 +70,7 @@ export const PropertyMap = memo(function PropertyMap({
   mosques,
   backendUniversities,
   backendMosques,
-  backendSchools,  // ✅ جديد
+  backendSchools,
   visitedProperties,
   favoriteIds,
   transactionType,
@@ -75,6 +80,13 @@ export const PropertyMap = memo(function PropertyMap({
   mapCenter = RIYADH_CENTER,
   mapZoom = 12,
 }: PropertyMapProps) {
+  
+  // 3. الحصول على حالة الخريطة الحرارية
+  const { isHeatmapVisible } = useHeatmap();
+  
+  // 4. جلب بيانات السوق لرسم الخريطة الحرارية
+  const { data: marketStats } = useMarketStats(transactionType === 'sale' ? 'بيع' : 'إيجار');
+
   return (
     <div className="absolute inset-0">
       <Map
@@ -86,8 +98,19 @@ export const PropertyMap = memo(function PropertyMap({
       >
         <MapRefHandler mapRef={mapRef} />
 
+        {/* 5. رسم طبقة الخريطة الحرارية */}
+        <HeatmapLayer 
+          key={transactionType}
+          data={marketStats || []} 
+          visible={isHeatmapVisible} 
+        />
+
+        {/* 6. رسم الدبابيس (Markers) فقط إذا كانت الخريطة الحرارية غير مفعلة 
+            نستخدم الشرط (!isHeatmapVisible) لإخفائها
+        */}
+
         {/* Property Markers */}
-        {properties.map((property) => (
+        {!isHeatmapVisible && properties.map((property) => (
           <PropertyMarker
             key={property.id}
             property={property}
@@ -99,13 +122,13 @@ export const PropertyMap = memo(function PropertyMap({
         ))}
 
         {/* School Markers (from local calculation) */}
-        {hasSearched &&
+        {!isHeatmapVisible && hasSearched &&
           schools.map((school) => (
             <SchoolMarker key={`school-${school.id}`} school={school} />
           ))}
 
-        {/* ✅ School Markers (from backend) - جديد */}
-        {hasSearched &&
+        {/* School Markers (from backend) */}
+        {!isHeatmapVisible && hasSearched &&
           backendSchools.map((school, index) => (
             <SchoolMarker
               key={`school-backend-${index}`}
@@ -114,7 +137,7 @@ export const PropertyMap = memo(function PropertyMap({
                 name: school.name,
                 lat: school.lat,
                 lon: school.lon,
-                gender: 'both',  // سيتم تحديده من البيانات لاحقاً
+                gender: 'both', 
                 primary_level: 'combined',
                 travelTime: school.walk_minutes || school.drive_minutes || 0,
               }}
@@ -122,7 +145,7 @@ export const PropertyMap = memo(function PropertyMap({
           ))}
 
         {/* University Markers (from local calculation) */}
-        {hasSearched &&
+        {!isHeatmapVisible && hasSearched &&
           universities.map((university) => (
             <UniversityMarker
               key={`university-${university.name_ar}`}
@@ -132,7 +155,7 @@ export const PropertyMap = memo(function PropertyMap({
           ))}
 
         {/* University Markers (from backend) */}
-        {hasSearched &&
+        {!isHeatmapVisible && hasSearched &&
           backendUniversities.map((university, index) => (
             <UniversityMarker
               key={`university-backend-${index}`}
@@ -142,7 +165,7 @@ export const PropertyMap = memo(function PropertyMap({
           ))}
 
         {/* Mosque Markers (from backend) */}
-        {hasSearched &&
+        {!isHeatmapVisible && hasSearched &&
           backendMosques.map((mosque, index) => (
             <MosqueMarker
               key={`mosque-backend-${index}`}
@@ -152,7 +175,7 @@ export const PropertyMap = memo(function PropertyMap({
           ))}
 
         {/* Mosque Markers (from local calculation) */}
-        {hasSearched &&
+        {!isHeatmapVisible && hasSearched &&
           mosques.map((mosque) => (
             <MosqueMarker
               key={`mosque-${mosque.id}`}
