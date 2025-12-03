@@ -420,6 +420,18 @@ export type Database = {
       }
     }
     Views: {
+      district_market_stats: {
+        Row: {
+          avg_lat: number | null
+          avg_lon: number | null
+          avg_price_per_m2: number | null
+          city: string | null
+          district: string | null
+          normalized_purpose: string | null
+          properties_count: number | null
+        }
+        Relationships: []
+      }
       geography_columns: {
         Row: {
           coord_dimension: number | null
@@ -823,6 +835,7 @@ export type Database = {
           p_lon: number
         }
         Returns: {
+          distance_meters: number
           id: string
           lat: number
           lon: number
