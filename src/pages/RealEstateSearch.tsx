@@ -1,5 +1,7 @@
 /**
- * RealEstateSearch Page Component
+ * RealEstateSearch Page Component (Updated)
+ * 
+ * Now includes HighlightedPropertyProvider for Best Value feature.
  * 
  * This is the main orchestrator component that:
  * - Coordinates all child components
@@ -10,11 +12,6 @@
  * - Single Responsibility: Acts only as orchestrator, delegates to specialized components
  * - Open/Closed: Easy to extend with new features by adding new components
  * - Dependency Inversion: Depends on abstractions (hooks, component interfaces)
- * 
- * Performance Optimizations:
- * - Child components use React.memo to prevent unnecessary re-renders
- * - Heavy calculations are in custom hooks with useMemo
- * - State is distributed to minimize re-render scope
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -47,6 +44,12 @@ import {
   ChatFloatingButton,
 } from '@/features/real-estate/components';
 
+// ✅ New: Import ClearHighlightedPropertyButton
+import { ClearHighlightedPropertyButton } from '@/features/real-estate/components/ClearHighlightedPropertyButton';
+
+// ✅ New: Import HighlightedPropertyProvider
+import { HighlightedPropertyProvider } from '@/features/real-estate/context/HighlightedPropertyContext';
+
 import type {
   Property,
   TransactionType,
@@ -55,10 +58,9 @@ import type {
   NearbySchool,
 } from '@/features/real-estate/types';
 
-const RealEstateSearch = () => {
+const RealEstateSearchContent = () => {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
   // ============================================
   // Authentication State
@@ -151,7 +153,7 @@ const RealEstateSearch = () => {
     mosques: allMosques,
     appliedFilters,
     hasSearched,
-    currentCriteria: undefined, // Will be set from chat
+    currentCriteria: undefined,
   });
 
   const { mapRef, mapCenter, mapZoom } = useMapControls({
@@ -195,7 +197,7 @@ const RealEstateSearch = () => {
   });
 
   // ============================================
-  // Extract Backend Entities (Universities, Mosques, Schools)
+  // Extract Backend Entities
   // ============================================
   const nearbyUniversitiesFromBackend = useMemo((): NearbyUniversity[] => {
     if (chatbotProperties.length > 0 && chatbotProperties[0].nearby_universities) {
@@ -211,17 +213,14 @@ const RealEstateSearch = () => {
     return [];
   }, [chatbotProperties]);
 
-  // ✅ جديد: استخراج المدارس القريبة من Backend
   const nearbySchoolsFromBackend = useMemo((): NearbySchool[] => {
     if (chatbotProperties.length === 0) return [];
     
-    // جمع كل المدارس الفريدة من جميع العقارات
     const schoolsMap = new Map<string, NearbySchool>();
     
     chatbotProperties.forEach(property => {
       if (property.nearby_schools && Array.isArray(property.nearby_schools)) {
         property.nearby_schools.forEach(school => {
-          // استخدام الاسم + الإحداثيات كمفتاح فريد
           const key = `${school.name}-${school.lat}-${school.lon}`;
           if (!schoolsMap.has(key)) {
             schoolsMap.set(key, school);
@@ -298,129 +297,144 @@ const RealEstateSearch = () => {
   // Render
   // ============================================
   return (
+    <div className="relative h-screen w-full overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-accent-light/20 via-background to-accent-light/10" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_hsl(142_76%_48%/0.08)_0%,_transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_hsl(142_76%_48%/0.05)_0%,_transparent_50%)]" />
+
+      {/* Map */}
+      <PropertyMap
+        properties={displayedProperties}
+        schools={nearbySchools}
+        universities={nearbyUniversities}
+        mosques={nearbyMosques}
+        backendUniversities={nearbyUniversitiesFromBackend}
+        backendMosques={nearbyMosquesFromBackend}
+        backendSchools={nearbySchoolsFromBackend}
+        visitedProperties={visitedProperties}
+        favoriteIds={favorites}
+        transactionType={transactionType}
+        hasSearched={hasSearched}
+        onPropertyClick={handlePropertyClick}
+        mapRef={mapRef}
+        mapCenter={mapCenter}
+        mapZoom={mapZoom}
+      />
+
+      {/* Search Header */}
+      <SearchHeader
+        transactionType={transactionType}
+        onTransactionTypeChange={setTransactionType}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        onSearch={triggerSearch}
+        onToggleFilters={() => setShowFilters(true)}
+        onToggleFavorites={() => setShowFavorites(true)}
+        favoritesCount={favorites.length}
+      />
+
+      {/* Filters Sheet */}
+      <FiltersSheet
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        filters={filters}
+        onFiltersChange={setFilters}
+        customSearchTerms={customSearchTerms}
+        onCustomSearchTermsChange={setCustomSearchTerms}
+        onApply={handleApplyFilters}
+        onReset={resetFilters}
+        propertyTypes={propertyTypes}
+        neighborhoods={neighborhoods}
+        schoolGenders={schoolGenders}
+        schoolLevels={schoolLevels}
+        universities={allUniversities}
+        nearbySchoolsCount={nearbySchools.length}
+        nearbyUniversitiesCount={nearbyUniversities.length}
+      />
+
+      {/* Property Details Dialog */}
+      <PropertyDetailsDialog
+        property={selectedProperty}
+        isOpen={showPropertyDialog}
+        onClose={() => {
+          setShowPropertyDialog(false);
+          setSelectedProperty(null);
+        }}
+        isFavorite={selectedProperty ? isFavorite(selectedProperty.id) : false}
+        onToggleFavorite={() => selectedProperty && handleToggleFavorite(selectedProperty.id)}
+        selectedSchool={null}
+        selectedUniversity={null}
+      />
+
+      {/* Favorites Sheet */}
+      <FavoritesSheet
+        isOpen={showFavorites}
+        onClose={() => setShowFavorites(false)}
+        properties={displayedFavorites}
+        onPropertySelect={(property) => {
+          setSelectedProperty(property);
+          setShowPropertyDialog(true);
+        }}
+        onToggleFavorite={handleToggleFavorite}
+      />
+
+      {/* Clear Chatbot Results Button */}
+      <ClearChatbotResultsButton
+        isVisible={showChatbotResults}
+        onClear={handleClearChatbotResults}
+      />
+
+      {/* ✅ New: Clear Highlighted Property Button */}
+      <ClearHighlightedPropertyButton />
+
+      {/* Results Counter */}
+      <ResultsCounter
+        count={displayedProperties.length}
+        isLoading={isLoadingProperties}
+        isVisible={!selectedProperty && hasSearched}
+      />
+
+      {/* Chat Floating Button */}
+      <ChatFloatingButton
+        onClick={() => setIsChatOpen(!isChatOpen)}
+        isBackendOnline={isBackendOnline}
+      />
+
+      {/* Chat Panel */}
+      <ChatPanel
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        messages={messages}
+        isLoading={isChatLoading}
+        isBackendOnline={isBackendOnline}
+        chatInput={chatInput}
+        onChatInputChange={setChatInput}
+        onSendMessage={handleSendMessage}
+        onSearchModeSelection={handleSearchModeSelection}
+        onVoiceInput={handleVoiceInput}
+        onClearChat={() => {
+          clearChat();
+          setChatbotProperties([]);
+          setShowChatbotResults(false);
+        }}
+        isListening={isListening}
+        messagesEndRef={messagesEndRef}
+      />
+    </div>
+  );
+};
+
+// ✅ Main component wrapped with providers
+const RealEstateSearch = () => {
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+  
+  return (
     <APIProvider apiKey={apiKey}>
-      <div className="relative h-screen w-full overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-accent-light/20 via-background to-accent-light/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_hsl(142_76%_48%/0.08)_0%,_transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_hsl(142_76%_48%/0.05)_0%,_transparent_50%)]" />
-
-        {/* Map */}
-        <PropertyMap
-          properties={displayedProperties}
-          schools={nearbySchools}
-          universities={nearbyUniversities}
-          mosques={nearbyMosques}
-          backendUniversities={nearbyUniversitiesFromBackend}
-          backendMosques={nearbyMosquesFromBackend}
-          backendSchools={nearbySchoolsFromBackend}
-          visitedProperties={visitedProperties}
-          favoriteIds={favorites}
-          transactionType={transactionType}
-          hasSearched={hasSearched}
-          onPropertyClick={handlePropertyClick}
-          mapRef={mapRef}
-          mapCenter={mapCenter}
-          mapZoom={mapZoom}
-        />
-
-        {/* Search Header */}
-        <SearchHeader
-          transactionType={transactionType}
-          onTransactionTypeChange={setTransactionType}
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
-          onSearch={triggerSearch}
-          onToggleFilters={() => setShowFilters(true)}
-          onToggleFavorites={() => setShowFavorites(true)}
-          favoritesCount={favorites.length}
-        />
-
-        {/* Filters Sheet */}
-        <FiltersSheet
-          isOpen={showFilters}
-          onClose={() => setShowFilters(false)}
-          filters={filters}
-          onFiltersChange={setFilters}
-          customSearchTerms={customSearchTerms}
-          onCustomSearchTermsChange={setCustomSearchTerms}
-          onApply={handleApplyFilters}
-          onReset={resetFilters}
-          propertyTypes={propertyTypes}
-          neighborhoods={neighborhoods}
-          schoolGenders={schoolGenders}
-          schoolLevels={schoolLevels}
-          universities={allUniversities}
-          nearbySchoolsCount={nearbySchools.length}
-          nearbyUniversitiesCount={nearbyUniversities.length}
-        />
-
-        {/* Property Details Dialog */}
-        <PropertyDetailsDialog
-          property={selectedProperty}
-          isOpen={showPropertyDialog}
-          onClose={() => {
-            setShowPropertyDialog(false);
-            setSelectedProperty(null);
-          }}
-          isFavorite={selectedProperty ? isFavorite(selectedProperty.id) : false}
-          onToggleFavorite={() => selectedProperty && handleToggleFavorite(selectedProperty.id)}
-          selectedSchool={null}
-          selectedUniversity={null}
-        />
-
-        {/* Favorites Sheet */}
-        <FavoritesSheet
-          isOpen={showFavorites}
-          onClose={() => setShowFavorites(false)}
-          properties={displayedFavorites}
-          onPropertySelect={(property) => {
-            setSelectedProperty(property);
-            setShowPropertyDialog(true);
-          }}
-          onToggleFavorite={handleToggleFavorite}
-        />
-
-        {/* Clear Chatbot Results Button */}
-        <ClearChatbotResultsButton
-          isVisible={showChatbotResults}
-          onClear={handleClearChatbotResults}
-        />
-
-        {/* Results Counter */}
-        <ResultsCounter
-          count={displayedProperties.length}
-          isLoading={isLoadingProperties}
-          isVisible={!selectedProperty && hasSearched}
-        />
-
-        {/* Chat Floating Button */}
-        <ChatFloatingButton
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          isBackendOnline={isBackendOnline}
-        />
-
-        {/* Chat Panel */}
-        <ChatPanel
-          isOpen={isChatOpen}
-          onClose={() => setIsChatOpen(false)}
-          messages={messages}
-          isLoading={isChatLoading}
-          isBackendOnline={isBackendOnline}
-          chatInput={chatInput}
-          onChatInputChange={setChatInput}
-          onSendMessage={handleSendMessage}
-          onSearchModeSelection={handleSearchModeSelection}
-          onVoiceInput={handleVoiceInput}
-          onClearChat={() => {
-            clearChat();
-            setChatbotProperties([]);
-            setShowChatbotResults(false);
-          }}
-          isListening={isListening}
-          messagesEndRef={messagesEndRef}
-        />
-      </div>
+      {/* ✅ Wrap with HighlightedPropertyProvider */}
+      <HighlightedPropertyProvider>
+        <RealEstateSearchContent />
+      </HighlightedPropertyProvider>
     </APIProvider>
   );
 };

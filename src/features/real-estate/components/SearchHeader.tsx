@@ -1,5 +1,7 @@
 /**
- * SearchHeader Component
+ * SearchHeader Component (Updated)
+ * 
+ * Now includes the BestValueSheet button (star icon) next to MarketInsightsSheet
  * 
  * SOLID Principles:
  * - Single Responsibility: Only handles the top search bar UI
@@ -26,6 +28,8 @@ import { supabase } from '@/integrations/supabase/client';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 import type { TransactionType } from '../types';
 import { MarketInsightsSheet } from './MarketInsightsSheet';
+import { BestValueSheet } from './BestValueSheet'; // ✅ New import
+
 interface SearchHeaderProps {
   transactionType: TransactionType;
   onTransactionTypeChange: (type: TransactionType) => void;
@@ -103,9 +107,17 @@ export const SearchHeader = memo(function SearchHeader({
             </div>
             
             <div className="flex gap-2">
+              {/* ✅ Market Insights Button */}
               <div className="hover:scale-105 transition-all duration-300">
                 <MarketInsightsSheet />
               </div>
+
+              {/* ✅ NEW: Best Value Properties Button */}
+              <div className="hover:scale-105 transition-all duration-300">
+                <BestValueSheet />
+              </div>
+
+              {/* Favorites Button */}
               <Button
                 variant="outline"
                 size="sm"
@@ -124,6 +136,7 @@ export const SearchHeader = memo(function SearchHeader({
                 )}
               </Button>
               
+              {/* Language Toggle */}
               <Button
                 variant="outline"
                 size="sm"
@@ -134,6 +147,7 @@ export const SearchHeader = memo(function SearchHeader({
                 {i18n.language === 'en' ? 'ع' : 'EN'}
               </Button>
               
+              {/* Profile Button */}
               <Button
                 variant="outline"
                 size="sm"

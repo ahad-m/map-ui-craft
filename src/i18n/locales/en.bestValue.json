@@ -1,0 +1,47 @@
+{
+  "bestValue": {
+    "tooltip": "Best value properties",
+    "title": "Best Value Properties",
+    "description": "Find properties priced below the district's average price per m²",
+    "forSale": "For Sale",
+    "forRent": "For Rent",
+    "searchDistrict": "Search district...",
+    "avgPrice": "Avg per m²",
+    "change": "Change",
+    "filterByType": "Filter by property type",
+    "selectPropertyType": "Select property type",
+    "allPropertyTypes": "All types",
+    "loadingDistricts": "Loading districts...",
+    "noDistrictsFound": "No results for \"{{term}}\"",
+    "noData": "No data available",
+    "selectDistrictHint": "Select a district to view best value properties",
+    "properties": "properties",
+    "perM2": "/m²",
+    "loading": "Searching for best value properties...",
+    "error": "Failed to fetch data",
+    "noResults": "No properties are currently priced below the average price per m² for this district given the current filters.",
+    "resultsCount": "Found {{count}} properties",
+    "avgPriceLabel": "District avg: {{price}}",
+    "districtAverage": "District average",
+    "savingsMessage": "{{percent}} below district average",
+    "viewDetails": "View details",
+    "untitledProperty": "Property",
+    "clearHighlight": "Hide highlighted property",
+    "column": {
+      "property": "Property",
+      "price": "Price",
+      "area": "Area (m²)",
+      "pricePerM2": "Price per m²",
+      "discount": "Below district average"
+    },
+    "propertyTypes": {
+      "فلل": "Villas",
+      "استوديو": "Studio",
+      "شقق": "Apartments",
+      "دور": "Single floor unit",
+      "تاون هاوس": "Townhouse",
+      "دوبلكس": "Duplex",
+      "عمائر": "Residential buildings"
+    }
+  }
+}

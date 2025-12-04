@@ -1,6 +1,9 @@
 /**
- * PropertyMap Component
- * * SOLID Principles:
+ * PropertyMap Component (Updated)
+ * 
+ * Now includes support for highlighted property from BestValueSheet.
+ * 
+ * SOLID Principles:
  * - Single Responsibility: Handles map rendering with all markers
  * - Dependency Inversion: Uses marker components through composition
  */
@@ -11,10 +14,10 @@ import { PropertyMarker } from './PropertyMarker';
 import { SchoolMarker } from './SchoolMarker';
 import { UniversityMarker } from './UniversityMarker';
 import { MosqueMarker } from './MosqueMarker';
-// 1. استدعاء مكون الخريطة الحرارية
 import { HeatmapLayer } from './HeatmapLayer';
-// 2. استدعاء السياق والـ Hook
+import { HighlightedPropertyMarker } from './HighlightedPropertyMarker'; // ✅ New import
 import { useHeatmap } from '../../context/HeatmapContext';
+import { useHighlightedProperty } from '../../context/HighlightedPropertyContext'; // ✅ New import
 import { useMarketStats } from '../../hooks/useMarketStats';
 
 import type {
@@ -81,10 +84,13 @@ export const PropertyMap = memo(function PropertyMap({
   mapZoom = 12,
 }: PropertyMapProps) {
   
-  // 3. الحصول على حالة الخريطة الحرارية
+  // Heatmap state
   const { isHeatmapVisible } = useHeatmap();
   
-  // 4. جلب بيانات السوق لرسم الخريطة الحرارية
+  // ✅ New: Highlighted property from BestValueSheet
+  const { highlightedProperty, showHighlightedMarker, clearHighlightedProperty } = useHighlightedProperty();
+  
+  // Market stats for heatmap
   const { data: marketStats } = useMarketStats(transactionType === 'sale' ? 'بيع' : 'إيجار');
 
   return (
@@ -98,18 +104,26 @@ export const PropertyMap = memo(function PropertyMap({
       >
         <MapRefHandler mapRef={mapRef} />
 
-        {/* 5. رسم طبقة الخريطة الحرارية */}
+        {/* Heatmap Layer */}
         <HeatmapLayer 
           key={transactionType}
           data={marketStats || []} 
           visible={isHeatmapVisible} 
         />
 
-        {/* 6. رسم الدبابيس (Markers) فقط إذا كانت الخريطة الحرارية غير مفعلة 
-            نستخدم الشرط (!isHeatmapVisible) لإخفائها
-        */}
+        {/* ✅ New: Highlighted Property Marker (from Best Value selection) */}
+        {showHighlightedMarker && highlightedProperty && (
+          <HighlightedPropertyMarker
+            property={highlightedProperty}
+            onClick={() => {
+              // Pass the highlighted property to onPropertyClick
+              // Cast to Property type - the essential fields are the same
+              onPropertyClick(highlightedProperty as unknown as Property);
+            }}
+          />
+        )}
 
-        {/* Property Markers */}
+        {/* Property Markers - hidden when heatmap is visible */}
         {!isHeatmapVisible && properties.map((property) => (
           <PropertyMarker
             key={property.id}
