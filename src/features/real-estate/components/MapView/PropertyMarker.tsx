@@ -7,7 +7,7 @@
 
 import { memo } from 'react';
 import { AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { Heart } from 'lucide-react';
+import { Check, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Property, TransactionType } from '../../types';
 import { isValidCoordinates } from '../../utils/distanceCalculations';
@@ -34,9 +34,17 @@ export const PropertyMarker = memo(function PropertyMarker({
     return null;
   }
 
-  // Red for favorites, Gray for non-favorites
-  const pinBackground = isFavorite ? '#ef4444' : '#94a3b8';
-  const pinBorderColor = isFavorite ? '#dc2626' : '#64748b';
+  const pinBackground = isVisited
+    ? '#94a3b8'
+    : transactionType === 'sale'
+    ? '#065f46'
+    : '#10b981';
+
+  const pinBorderColor = isVisited
+    ? '#64748b'
+    : transactionType === 'sale'
+    ? '#064e3b'
+    : '#059669';
 
   return (
     <AdvancedMarker
@@ -48,9 +56,9 @@ export const PropertyMarker = memo(function PropertyMarker({
         <div
           className={cn(
             'transition-all duration-500',
-            isFavorite
-              ? 'group-hover:scale-125 group-hover:-translate-y-2'
-              : 'scale-75 opacity-70'
+            isVisited
+              ? 'scale-75 opacity-70'
+              : 'group-hover:scale-125 group-hover:-translate-y-2'
           )}
         >
           <Pin
@@ -60,12 +68,19 @@ export const PropertyMarker = memo(function PropertyMarker({
           />
         </div>
 
-        {/* Ping animation on hover (favorites only) */}
-        {isFavorite && (
+        {/* Ping animation on hover (non-visited only) */}
+        {!isVisited && (
           <div
-            className="absolute inset-0 rounded-full bg-red-500/20 animate-ping opacity-0 group-hover:opacity-100"
+            className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-0 group-hover:opacity-100"
             style={{ animationDuration: '1.5s' }}
           />
+        )}
+
+        {/* Visited indicator */}
+        {isVisited && (
+          <div className="absolute -top-1 -right-1 bg-blue-600 rounded-full p-0.5 shadow-lg border-2 border-white">
+            <Check className="h-3 w-3 text-white" />
+          </div>
         )}
 
         {/* Favorite indicator */}
