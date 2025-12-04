@@ -1084,6 +1084,20 @@ export type Database = {
           url: string
         }[]
       }
+      search_properties_flexible_ranked: {
+        Args: {
+          p_city: string
+          p_property_type: string
+          p_purpose: string
+          target_lat: number
+          target_lon: number
+          target_price: number
+        }
+        Returns: {
+          id: string
+          similarity: number
+        }[]
+      }
       search_properties_hybrid:
         | {
             Args: {

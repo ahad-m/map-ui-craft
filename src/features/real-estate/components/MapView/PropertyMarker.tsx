@@ -34,13 +34,17 @@ export const PropertyMarker = memo(function PropertyMarker({
     return null;
   }
 
-  const pinBackground = isVisited
+  const pinBackground = isFavorite
+    ? '#ef4444'
+    : isVisited
     ? '#94a3b8'
     : transactionType === 'sale'
     ? '#065f46'
     : '#10b981';
 
-  const pinBorderColor = isVisited
+  const pinBorderColor = isFavorite
+    ? '#dc2626'
+    : isVisited
     ? '#64748b'
     : transactionType === 'sale'
     ? '#064e3b'
