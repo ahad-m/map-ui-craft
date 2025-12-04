@@ -349,7 +349,7 @@ class SearchEngine:
                     if query_vector:
                         rpc_params = {
                             'query_embedding': query_vector,
-                            'match_threshold': 0.5,
+                            'match_threshold': 0.3,
                             'match_count': 100,
                             'p_purpose': criteria.purpose.value,
                             'p_property_type': criteria.property_type.value,
