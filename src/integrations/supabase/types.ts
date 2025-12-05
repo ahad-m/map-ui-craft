@@ -314,6 +314,13 @@ export type Database = {
             foreignKeyName: "fk_property_id"
             columns: ["property_id"]
             isOneToOne: true
+            referencedRelation: "district_best_value_properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_property_id"
+            columns: ["property_id"]
+            isOneToOne: true
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
@@ -420,6 +427,38 @@ export type Database = {
       }
     }
     Views: {
+      district_best_value_properties: {
+        Row: {
+          area_m2: number | null
+          avg_price_per_m2: number | null
+          baths: number | null
+          city: string | null
+          description: string | null
+          discount_pct: number | null
+          district: string | null
+          district_properties_count: number | null
+          final_lat: number | null
+          final_lon: number | null
+          halls: number | null
+          id: string | null
+          image_url: string | null
+          lat: number | null
+          lon: number | null
+          normalized_purpose: string | null
+          price_currency: string | null
+          price_num: number | null
+          price_per_m2: number | null
+          price_period: string | null
+          property_type: string | null
+          purpose: string | null
+          rooms: number | null
+          savings_per_m2: number | null
+          time_to_metro_min: number | null
+          title: string | null
+          url: string | null
+        }
+        Relationships: []
+      }
       district_market_stats: {
         Row: {
           avg_lat: number | null
@@ -1098,52 +1137,29 @@ export type Database = {
           similarity: number
         }[]
       }
-      search_properties_hybrid:
-        | {
-            Args: {
-              match_count: number
-              match_threshold: number
-              max_price?: number
-              min_price?: number
-              p_city?: string
-              p_district?: string
-              p_lat?: number
-              p_lon?: number
-              p_property_type?: string
-              p_purpose?: string
-              query_embedding: string
-            }
-            Returns: {
-              dist_meters: number
-              id: string
-              lat: number
-              lon: number
-              price_num: number
-              similarity: number
-            }[]
-          }
-        | {
-            Args: {
-              match_count: number
-              match_threshold: number
-              max_price?: number
-              min_price?: number
-              p_city?: string
-              p_lat?: number
-              p_lon?: number
-              p_property_type?: string
-              p_purpose?: string
-              query_embedding: string
-            }
-            Returns: {
-              dist_meters: number
-              id: string
-              lat: number
-              lon: number
-              price_num: number
-              similarity: number
-            }[]
-          }
+      search_properties_hybrid: {
+        Args: {
+          match_count: number
+          match_threshold: number
+          max_price: number
+          min_price: number
+          p_city: string
+          p_district: string
+          p_lat: number
+          p_lon: number
+          p_property_type: string
+          p_purpose: string
+          query_embedding: string
+        }
+        Returns: {
+          dist_meters: number
+          final_lat: number
+          final_lon: number
+          id: string
+          price_num: number
+          similarity: number
+        }[]
+      }
       search_properties_nearby: {
         Args: {
           max_price?: number
