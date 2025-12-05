@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Database:
-    """مدير قاعدة البيانات"""
+    """مدير قاعدة البيانات (الغرض: إنشاء اتصال مع Supabase عند بدء التطبيق)"""
     
     def __init__(self):
         """تهيئة الاتصال بـ Supabase"""

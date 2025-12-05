@@ -15,11 +15,11 @@ class Settings(BaseSettings):
     
     # إعدادات OpenAI (متوفرة في البيئة)
     OPENAI_API_KEY: str
-    HUGGINGFACE_API_KEY: Optional[str] = None
 
     
     # إعدادات النموذج اللغوي
     LLM_MODEL: str = "gpt-4o-mini"  
+    #ملاحظة: temperature = 0.1 منخفضة جداً، هذا يعني أن النموذج سيكون دقيق ومتسق في استخراج المعايير بدلاً من الإبداع.
     LLM_TEMPERATURE: float = 0.1  # منخفضة للدقة العالية
     LLM_MAX_TOKENS: int = 1000
     
@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     VECTOR_SIMILARITY_THRESHOLD: float = 0.7
     
     # أوزان البحث الهجين
+    # مااستخدمتها استخدمت دايركت بالكود الاساسي ( ارجع لها اشوف)
     SQL_WEIGHT: float = 0.7
     VECTOR_WEIGHT: float = 0.3
     
