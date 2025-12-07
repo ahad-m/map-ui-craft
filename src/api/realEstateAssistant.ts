@@ -146,7 +146,7 @@ export interface SearchResponse {
 // إعدادات API
 // ═══════════════════════════════════════════════════════════
 
-const API_BASE_URL = "https://riyal-estate-56q6.onrender.com";
+const API_BASE_URL = "https://riyal-estate-api.onrender.com";
 //const API_BASE_URL = "http://localhost:8000";
 
 /**
