@@ -55,13 +55,13 @@ export const MarketInsightsSheet = () => {
         </Button>
       </SheetTrigger>
       
-      <SheetContent side="left" className="w-[400px] sm:w-[540px] flex flex-col h-full">
-        <SheetHeader className="mb-6 flex-shrink-0">
-          <SheetTitle className="flex items-center gap-2 text-xl text-primary">
-            <TrendingUp className="h-6 w-6" />
+      <SheetContent side="left" className="w-full sm:w-[400px] md:w-[480px] lg:w-[540px] flex flex-col h-full p-4 sm:p-6">
+        <SheetHeader className="mb-4 sm:mb-6 flex-shrink-0">
+          <SheetTitle className="flex items-center gap-2 text-lg sm:text-xl text-primary">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
             مؤشر أسعار الأحياء
           </SheetTitle>
-          <SheetDescription>
+          <SheetDescription className="text-sm sm:text-base">
             متوسط سعر المتر المربع في أحياء الرياض بناءً على العروض الحالية
           </SheetDescription>
         </SheetHeader>
