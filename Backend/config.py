@@ -3,7 +3,6 @@
 """
 from pydantic_settings import BaseSettings
 from typing import Optional
-from typing import Optional  # أضف Optional إذا مو موجود
 
 
 class Settings(BaseSettings):
@@ -13,7 +12,7 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_KEY: str
     
-    # إعدادات OpenAI (متوفرة في البيئة)
+    # إعدادات OpenAI 
     OPENAI_API_KEY: str
 
     
@@ -29,7 +28,7 @@ class Settings(BaseSettings):
     VECTOR_SIMILARITY_THRESHOLD: float = 0.7
     
     # أوزان البحث الهجين
-    # مااستخدمتها استخدمت دايركت بالكود الاساسي ( ارجع لها اشوف)
+    # مااستخدمتها استخدمت دايركت بالكود الاساسي 
     SQL_WEIGHT: float = 0.7
     VECTOR_WEIGHT: float = 0.3
     
