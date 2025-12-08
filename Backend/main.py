@@ -34,7 +34,7 @@ app = FastAPI(
 # إعداد CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # في الإنتاج، حدد النطاقات المسموحة
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,7 +64,7 @@ async def health_check():
     return {
         "status": "healthy",
         "model": settings.LLM_MODEL,
-        "multi_turn_support": True  # [جديد] إشارة لدعم المحادثة التفاعلية
+        "multi_turn_support": True  
     }
 
 
@@ -78,7 +78,7 @@ async def welcome_message():
 
 
 # ═══════════════════════════════════════════════════════════
-# [محدّث] نقطة معالجة الطلب - مع دعم المعايير السابقة
+# نقطة معالجة الطلب - مع دعم المعايير السابقة
 # ═══════════════════════════════════════════════════════════
 @app.post("/api/chat/query", response_model=CriteriaExtractionResponse)
 async def process_user_query(query: UserQuery):
@@ -108,10 +108,10 @@ async def process_user_query(query: UserQuery):
         # استخراج المعايير باستخدام LLM مع المعايير السابقة
         result = llm_parser.extract_criteria(
             user_query=query.message,
-            previous_criteria=query.previous_criteria  # [جديد] تمرير المعايير السابقة
+            previous_criteria=query.previous_criteria  #تمرير المعايير السابقة
         )
         
-        logger.info(f"✅ نتيجة الاستخراج:")
+        logger.info(f" نتيجة الاستخراج:")
         logger.info(f"   - success={result.success}")
         logger.info(f"   - action_type={result.action_type}")
         logger.info(f"   - needs_clarification={result.needs_clarification}")
@@ -121,7 +121,7 @@ async def process_user_query(query: UserQuery):
         return result
         
     except Exception as e:
-        logger.error(f"❌ خطأ في معالجة الطلب: {e}")
+        logger.error(f"خطأ في معالجة الطلب: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -167,7 +167,7 @@ async def search_properties(selection: SearchModeSelection):
         )
         
     except Exception as e:
-        logger.error(f"❌ خطأ في البحث: {e}")
+        logger.error(f" خطأ في البحث: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -197,7 +197,7 @@ async def get_property_details(property_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ خطأ في الحصول على تفاصيل العقار: {e}")
+        logger.error(f" خطأ في الحصول على تفاصيل العقار: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -213,17 +213,16 @@ async def submit_feedback(feedback: dict):
         رسالة تأكيد
     """
     try:
-        logger.info(f"📝 استلام ملاحظات: {feedback}")
+        logger.info(f" استلام ملاحظات: {feedback}")
         
-        # في الإنتاج، يمكن حفظ الملاحظات في قاعدة البيانات
         
         return {
             "success": True,
-            "message": "شكراً لك! تم استلام ملاحظاتك بنجاح 🙏"
+            "message": "شكراً لك! تم استلام ملاحظاتك بنجاح �"
         }
         
     except Exception as e:
-        logger.error(f"❌ خطأ في حفظ الملاحظات: {e}")
+        logger.error(f" خطأ في حفظ الملاحظات: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
