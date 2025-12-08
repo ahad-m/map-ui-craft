@@ -1,10 +1,3 @@
-/**
- * ChatPanel Component
- * 
- * SOLID Principles:
- * - Single Responsibility: Handles the chat UI
- * - Dependency Inversion: Receives chat logic through props/hooks
- */
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
