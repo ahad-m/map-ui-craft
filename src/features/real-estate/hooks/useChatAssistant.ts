@@ -1,11 +1,7 @@
 /**
  * useChatAssistant Hook
  * 
- * SOLID Principles:
- * - Single Responsibility: Wraps chat functionality
- * - Open/Closed: Extends useRealEstateAssistant without modifying it
- * 
- * النسخة المحدثة: دعم المحادثة التفاعلية (Multi-Turn)
+
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -78,7 +74,7 @@ export function useChatAssistant({
     clearLastCriteria: clearLastCriteriaBase,
   } = useRealEstateAssistant();
 
-  // [جديد] حساب ما إذا كنا في وضع التعديل
+  //  حساب ما إذا كنا في وضع التعديل
   const isModifyingPrevious = lastCriteria !== null;
 
   /**
@@ -102,14 +98,14 @@ export function useChatAssistant({
   }, [searchResults, currentCriteria, onResultsReceived, onFiltersSync]);
 
   /**
-   * [جديد] إظهار toast عند التعديل
+   *  إظهار toast عند التعديل
    */
   useEffect(() => {
     if (lastActionType === 'UPDATE_CRITERIA') {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage?.changesSummary) {
         toast({
-          title: '✅ تم التعديل',
+          title:  تم التعديل',
           description: lastMessage.changesSummary,
         });
       }
@@ -225,7 +221,7 @@ export function useChatAssistant({
   }, [clearChatBase]);
 
   /**
-   * [جديد] Clear last criteria only (لبدء بحث جديد)
+   *  Clear last criteria only (لبدء بحث جديد)
    */
   const clearLastCriteria = useCallback(() => {
     clearLastCriteriaBase();
@@ -247,7 +243,7 @@ export function useChatAssistant({
     isBackendOnline,
     currentCriteria,
     
-    // [جديد] للمحادثة التفاعلية
+    // للمحادثة التفاعلية
     lastCriteria,
     lastActionType,
     isModifyingPrevious,
