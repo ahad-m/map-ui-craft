@@ -1,9 +1,4 @@
-/**
- * ChatMessage Component
- * 
- * SOLID Principles:
- * - Single Responsibility: Renders a single chat message
- */
+
 
 import { memo } from 'react';
 import { Button } from '@/components/ui/button';
