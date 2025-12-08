@@ -88,7 +88,6 @@ export const HeatmapLayer = ({ data, visible }: HeatmapLayerProps) => {
       });
     }
 
-    // 👇👇👇 الحل هنا 👇👇👇
     // دالة التنظيف (Cleanup Function)
     return () => {
       // 1. حذف مستمع الزوم
@@ -97,12 +96,10 @@ export const HeatmapLayer = ({ data, visible }: HeatmapLayerProps) => {
       }
       
       // 2. حذف الخريطة الحرارية دائماً عند انتهاء المكون
-      // أزلنا شرط (!visible) عشان نضمن الحذف حتى عند التبديل
       if (heatmap) {
         heatmap.setMap(null);
       }
     };
-    // 👆👆👆 ---------------- 👆👆👆
 
   }, [map, visualizationLib, heatmapData, visible, heatmap, maxIntensity]);
 
