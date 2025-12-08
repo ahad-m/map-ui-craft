@@ -1,9 +1,7 @@
 /**
  * Real Estate Search Types
  * 
- * SOLID Principle: Interface Segregation
- * - Each interface is focused on a specific domain
- * - Consumers only depend on what they need
+
  */
 
 // ============================================
@@ -17,7 +15,7 @@ export interface Property {
   price_num: number;
   price_currency: string;
   property_type: string;
-  purpose: string; // "للبيع" | "للايجار"
+  purpose: string; 
   city: string;
   district: string;
   rooms?: number;
@@ -265,7 +263,7 @@ export interface PropertyMarkerProps {
   onClick: () => void;
 }
 
-// ✅ محدث: إضافة backendSchools
+//  backendSchools
 export interface PropertyMapProps {
   properties: Property[];
   schools: SchoolWithTravelTime[];
@@ -273,7 +271,7 @@ export interface PropertyMapProps {
   mosques: MosqueWithTravelTime[];
   backendUniversities: NearbyUniversity[];
   backendMosques: NearbyMosque[];
-  backendSchools: NearbySchool[];  // ✅ جديد
+  backendSchools: NearbySchool[];  
   visitedProperties: Set<string>;
   favoriteIds: string[];
   transactionType: TransactionType;
