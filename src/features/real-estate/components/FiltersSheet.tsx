@@ -1,9 +1,7 @@
 /**
  * FiltersSheet Component
  * 
- * SOLID Principles:
- * - Single Responsibility: Container for all filter sections
- * - Open/Closed: Easy to add new filter sections without modifying existing code
+
  */
 
 import { memo } from 'react';
