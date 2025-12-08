@@ -7,7 +7,6 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import RealEstateSearch from "./pages/RealEstateSearch";
-import AdminTables from "./pages/AdminTables";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { HeatmapProvider } from "./features/real-estate/context/HeatmapContext";
@@ -27,7 +26,6 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/search" element={<RealEstateSearch />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/admin/tables" element={<AdminTables />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
