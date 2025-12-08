@@ -1,8 +1,6 @@
 /**
  * PriceAreaFilter Component
  * 
- * SOLID Principles:
- * - Single Responsibility: Only handles price and area filters
  */
 
 import { memo } from 'react';
