@@ -1,9 +1,7 @@
 /**
  * usePropertyQueries Hook
  * 
- * SOLID Principles:
- * - Single Responsibility: Only handles data fetching
- * - Dependency Inversion: Abstracts Supabase implementation
+
  */
 
 import { useQuery } from '@tanstack/react-query';
