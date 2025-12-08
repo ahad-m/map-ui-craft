@@ -1,8 +1,7 @@
 /**
  * FavoritesSheet Component
  * 
- * SOLID Principles:
- * - Single Responsibility: Handles favorites display
+
  */
 
 import { memo } from 'react';
