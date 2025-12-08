@@ -1,10 +1,3 @@
-/**
- * UniversityMarker Component
- * 
- * SOLID Principles:
- * - Single Responsibility: Only renders a university marker
- */
-
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AdvancedMarker } from '@vis.gl/react-google-maps';
