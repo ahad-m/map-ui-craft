@@ -1,9 +1,3 @@
-/**
- * ChatFloatingButton Component
- * 
- * SOLID Principles:
- * - Single Responsibility: Renders the floating chat button
- */
 
 import { memo } from 'react';
 import { Bot } from 'lucide-react';
