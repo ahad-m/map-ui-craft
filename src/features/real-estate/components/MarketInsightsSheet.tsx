@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrendingUp, Search, MapPin, Loader2, Map } from 'lucide-react'; // تم إضافة Map
+import { TrendingUp, Search, MapPin, Loader2, Map } from 'lucide-react'; 
 import {
   Sheet,
   SheetContent,
