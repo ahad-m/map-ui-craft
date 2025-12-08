@@ -50,8 +50,13 @@ export const MarketInsightsSheet = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="relative hover:bg-secondary/50 transition-colors" title="تحليل أسعار السوق">
-          <TrendingUp className="h-5 w-5 text-primary" />
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="h-8 w-8 sm:h-9 sm:w-9 p-0 relative hover:bg-primary/10 hover:border-primary transition-all duration-300 hover:scale-105" 
+          title="تحليل أسعار السوق"
+        >
+          <TrendingUp className="h-4 w-4 text-primary" />
         </Button>
       </SheetTrigger>
       

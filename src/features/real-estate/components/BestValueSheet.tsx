@@ -135,10 +135,10 @@ export const BestValueSheet = () => {
             <SheetTrigger asChild>
               <Button 
                 variant="outline" 
-                size="icon" 
-                className="relative hover:bg-amber-50 hover:border-amber-400 transition-all duration-300 hover:scale-105 group"
+                size="sm"
+                className="h-8 w-8 sm:h-9 sm:w-9 p-0 relative hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:border-amber-400 transition-all duration-300 hover:scale-105 group"
               >
-                <Star className="h-5 w-5 text-amber-500 group-hover:fill-amber-500 transition-all" />
+                <Star className="h-4 w-4 text-amber-500 group-hover:fill-amber-500 transition-all" />
               </Button>
             </SheetTrigger>
           </TooltipTrigger>
