@@ -1,9 +1,7 @@
 /**
  * useProximityCalculations Hook
  * 
- * SOLID Principles:
- * - Single Responsibility: Only handles proximity calculations
- * - Dependency Inversion: Depends on abstractions (GeoLocation), not concrete implementations
+
  */
 
 import { useMemo } from 'react';
