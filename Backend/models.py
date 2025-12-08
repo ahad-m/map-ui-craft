@@ -1,6 +1,6 @@
 """
 نماذج البيانات (Pydantic Models) للمساعد العقاري الذكي
-النسخة المحدّثة - مع دعم المحادثة التفاعلية (Multi-Turn)
+ مع دعم المحادثة التفاعلية (Multi-Turn)
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Literal, Dict, Any
@@ -39,9 +39,7 @@ class SchoolGender(str, Enum):
     MIXED = "مختلط"
 
 
-# ═══════════════════════════════════════════════════════════
-# [جديد] نوع الإجراء للمحادثة التفاعلية
-# ═══════════════════════════════════════════════════════════
+
 class ActionType(str, Enum):
     """نوع الإجراء الذي يجب اتخاذه"""
     NEW_SEARCH = "NEW_SEARCH"           # بحث جديد من الصفر
@@ -157,9 +155,7 @@ class ChatMessage(BaseModel):
     content: str
 
 
-# ═══════════════════════════════════════════════════════════
-# [محدّث] UserQuery - مع دعم المعايير السابقة
-# ═══════════════════════════════════════════════════════════
+
 class UserQuery(BaseModel):
     """طلب المستخدم مع السياق السابق"""
     message: str = Field(..., description="رسالة المستخدم الحالية")
@@ -167,7 +163,7 @@ class UserQuery(BaseModel):
         default=[], 
         description="تاريخ المحادثة (اختياري)"
     )
-    # [جديد] المعايير السابقة للمحادثة التفاعلية
+    #  المعايير السابقة للمحادثة التفاعلية
     previous_criteria: Optional[PropertyCriteria] = Field(
         default=None,
         description="معايير البحث من الطلب السابق (إن وجدت)"
@@ -188,9 +184,7 @@ class SearchResponse(BaseModel):
     search_mode: Optional[SearchMode] = None
 
 
-# ═══════════════════════════════════════════════════════════
-# [محدّث] CriteriaExtractionResponse - مع نوع الإجراء
-# ═══════════════════════════════════════════════════════════
+
 class CriteriaExtractionResponse(BaseModel):
     """استجابة استخراج المعايير مع دعم المحادثة التفاعلية"""
     success: bool
