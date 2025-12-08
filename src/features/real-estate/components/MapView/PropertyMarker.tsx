@@ -1,10 +1,3 @@
-/**
- * PropertyMarker Component
- * 
- * SOLID Principles:
- * - Single Responsibility: Only renders a property marker
- */
-
 import { memo } from 'react';
 import { AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 import { Check, Heart } from 'lucide-react';
