@@ -1,11 +1,6 @@
 /**
- * SearchHeader Component (Updated)
- * 
- * Now includes the BestValueSheet button (star icon) next to MarketInsightsSheet
- * 
- * SOLID Principles:
- * - Single Responsibility: Only handles the top search bar UI
- * - Interface Segregation: Props are minimal and focused
+ * SearchHeader Component 
+ *  * 
  */
 
 import { memo } from 'react';
@@ -28,7 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 import type { TransactionType } from '../types';
 import { MarketInsightsSheet } from './MarketInsightsSheet';
-import { BestValueSheet } from './BestValueSheet'; // ✅ New import
+import { BestValueSheet } from './BestValueSheet'; 
 
 interface SearchHeaderProps {
   transactionType: TransactionType;
