@@ -240,7 +240,7 @@ class SearchEngine:
                     if criteria.rooms.min is not None: query = query.gte('rooms', criteria.rooms.min)
                     if criteria.rooms.max is not None: query = query.lte('rooms', criteria.rooms.max)
             
-            # ✅ فلتر الحمامات (كان ناقص!)
+            # فلتر الحمامات
             if criteria.baths:
                 if criteria.baths.exact is not None:
                     query = query.eq('baths', criteria.baths.exact)
@@ -248,7 +248,7 @@ class SearchEngine:
                     if criteria.baths.min is not None: query = query.gte('baths', criteria.baths.min)
                     if criteria.baths.max is not None: query = query.lte('baths', criteria.baths.max)
             
-            # ✅ فلتر الصالات (كان ناقص!)
+            #  فلتر الصالات 
             if criteria.halls:
                 if criteria.halls.exact is not None:
                     query = query.eq('halls', criteria.halls.exact)
@@ -256,7 +256,7 @@ class SearchEngine:
                     if criteria.halls.min is not None: query = query.gte('halls', criteria.halls.min)
                     if criteria.halls.max is not None: query = query.lte('halls', criteria.halls.max)
             
-            # ✅ فلتر المساحة (كان ناقص!)
+            #  فلتر المساحة 
             if criteria.area_m2:
                 if criteria.area_m2.min is not None: query = query.gte('area_m2', criteria.area_m2.min)
                 if criteria.area_m2.max is not None: query = query.lte('area_m2', criteria.area_m2.max)
@@ -273,7 +273,6 @@ class SearchEngine:
             properties_data = result.data
             
             # تصفية إضافية للخدمات (للبحث العام مثل "أي مسجد")
-            # ✅ strict=True للبحث المطابق - بدون أي تسامح!
             if criteria.metro_time_max or \
                (criteria.university_requirements and not criteria.university_requirements.university_name) or \
                (criteria.mosque_requirements and not criteria.mosque_requirements.mosque_name) or \
@@ -297,15 +296,15 @@ class SearchEngine:
         المنطق: المشابه = المطابق + الإضافات المشابهة
         """
         try:
-            logger.info("🧠 بدء البحث الهجين (Smart Hybrid Search)...")
+            logger.info(" بدء البحث الهجين (Smart Hybrid Search)...")
             
             # ════════════════════════════════════════════════════════════
             # الخطوة 1: جلب نتائج البحث المطابق أولاً
             # ════════════════════════════════════════════════════════════
-            logger.info("📌 جلب نتائج البحث المطابق أولاً...")
+            logger.info(" جلب نتائج البحث المطابق أولاً...")
             exact_results = self._exact_search(criteria)
             exact_ids = {str(p.get('id')) for p in exact_results}
-            logger.info(f"✅ البحث المطابق أرجع {len(exact_results)} عقار")
+            logger.info(f" البحث المطابق أرجع {len(exact_results)} عقار")
             
             # ════════════════════════════════════════════════════════════
             # الخطوة 2: تجهيز إحداثيات البحث
@@ -328,14 +327,14 @@ class SearchEngine:
                 loc = self._get_entity_location(criteria.mosque_requirements.mosque_name, 'mosques')
                 if loc: 
                     target_lat, target_lon = loc
-                    logger.info(f"📍 استخدام موقع المسجد")
+                    logger.info(f" استخدام موقع المسجد")
             
-            # ثالثاً: ✅ جديد - استخدام مركز الحي إذا ما في جامعة/مسجد
+            # ثالثاً:  - استخدام مركز الحي إذا ما في جامعة/مسجد
             if not target_lat and criteria.district:
                 loc = _get_district_coordinates(criteria.district)
                 if loc:
                     target_lat, target_lon = loc
-                    logger.info(f"📍 استخدام مركز حي {criteria.district}")
+                    logger.info(f" استخدام مركز حي {criteria.district}")
 
             # ════════════════════════════════════════════════════════════
             # الخطوة 3: البحث الدلالي للعقارات الإضافية
@@ -357,14 +356,14 @@ class SearchEngine:
                             'p_district': None,  # لا نحدد الحي - نعتمد على الإحداثيات
                             'min_price': criteria.price.min * 0.5 if criteria.price and criteria.price.min else None,
                             'max_price': criteria.price.max * 1.5 if criteria.price and criteria.price.max else None,
-                            'p_lat': target_lat,  # ✅ إحداثيات الجامعة/المسجد/الحي
+                            'p_lat': target_lat,  #  إحداثيات الجامعة/المسجد/الحي
                             'p_lon': target_lon
                         }
                         
-                        logger.info(f"🚀 استدعاء search_properties_hybrid (target: {target_lat}, {target_lon})...")
+                        logger.info(f" استدعاء search_properties_hybrid (target: {target_lat}, {target_lon})...")
                         result = self.db.client.rpc('search_properties_hybrid', rpc_params).execute()
                         hybrid_results = result.data or []
-                        logger.info(f"✅ البحث الدلالي أرجع {len(hybrid_results)} عقار")
+                        logger.info(f" البحث الدلالي أرجع {len(hybrid_results)} عقار")
                 except Exception as vec_error:
                     logger.error(f"فشل البحث المتجهي: {vec_error}")
                     hybrid_results = []
@@ -373,7 +372,7 @@ class SearchEngine:
             # الخطوة 4: Fallback إذا لم نجد نتائج بالبحث الهجين
             # ════════════════════════════════════════════════════════════
             if not hybrid_results:
-                logger.info("⚠️ استخدام البحث الرقمي البديل (Weighted Search)...")
+                logger.info(" استخدام البحث الرقمي البديل (Weighted Search)...")
                 
                 target_price = 0
                 if criteria.price:
@@ -421,7 +420,7 @@ class SearchEngine:
                             prop['match_score'] = round(item.get('similarity', 0) * 100) if 'similarity' in item else 70
                             additional_properties.append(prop)
             
-            logger.info(f"✅ عقارات إضافية مشابهة: {len(additional_properties)}")
+            logger.info(f" عقارات إضافية مشابهة: {len(additional_properties)}")
             
             # ════════════════════════════════════════════════════════════
             # الخطوة 6: دمج النتائج (المطابق أولاً + المشابه)
@@ -442,7 +441,7 @@ class SearchEngine:
                     additional_properties = self._filter_by_services(additional_properties, criteria, strict=False)
             
             # ════════════════════════════════════════════════════════════
-            # الخطوة 7: ✅ ترتيب العقارات المشابهة (نفس الحي أولاً)
+            # الخطوة 7:  ترتيب العقارات المشابهة (نفس الحي أولاً)
             # ════════════════════════════════════════════════════════════
             if criteria.district and additional_properties:
                 # فصل العقارات: نفس الحي vs أحياء أخرى
@@ -464,13 +463,13 @@ class SearchEngine:
                 for prop in other_districts:
                     final_results.append(prop)
                 
-                logger.info(f"📊 الترتيب: {len(same_district)} من نفس الحي + {len(other_districts)} من أحياء قريبة")
+                logger.info(f" الترتيب: {len(same_district)} من نفس الحي + {len(other_districts)} من أحياء قريبة")
             else:
                 # إذا ما في حي محدد، أضف الكل
                 for prop in additional_properties:
                     final_results.append(prop)
             
-            logger.info(f"🎯 إجمالي النتائج: {len(exact_results)} مطابق + {len(additional_properties)} مشابه = {len(final_results)}")
+            logger.info(f" إجمالي النتائج: {len(exact_results)} مطابق + {len(additional_properties)} مشابه = {len(final_results)}")
             
             # ════════════════════════════════════════════════════════════
             # الخطوة 8: إضافة معلومات الخدمات القريبة للعرض
@@ -496,7 +495,7 @@ class SearchEngine:
         """
         filtered = []
         
-        # ✅ التسامح الموحد للبحث المشابه: +5 دقائق لكل الخدمات
+        #  التسامح الموحد للبحث المشابه: +5 دقائق لكل الخدمات
         TOLERANCE_MINUTES = 5
         
         for prop in properties:
@@ -506,7 +505,7 @@ class SearchEngine:
             if not prop_lat or not prop_lon: continue
             
             # ═══════════════════════════════════════════════════════
-            # ✅ الميترو
+            #  الميترو
             # ═══════════════════════════════════════════════════════
             if criteria.metro_time_max:
                 prop_metro_time = prop.get('time_to_metro_min')
@@ -521,7 +520,7 @@ class SearchEngine:
                             continue
             
             # ═══════════════════════════════════════════════════════
-            # ✅ الجامعات (بحث عام)
+            #  الجامعات (بحث عام)
             # ═══════════════════════════════════════════════════════
             if criteria.university_requirements and criteria.university_requirements.required:
                 uni_reqs = criteria.university_requirements
@@ -541,7 +540,7 @@ class SearchEngine:
                     except: continue
 
             # ═══════════════════════════════════════════════════════
-            # ✅ المساجد (بحث عام)
+            #  المساجد (بحث عام)
             # ═══════════════════════════════════════════════════════
             if criteria.mosque_requirements and criteria.mosque_requirements.required:
                 mosque_reqs = criteria.mosque_requirements
@@ -561,7 +560,7 @@ class SearchEngine:
                     except: continue
             
             # ═══════════════════════════════════════════════════════
-            # ✅ المدارس (بحث عام)
+            #  المدارس (بحث عام)
             # ═══════════════════════════════════════════════════════
             if criteria.school_requirements and criteria.school_requirements.required:
                 school_reqs = criteria.school_requirements
@@ -688,7 +687,7 @@ class SearchEngine:
             nearby_schools=row.get('nearby_schools', []),
             nearby_universities=row.get('nearby_universities', []),
             nearby_mosques=row.get('nearby_mosques', []),
-            match_score=row.get('match_score') # إضافة درجة التطابق إذا وجدت
+            match_score=row.get('match_score') 
         )
 
 
