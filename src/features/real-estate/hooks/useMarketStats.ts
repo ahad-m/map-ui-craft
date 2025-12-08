@@ -1,5 +1,5 @@
 /**
- * useMarketStats Hook (Updated)
+ * useMarketStats Hook
  * 
  * Fetches market statistics for districts including average price per m².
  * Now also re-exports best value properties functionality for convenience.
