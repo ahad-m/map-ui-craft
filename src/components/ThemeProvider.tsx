@@ -16,7 +16,7 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ 
   children, 
-  defaultTheme = "system",
+  defaultTheme = "light",
   ...props 
 }: ThemeProviderProps) {
   return (
