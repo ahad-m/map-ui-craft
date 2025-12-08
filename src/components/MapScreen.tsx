@@ -295,22 +295,9 @@ const MapContent = () => {
                   </Card>
                 )}
               </div>
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button size="icon" variant="outline" className="h-12 w-12 rounded-full">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side={i18n.language === 'ar' ? 'left' : 'right'}>
-                  <SheetHeader>
-                    <SheetTitle>{t('userProfile') || 'User Profile'}</SheetTitle>
-                  </SheetHeader>
-                  <div className="py-4 space-y-4">
-                    <p className="text-sm text-muted-foreground">{t('signInToAccess') || 'Sign in to access your profile and preferences'}</p>
-                    <Button className="w-full">{t('signIn') || 'Sign In'}</Button>
-                  </div>
-                </SheetContent>
-              </Sheet>
+              <div className="h-12 w-12 rounded-full border border-input bg-background flex items-center justify-center">
+                <User className="h-5 w-5 text-muted-foreground" />
+              </div>
               <ThemeToggle variant="compact" className="h-12 w-12 rounded-full" />
               <Button
                 variant="outline"
