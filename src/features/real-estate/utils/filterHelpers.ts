@@ -1,9 +1,7 @@
 /**
  * Filter Helper Utilities
  * 
- * SOLID Principle: Single Responsibility
- * - This module handles filter-related logic
- * - Parsing, validation, and transformation of filter values
+
  */
 
 import type { PropertyFilters, Property } from '../types';
