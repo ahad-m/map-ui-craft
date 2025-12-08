@@ -76,20 +76,20 @@ export const FiltersSheet = memo(function FiltersSheet({
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-2xl overflow-y-auto bg-background/98 backdrop-blur-md"
+        className="w-full sm:max-w-xl lg:max-w-2xl overflow-y-auto bg-background/98 backdrop-blur-md p-4 sm:p-6"
       >
-        <SheetHeader className="pb-6 border-b-2 border-primary/20">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <SlidersHorizontal className="h-5 w-5 text-primary" />
+        <SheetHeader className="pb-4 sm:pb-6 border-b-2 border-primary/20">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10">
+              <SlidersHorizontal className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
-            <SheetTitle className="text-2xl font-bold">
+            <SheetTitle className="text-lg sm:text-xl lg:text-2xl font-bold">
               {t('advancedFilters')}
             </SheetTitle>
           </div>
         </SheetHeader>
 
-        <div className="space-y-8 mt-6 pb-4">
+        <div className="space-y-5 sm:space-y-6 lg:space-y-8 mt-4 sm:mt-6 pb-4">
           {/* Property Details Section */}
           <PropertyDetailsFilter
             filters={filters}
@@ -132,19 +132,19 @@ export const FiltersSheet = memo(function FiltersSheet({
           />
 
           {/* Apply/Reset Buttons */}
-          <div className="flex gap-3 mt-8 pt-6 border-t border-border/50">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-border/50">
             <Button
               variant="outline"
               size="lg"
-              className="flex-1 h-12 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all"
+              className="flex-1 h-10 sm:h-12 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-all text-sm sm:text-base"
               onClick={onReset}
             >
-              <X className={`h-5 w-5 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+              <X className={`h-4 w-4 sm:h-5 sm:w-5 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />
               {t('resetFilters')}
             </Button>
             <Button
               size="lg"
-              className="flex-1 h-12 bg-gradient-to-r from-primary to-accent shadow-glow hover:shadow-elevated hover:scale-105 transition-all duration-300 font-bold"
+              className="flex-1 h-10 sm:h-12 bg-gradient-to-r from-primary to-accent shadow-glow hover:shadow-elevated hover:scale-105 transition-all duration-300 font-bold text-sm sm:text-base"
               onClick={handleApply}
             >
               <Search className={`h-4 w-4 ${i18n.language === 'ar' ? 'ml-2' : 'mr-2'}`} />

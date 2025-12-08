@@ -150,13 +150,13 @@ export const BestValueSheet = () => {
         </Tooltip>
       </TooltipProvider>
       
-      <SheetContent side="left" className="w-[400px] sm:w-[540px] flex flex-col h-full">
-        <SheetHeader className="mb-4 flex-shrink-0">
-          <SheetTitle className="flex items-center gap-2 text-xl text-amber-600">
-            <Star className="h-6 w-6 fill-amber-500" />
+      <SheetContent side="left" className="w-full sm:w-[400px] md:w-[480px] lg:w-[540px] flex flex-col h-full p-4 sm:p-6">
+        <SheetHeader className="mb-3 sm:mb-4 flex-shrink-0">
+          <SheetTitle className="flex items-center gap-2 text-lg sm:text-xl text-amber-600">
+            <Star className="h-5 w-5 sm:h-6 sm:w-6 fill-amber-500" />
             {t('bestValue.title', 'أفضل العقارات من حيث السعر')}
           </SheetTitle>
-          <SheetDescription>
+          <SheetDescription className="text-sm sm:text-base">
             {t('bestValue.description', 'هنا تجد أفضل العقارات من حيث السعر مقارنة بمتوسط سعر المتر في الحي')}
           </SheetDescription>
         </SheetHeader>
