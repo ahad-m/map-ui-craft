@@ -1,13 +1,3 @@
-/**
- * PropertyMap Component (Updated)
- * 
- * Now includes support for highlighted property from BestValueSheet.
- * 
- * SOLID Principles:
- * - Single Responsibility: Handles map rendering with all markers
- * - Dependency Inversion: Uses marker components through composition
- */
-
 import { memo, useEffect } from 'react';
 import { Map, useMap } from '@vis.gl/react-google-maps';
 import { PropertyMarker } from './PropertyMarker';
@@ -15,9 +5,9 @@ import { SchoolMarker } from './SchoolMarker';
 import { UniversityMarker } from './UniversityMarker';
 import { MosqueMarker } from './MosqueMarker';
 import { HeatmapLayer } from './HeatmapLayer';
-import { HighlightedPropertyMarker } from './HighlightedPropertyMarker'; // ✅ New import
+import { HighlightedPropertyMarker } from './HighlightedPropertyMarker'; 
 import { useHeatmap } from '../../context/HeatmapContext';
-import { useHighlightedProperty } from '../../context/HighlightedPropertyContext'; // ✅ New import
+import { useHighlightedProperty } from '../../context/HighlightedPropertyContext'; 
 import { useMarketStats } from '../../hooks/useMarketStats';
 
 import type {
@@ -87,7 +77,7 @@ export const PropertyMap = memo(function PropertyMap({
   // Heatmap state
   const { isHeatmapVisible } = useHeatmap();
   
-  // ✅ New: Highlighted property from BestValueSheet
+  // Highlighted property from BestValueSheet
   const { highlightedProperty, showHighlightedMarker, clearHighlightedProperty } = useHighlightedProperty();
   
   // Market stats for heatmap
@@ -111,7 +101,7 @@ export const PropertyMap = memo(function PropertyMap({
           visible={isHeatmapVisible} 
         />
 
-        {/* ✅ New: Highlighted Property Marker (from Best Value selection) */}
+        {/*  Highlighted Property Marker (from Best Value selection) */}
         {showHighlightedMarker && highlightedProperty && (
           <HighlightedPropertyMarker
             property={highlightedProperty}
