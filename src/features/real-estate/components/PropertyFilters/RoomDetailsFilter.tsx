@@ -1,8 +1,6 @@
 /**
  * RoomDetailsFilter Component
- * 
- * SOLID Principles:
- * - Single Responsibility: Only handles room filters (bedrooms, living rooms, bathrooms)
+
  */
 
 import { memo } from 'react';
