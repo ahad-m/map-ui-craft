@@ -1,9 +1,7 @@
 /**
  * PropertyDetailsFilter Component
  * 
- * SOLID Principles:
- * - Single Responsibility: Only handles property type and neighborhood filters
- * - Interface Segregation: Focused props interface
+
  */
 
 import { memo, useState } from 'react';
