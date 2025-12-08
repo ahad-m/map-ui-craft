@@ -1,8 +1,7 @@
 /**
  * ClearChatbotResultsButton Component
  * 
- * SOLID Principles:
- * - Single Responsibility: Button to clear chatbot results
+
  */
 
 import { memo } from 'react';
