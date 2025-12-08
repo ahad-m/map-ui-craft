@@ -1,8 +1,7 @@
 /**
  * ResultsCounter Component
  * 
- * SOLID Principles:
- * - Single Responsibility: Displays property count
+
  */
 
 import { memo } from 'react';
