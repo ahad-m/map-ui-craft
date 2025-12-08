@@ -1,8 +1,7 @@
 /**
  * ProximityFilter Component
  * 
- * SOLID Principles:
- * - Single Responsibility: Only handles proximity filters (mosques, metro)
+
  */
 
 import { memo } from 'react';
