@@ -111,7 +111,7 @@ class Database:
         """
         try:
             # ملاحظة: يحتاج إلى دالة PostGIS لحساب المسافة
-            # هذا مثال بسيط، يمكن تحسينه باستخدام RPC function
+           
             query = self.client.table('schools').select('*')
             
             if gender:
@@ -120,7 +120,7 @@ class Database:
             result = query.execute()
             
             # فلترة حسب المسافة (بشكل تقريبي)
-            # في الإنتاج، يُفضل استخدام PostGIS
+ 
             schools = []
             for school in result.data:
                 if school.get('lat') and school.get('lon'):
