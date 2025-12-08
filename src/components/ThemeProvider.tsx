@@ -23,7 +23,7 @@ export function ThemeProvider({
     <NextThemesProvider
       attribute="class"
       defaultTheme={defaultTheme}
-      enableSystem
+      enableSystem={false}
       disableTransitionOnChange
       {...props}
     >
