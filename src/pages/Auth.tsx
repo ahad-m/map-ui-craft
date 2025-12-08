@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
 import { Loader2, ArrowLeft, Languages } from 'lucide-react';
 import { z } from 'zod';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Auth = () => {
   const { t, i18n } = useTranslation();
@@ -151,6 +152,9 @@ const Auth = () => {
         <Languages className="h-4 w-4" />
         {i18n.language === 'en' ? 'ع' : 'EN'}
       </Button>
+      <div className="absolute top-4 right-20 z-10">
+        <ThemeToggle variant="compact" />
+      </div>
       <Card className="w-full max-w-md shadow-elevated glass-effect animate-slide-up relative z-10">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">

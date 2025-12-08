@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import riyalEstateLogo from '@/assets/riyal-estate-logo.jpg';
@@ -137,6 +138,9 @@ export const SearchHeader = memo(function SearchHeader({
                 )}
               </Button>
               
+              {/* Theme Toggle */}
+              <ThemeToggle variant="compact" />
+
               {/* Language Toggle */}
               <Button
                 variant="outline"

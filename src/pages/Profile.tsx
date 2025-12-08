@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { User, LogOut, Trash2, Edit2, X, Lock } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -164,15 +165,17 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/10 p-8">
       <div className="max-w-2xl mx-auto">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/search")}
-          className="mb-6"
-        >
-          <X className="w-4 h-4 mr-2" />
-          {t("Back to Search")}
-        </Button>
+        {/* Top Bar */}
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/search")}
+          >
+            <X className="w-4 h-4 mr-2" />
+            {t("Back to Search")}
+          </Button>
+          <ThemeToggle />
+        </div>
 
         {/* Profile Card */}
         <div className="bg-background/80 backdrop-blur-xl rounded-2xl shadow-xl border border-border/50 p-8">
