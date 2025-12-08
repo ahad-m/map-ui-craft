@@ -1,9 +1,7 @@
 /**
  * Distance Calculation Utilities
  * 
- * SOLID Principle: Single Responsibility
- * - This module only handles distance/travel time calculations
- * - Pure functions with no side effects
+
  */
 
 import type { GeoLocation } from '../types';
