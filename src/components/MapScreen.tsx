@@ -228,7 +228,7 @@ const MapContent = () => {
   ];
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-background">
+    <div className="relative h-screen w-full flex flex-col overflow-hidden bg-background">
         {/* Top Search Bar */}
         <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm border-b">
           <div className="p-4 space-y-3">
@@ -408,16 +408,16 @@ const MapContent = () => {
           </Button>
         </div>
 
-        {/* Latest in the area banner */}
-        <div className="absolute bottom-20 left-4 right-4 z-10">
+        {/* Latest in the area banner - positioned above fixed bottom nav */}
+        <div className="fixed bottom-16 left-4 right-4 z-10 sm:absolute sm:bottom-20">
           <Card className="p-3 bg-card/95 backdrop-blur-sm">
             <p className="text-sm font-medium">{t('latestInArea')}</p>
           </Card>
         </div>
 
-        {/* Bottom Navigation */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 bg-background border-t">
-          <div className="flex items-center justify-around p-2 pb-safe">
+        {/* Bottom Navigation - Fixed on mobile for visibility */}
+        <div className="fixed bottom-0 left-0 right-0 z-20 bg-background border-t shadow-lg">
+          <div className="flex items-center justify-around p-2 pb-safe max-w-screen-xl mx-auto">
             <Sheet open={showExploreSheet} onOpenChange={setShowExploreSheet}>
               <SheetTrigger asChild>
                 <Button
