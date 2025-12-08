@@ -1,9 +1,7 @@
 /**
  * useMapControls Hook
  * 
- * SOLID Principles:
- * - Single Responsibility: Only handles map control logic
- * - Dependency Inversion: Works with any map instance via ref
+
  */
 
 import { useRef, useEffect, useCallback } from 'react';
