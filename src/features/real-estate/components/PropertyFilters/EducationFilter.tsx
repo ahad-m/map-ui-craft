@@ -1,8 +1,6 @@
 /**
  * EducationFilter Component
  * 
- * SOLID Principles:
- * - Single Responsibility: Only handles education filters (schools & universities)
  */
 
 import { memo, useState } from 'react';
