@@ -15,7 +15,6 @@ import {
   Search,
   MapPin,
   SlidersHorizontal,
-  Languages,
   ArrowLeft,
   Heart,
   User,
@@ -107,24 +106,20 @@ export const SearchHeader = memo(function SearchHeader({
               </p>
             </div>
             
-            {/* Action buttons - responsive grid */}
-            <div className="flex gap-1 sm:gap-2 flex-wrap justify-end">
+            {/* Action buttons - unified sizing */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {/* Market Insights Button */}
-              <div className="hover:scale-105 transition-all duration-300">
-                <MarketInsightsSheet />
-              </div>
+              <MarketInsightsSheet />
 
               {/* Best Value Properties Button */}
-              <div className="hover:scale-105 transition-all duration-300">
-                <BestValueSheet />
-              </div>
+              <BestValueSheet />
 
               {/* Favorites Button */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onToggleFavorites}
-                className="gap-1 sm:gap-2 relative hover:bg-red-50 hover:border-red-300 transition-all duration-300 hover:scale-105 h-8 w-8 sm:h-9 sm:w-auto p-0 sm:px-3"
+                className="h-8 w-8 sm:h-9 sm:w-9 p-0 relative hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 transition-all duration-300 hover:scale-105"
               >
                 <Heart
                   className={`h-4 w-4 transition-all duration-300 ${
@@ -132,8 +127,8 @@ export const SearchHeader = memo(function SearchHeader({
                   }`}
                 />
                 {favoritesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center animate-pulse-glow text-[10px] sm:text-xs">
-                    {favoritesCount}
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-medium rounded-full h-4 w-4 flex items-center justify-center">
+                    {favoritesCount > 9 ? '9+' : favoritesCount}
                   </span>
                 )}
               </Button>
@@ -146,10 +141,9 @@ export const SearchHeader = memo(function SearchHeader({
                 variant="outline"
                 size="sm"
                 onClick={toggleLanguage}
-                className="gap-1 sm:gap-2 hover:bg-accent-light hover:border-primary transition-all duration-300 hover:scale-105 h-8 w-8 sm:h-9 sm:w-auto p-0 sm:px-3"
+                className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-primary/10 hover:border-primary transition-all duration-300 hover:scale-105 font-semibold text-xs"
               >
-                <Languages className="h-4 w-4 sm:hidden" />
-                <span className="hidden sm:inline">{i18n.language === 'en' ? 'ع' : 'EN'}</span>
+                {i18n.language === 'en' ? 'ع' : 'EN'}
               </Button>
               
               {/* Profile Button */}
@@ -157,7 +151,7 @@ export const SearchHeader = memo(function SearchHeader({
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/profile')}
-                className="gap-1 sm:gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary transition-all duration-300 hover:scale-105 h-8 w-8 sm:h-9 sm:w-auto p-0 sm:px-3"
+                className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-primary/10 hover:border-primary transition-all duration-300 hover:scale-105"
               >
                 <User className="h-4 w-4" />
               </Button>
