@@ -1,10 +1,7 @@
 /**
  * usePropertyFilters Hook
  * 
- * SOLID Principles:
- * - Single Responsibility: Only manages filter state
- * - Open/Closed: Extensible through generic filter types
- * - Dependency Inversion: Returns a clean interface, hides implementation
+
  */
 
 import { useState, useCallback, useMemo } from 'react';
